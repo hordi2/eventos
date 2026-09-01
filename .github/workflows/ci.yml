@@ -40,7 +40,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
-          extensions: pdo_pgsql, pgsql, bcmath, zip, redis
+          extensions: pdo_pgsql, pgsql, bcmath, zip, redis, intl
           coverage: xdebug
 
       - name: Cache dépendances Composer
@@ -113,7 +113,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
-          extensions: pdo_pgsql, pgsql, bcmath, zip, redis
+          extensions: pdo_pgsql, pgsql, bcmath, zip, redis, intl
 
       - name: Cache dépendances Composer
         uses: actions/cache@v4
