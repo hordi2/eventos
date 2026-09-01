@@ -22,6 +22,7 @@ final class OrganizationFactory extends Factory
         return [
             'name' => fake()->company(),
             'slug' => fake()->unique()->slug(),
+            'allow_editor_financial_access' => false,
         ];
     }
 }

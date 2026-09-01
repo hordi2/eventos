@@ -7,20 +7,24 @@ use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Organization\Models\Organization;
 use App\Models\User;
 
-it('permet au owner de consulter le journal d\'audit de son organisation', function (): void {
-    $owner = User::factory()->create();
-    $organization = Organization::factory()->create();
-    $owner->memberships()->create(['organization_id' => $organization->id, 'role' => MembershipRole::Owner]);
+it('permet au owner et à l\'admin de consulter le journal d\'audit de leur organisation', function (): void {
+    foreach ([MembershipRole::Owner, MembershipRole::Admin] as $role) {
+        $user = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $user->memberships()->create(['organization_id' => $organization->id, 'role' => $role]);
 
-    $this->actingAs($owner)->get('/audit-log')->assertOk();
+        $this->actingAs($user)->get('/audit-log')->assertOk();
+    }
 });
 
-it('refuse l\'accès au journal d\'audit à un membre qui n\'est pas owner', function (): void {
-    $editor = User::factory()->create();
-    $organization = Organization::factory()->create();
-    $editor->memberships()->create(['organization_id' => $organization->id, 'role' => MembershipRole::Editor]);
+it('refuse l\'accès au journal d\'audit à un membre qui n\'est ni owner ni admin', function (): void {
+    foreach ([MembershipRole::Editor, MembershipRole::DoorStaff, MembershipRole::Viewer] as $role) {
+        $user = User::factory()->create();
+        $organization = Organization::factory()->create();
+        $user->memberships()->create(['organization_id' => $organization->id, 'role' => $role]);
 
-    $this->actingAs($editor)->get('/audit-log')->assertForbidden();
+        $this->actingAs($user)->get('/audit-log')->assertForbidden();
+    }
 });
 
 it('refuse l\'accès au journal d\'audit à un visiteur non authentifié', function (): void {

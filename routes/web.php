@@ -54,7 +54,7 @@ Route::middleware('auth')->group(function (): void {
         ->middleware(['verified', 'resolve-organization'])
         ->name('dashboard');
 
-    Route::middleware(['verified', 'resolve-organization', 'ensure-organization-owner'])->group(function (): void {
+    Route::middleware(['verified', 'resolve-organization', 'can-organization:viewAuditLog'])->group(function (): void {
         Route::get('audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
         Route::get('audit-log/export', [AuditLogController::class, 'export'])->name('audit-log.export');
     });

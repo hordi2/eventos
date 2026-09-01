@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domain\Organization\Models\Organization;
+use App\Domain\Organization\Policies\OrganizationPolicy;
 use App\Support\MultiTenancy\CurrentOrganization;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,6 +25,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Gate::policy(Organization::class, OrganizationPolicy::class);
     }
 }

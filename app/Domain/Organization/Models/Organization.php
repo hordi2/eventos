@@ -23,7 +23,18 @@ final class Organization extends Model
     protected $fillable = [
         'name',
         'slug',
+        'allow_editor_financial_access',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'allow_editor_financial_access' => 'boolean',
+        ];
+    }
 
     protected static function newFactory(): OrganizationFactory
     {

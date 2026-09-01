@@ -9,6 +9,13 @@ parameters:
 
     tmpDir: storage/framework/phpstan
 
+    # Le projet utilise la syntaxe casts(): array (recommandée depuis
+    # Laravel 11) plutôt que la propriété $casts. Sans cette option,
+    # Larastan ne détecte pas les casts vers une classe enum (ex.
+    # MembershipRole) et infère le type brut de la colonne (string) au lieu
+    # du type de l'enum, faussant toute comparaison stricte en aval.
+    parseModelCastsMethod: true
+
     ignoreErrors:
         -
             # BelongsToOrganization est prêt à être utilisé par les futurs

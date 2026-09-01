@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Http\Middleware\EnsureUserIsOrganizationOwner;
+use App\Http\Middleware\AuthorizeOrganizationAbility;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ResolveCurrentOrganization;
 use Illuminate\Foundation\Application;
@@ -22,7 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'resolve-organization' => ResolveCurrentOrganization::class,
-            'ensure-organization-owner' => EnsureUserIsOrganizationOwner::class,
+            'can-organization' => AuthorizeOrganizationAbility::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
