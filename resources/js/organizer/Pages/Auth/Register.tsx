@@ -2,6 +2,10 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 import AuthLayout from '../../Layouts/AuthLayout';
 import InputError from '../../Components/InputError';
+import InputLabel from '../../Components/InputLabel';
+import TextInput from '../../Components/TextInput';
+import PrimaryButton from '../../Components/PrimaryButton';
+import GoogleButton from '../../Components/GoogleButton';
 
 export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -24,17 +28,14 @@ export default function Register() {
         <AuthLayout title="Créer un compte">
             <Head title="Inscription" />
 
-            <form onSubmit={submit} className="space-y-4">
+            <form onSubmit={submit} className="space-y-6">
                 <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                        Nom
-                    </label>
-                    <input
+                    <InputLabel htmlFor="name">Nom</InputLabel>
+                    <TextInput
                         id="name"
                         type="text"
                         value={data.name}
                         onChange={(e) => setData('name', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         autoFocus
                         required
                     />
@@ -42,83 +43,62 @@ export default function Register() {
                 </div>
 
                 <div>
-                    <label htmlFor="organization_name" className="block text-sm font-medium text-gray-700">
-                        Nom de l'organisation
-                    </label>
-                    <input
+                    <InputLabel htmlFor="organization_name">Nom de l'organisation</InputLabel>
+                    <TextInput
                         id="organization_name"
                         type="text"
                         value={data.organization_name}
                         onChange={(e) => setData('organization_name', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         required
                     />
                     <InputError message={errors.organization_name} />
                 </div>
 
                 <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                        E-mail
-                    </label>
-                    <input
+                    <InputLabel htmlFor="email">E-mail</InputLabel>
+                    <TextInput
                         id="email"
                         type="email"
                         value={data.email}
                         onChange={(e) => setData('email', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         required
                     />
                     <InputError message={errors.email} />
                 </div>
 
                 <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                        Mot de passe
-                    </label>
-                    <input
+                    <InputLabel htmlFor="password">Mot de passe</InputLabel>
+                    <TextInput
                         id="password"
                         type="password"
                         value={data.password}
                         onChange={(e) => setData('password', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         required
                     />
                     <InputError message={errors.password} />
                 </div>
 
                 <div>
-                    <label htmlFor="password_confirmation" className="block text-sm font-medium text-gray-700">
-                        Confirmer le mot de passe
-                    </label>
-                    <input
+                    <InputLabel htmlFor="password_confirmation">Confirmer le mot de passe</InputLabel>
+                    <TextInput
                         id="password_confirmation"
                         type="password"
                         value={data.password_confirmation}
                         onChange={(e) => setData('password_confirmation', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         required
                     />
                     <InputError message={errors.password_confirmation} />
                 </div>
 
-                <button
-                    type="submit"
-                    disabled={processing}
-                    className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-                >
+                <PrimaryButton type="submit" disabled={processing}>
                     Créer mon compte
-                </button>
+                </PrimaryButton>
 
-                <a
-                    href="/auth/google/redirect"
-                    className="block w-full rounded-md border border-gray-300 px-4 py-2 text-center text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                    Continuer avec Google
-                </a>
+                <GoogleButton />
 
-                <p className="text-center text-sm text-gray-600">
+                <p className="text-center text-sm text-ink-soft">
                     Déjà un compte ?{' '}
-                    <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+                    <Link href="/login" className="font-medium text-ink underline underline-offset-4">
                         Se connecter
                     </Link>
                 </p>

@@ -6,7 +6,35 @@
 @source '../**/*.js';
 @source '../**/*.tsx';
 
+/*
+ * Charte graphique Itaza Invitation — reprise à l'identique du site vitrine
+ * (itaza_invitation_site.html) pour que l'application ait la même identité
+ * visuelle que le site public.
+ */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-serif: 'Bodoni Moda', ui-serif, serif;
+    --font-label: 'Space Grotesk', ui-sans-serif, sans-serif;
+
+    --color-bg: #ffffff;
+    --color-bg-alt: #f4f4f2;
+    --color-bg-deep: #ecece9;
+    --color-ink: #1b1611;
+    --color-ink-soft: #7a7167;
+    --color-line: #e3e3e0;
+    --color-accent: #0a0a0a;
+}
+
+body {
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    background: var(--color-bg);
+}
+
+h1,
+h2,
+h3 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.01em;
 }

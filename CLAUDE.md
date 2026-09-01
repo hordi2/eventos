@@ -8,6 +8,9 @@
 
 ## 1. Le projet en une page
 
+**Nom commercial retenu : Itaza Invitation** (nom de code *EventOS* dans le
+cahier des charges — conservé comme référence historique dans `docs/`).
+
 Plateforme SaaS de gestion d'événements : invitation, inscription, billetterie,
 check-in, analytics. Un seul outil qui remplace le patchwork
 Google Forms + Excel + Mailchimp + billetterie + liste papier.

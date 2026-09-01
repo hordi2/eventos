@@ -1,7 +1,7 @@
-# EventOS
+# Itaza Invitation
 
 Plateforme SaaS de gestion d'événements : invitation, inscription, billetterie,
-check-in, analytics.
+check-in, analytics. (Nom de code du projet dans les documents de cadrage : *EventOS*.)
 
 Le contexte produit complet est dans [`docs/cahier-des-charges.md`](docs/cahier-des-charges.md),
 le découpage en tickets dans [`docs/backlog-lot1-mvp.md`](docs/backlog-lot1-mvp.md),

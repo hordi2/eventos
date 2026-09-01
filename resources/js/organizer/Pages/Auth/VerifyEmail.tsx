@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 import AuthLayout from '../../Layouts/AuthLayout';
+import PrimaryButton from '../../Components/PrimaryButton';
 
 export default function VerifyEmail({ status }: { status?: string }) {
     const { post, processing } = useForm({});
@@ -15,27 +16,28 @@ export default function VerifyEmail({ status }: { status?: string }) {
         <AuthLayout title="Vérifie ton adresse e-mail">
             <Head title="Vérification de l'e-mail" />
 
-            <p className="mb-4 text-sm text-gray-600">
+            <p className="mb-6 text-sm text-ink-soft">
                 Merci de ton inscription ! Avant de commencer, peux-tu vérifier ton adresse e-mail en cliquant sur le
                 lien qu'on vient de t'envoyer ? Si tu ne l'as pas reçu, on peut t'en renvoyer un autre.
             </p>
 
             {status === 'verification-link-sent' && (
-                <p className="mb-4 text-sm font-medium text-green-600">
+                <p className="mb-6 text-sm font-medium text-ink">
                     Un nouveau lien de vérification vient d'être envoyé à l'adresse fournie lors de l'inscription.
                 </p>
             )}
 
-            <form onSubmit={submit} className="flex items-center justify-between">
-                <button
-                    type="submit"
-                    disabled={processing}
-                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-                >
+            <form onSubmit={submit} className="space-y-4">
+                <PrimaryButton type="submit" disabled={processing}>
                     Renvoyer l'e-mail de vérification
-                </button>
+                </PrimaryButton>
 
-                <Link href="/logout" method="post" as="button" className="text-sm text-gray-600 hover:text-gray-900">
+                <Link
+                    href="/logout"
+                    method="post"
+                    as="button"
+                    className="block w-full text-center text-sm text-ink-soft underline underline-offset-4 hover:text-ink"
+                >
                     Se déconnecter
                 </Link>
             </form>

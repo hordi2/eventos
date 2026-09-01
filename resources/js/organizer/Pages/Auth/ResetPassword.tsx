@@ -2,6 +2,9 @@ import { Head, useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 import AuthLayout from '../../Layouts/AuthLayout';
 import InputError from '../../Components/InputError';
+import InputLabel from '../../Components/InputLabel';
+import TextInput from '../../Components/TextInput';
+import PrimaryButton from '../../Components/PrimaryButton';
 
 export default function ResetPassword({ token, email }: { token: string; email: string }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -23,32 +26,26 @@ export default function ResetPassword({ token, email }: { token: string; email: 
         <AuthLayout title="Nouveau mot de passe">
             <Head title="Réinitialisation du mot de passe" />
 
-            <form onSubmit={submit} className="space-y-4">
+            <form onSubmit={submit} className="space-y-6">
                 <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                        E-mail
-                    </label>
-                    <input
+                    <InputLabel htmlFor="email">E-mail</InputLabel>
+                    <TextInput
                         id="email"
                         type="email"
                         value={data.email}
                         onChange={(e) => setData('email', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         required
                     />
                     <InputError message={errors.email} />
                 </div>
 
                 <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                        Nouveau mot de passe
-                    </label>
-                    <input
+                    <InputLabel htmlFor="password">Nouveau mot de passe</InputLabel>
+                    <TextInput
                         id="password"
                         type="password"
                         value={data.password}
                         onChange={(e) => setData('password', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         autoFocus
                         required
                     />
@@ -56,27 +53,20 @@ export default function ResetPassword({ token, email }: { token: string; email: 
                 </div>
 
                 <div>
-                    <label htmlFor="password_confirmation" className="block text-sm font-medium text-gray-700">
-                        Confirmer le mot de passe
-                    </label>
-                    <input
+                    <InputLabel htmlFor="password_confirmation">Confirmer le mot de passe</InputLabel>
+                    <TextInput
                         id="password_confirmation"
                         type="password"
                         value={data.password_confirmation}
                         onChange={(e) => setData('password_confirmation', e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         required
                     />
                     <InputError message={errors.password_confirmation} />
                 </div>
 
-                <button
-                    type="submit"
-                    disabled={processing}
-                    className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-                >
+                <PrimaryButton type="submit" disabled={processing}>
                     Réinitialiser le mot de passe
-                </button>
+                </PrimaryButton>
             </form>
         </AuthLayout>
     );
