@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Organization\Actions;
 
+use App\Models\User;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -17,6 +18,7 @@ final class AttemptLogin
 
     public function __construct(
         private readonly RateLimiter $limiter,
+        private readonly RecordAuditLog $recordAuditLog,
     ) {}
 
     public function handle(string $email, string $password, string $ip, bool $remember = false): void
@@ -40,6 +42,17 @@ final class AttemptLogin
         }
 
         $this->limiter->clear($key);
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        // Aucun contexte d'organisation n'est encore résolu à ce stade (le
+        // middleware resolve-organization n'a pas encore tourné) : on
+        // rattache la connexion à la première organisation de l'utilisateur
+        // pour qu'elle apparaisse dans son journal d'audit.
+        $organizationId = $user->memberships()->value('organization_id');
+
+        $this->recordAuditLog->handle(action: 'auth.login', causer: $user, organizationId: $organizationId);
     }
 
     private function throttleKey(string $email, string $ip): string

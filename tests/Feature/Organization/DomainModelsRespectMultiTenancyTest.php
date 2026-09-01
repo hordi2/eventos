@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domain\Organization\Models\AuditLog;
 use App\Domain\Organization\Models\Membership;
 use App\Support\MultiTenancy\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
@@ -10,12 +11,16 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 it('tout modèle du domaine possédant organization_id déclare le trait BelongsToOrganization', function (): void {
-    // Membership est la table de résolution du tenant lui-même : on ne peut
-    // pas exiger un contexte d'organisation déjà résolu pour la consulter,
-    // c'est justement elle qui sert à le déterminer. Exception documentée,
-    // pas un oubli.
     $exempt = [
+        // Table de résolution du tenant lui-même : on ne peut pas exiger un
+        // contexte d'organisation déjà résolu pour la consulter, c'est
+        // justement elle qui sert à le déterminer.
         Membership::class,
+        // organization_id est nullable (une connexion peut être journalisée
+        // avant qu'un contexte d'organisation ne soit résolu) et son
+        // immutabilité est garantie par un déclencheur PostgreSQL, pas par
+        // le cloisonnement multi-tenant.
+        AuditLog::class,
     ];
 
     $domainPath = app_path('Domain');

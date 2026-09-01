@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Organizer\AuditLogController;
 use App\Http\Controllers\Organizer\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Organizer\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Organizer\Auth\EmailVerificationPromptController;
@@ -10,8 +11,8 @@ use App\Http\Controllers\Organizer\Auth\NewPasswordController;
 use App\Http\Controllers\Organizer\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Organizer\Auth\RegisteredUserController;
 use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
+use App\Http\Controllers\Organizer\DashboardController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/', function () {
     return redirect()->route(auth()->check() ? 'dashboard' : 'login');
@@ -49,7 +50,12 @@ Route::middleware('auth')->group(function (): void {
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
-    Route::get('dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->middleware(['verified', 'resolve-organization'])->name('dashboard');
+    Route::get('dashboard', DashboardController::class)
+        ->middleware(['verified', 'resolve-organization'])
+        ->name('dashboard');
+
+    Route::middleware(['verified', 'resolve-organization', 'ensure-organization-owner'])->group(function (): void {
+        Route::get('audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
+        Route::get('audit-log/export', [AuditLogController::class, 'export'])->name('audit-log.export');
+    });
 });

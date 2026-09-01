@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Domain\Organization\Models\AuditLog;
+use App\Domain\Organization\Models\MembershipRole;
+use App\Domain\Organization\Models\Organization;
 use App\Models\User;
 
 it('connecte un utilisateur avec les bons identifiants', function (): void {
@@ -13,6 +16,23 @@ it('connecte un utilisateur avec les bons identifiants', function (): void {
     ])->assertRedirect(route('dashboard'));
 
     $this->assertAuthenticatedAs($user);
+});
+
+it('journalise une connexion réussie, rattachée à l\'organisation de l\'utilisateur', function (): void {
+    $user = User::factory()->create(['password' => 'mot-de-passe-correct']);
+    $organization = Organization::factory()->create();
+    $user->memberships()->create(['organization_id' => $organization->id, 'role' => MembershipRole::Owner]);
+
+    $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'mot-de-passe-correct',
+    ]);
+
+    $log = AuditLog::query()->where('action', 'auth.login')->where('causer_id', $user->id)->first();
+
+    expect($log)->not->toBeNull();
+    expect($log->causer_type)->toBe(User::class);
+    expect($log->organization_id)->toBe($organization->id);
 });
 
 it('refuse de mauvais identifiants', function (): void {

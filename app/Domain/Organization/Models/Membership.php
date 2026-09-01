@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Organization\Models;
 
 use App\Models\User;
+use App\Support\Auditing\Auditable;
 use Database\Factories\MembershipFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 final class Membership extends Model
 {
     /** @use HasFactory<MembershipFactory> */
-    use HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * @var list<string>
