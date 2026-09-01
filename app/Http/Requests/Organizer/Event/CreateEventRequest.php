@@ -29,6 +29,14 @@ final class CreateEventRequest extends FormRequest
             'start_at' => ['required', 'date'],
             'end_at' => ['nullable', 'date', 'after:start_at'],
             'timezone' => ['required', 'string', Rule::in(DateTimeZone::listIdentifiers())],
+            // La RLS PostgreSQL (T-002) rend déjà invisible tout lieu d'une autre
+            // organisation à cette requête : Rule::exists suffit, pas besoin de
+            // filtrer explicitement sur organization_id ici.
+            'venue_id' => ['nullable', 'integer', Rule::exists('venues', 'id')->whereNull('deleted_at')],
+            'venue_name' => ['nullable', 'string', 'max:255'],
+            'venue_address' => ['nullable', 'string', 'required_with:venue_name'],
+            'venue_access_instructions' => ['nullable', 'string'],
+            'venue_parking_info' => ['nullable', 'string'],
         ];
     }
 }

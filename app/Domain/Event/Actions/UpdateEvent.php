@@ -15,6 +15,10 @@ use InvalidArgumentException;
 
 final class UpdateEvent
 {
+    public function __construct(
+        private readonly CreateVenue $createVenue,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -29,6 +33,16 @@ final class UpdateEvent
         if (array_key_exists('slug', $data)) {
             $data['slug'] = $this->resolveSlug($event, $data['slug']);
         }
+
+        if (isset($data['venue_name'])) {
+            $data['venue_id'] = $this->createVenue->handle($event->organization, $editor, [
+                'name' => $data['venue_name'],
+                'address' => $data['venue_address'] ?? '',
+                'access_instructions' => $data['venue_access_instructions'] ?? null,
+                'parking_info' => $data['venue_parking_info'] ?? null,
+            ])->id;
+        }
+        unset($data['venue_name'], $data['venue_address'], $data['venue_access_instructions'], $data['venue_parking_info']);
 
         $timezone = $data['timezone'] ?? $event->timezone;
 

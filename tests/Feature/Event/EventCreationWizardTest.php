@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventStatus;
 use App\Domain\Event\Models\EventType;
+use App\Domain\Event\Models\Venue;
 use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Organization\Models\Organization;
 use App\Models\User;
@@ -118,4 +119,55 @@ it('refuse la mise à jour à un rôle sans updateEvents', function (): void {
     ]);
 
     $response->assertForbidden();
+});
+
+it('attache un lieu déjà saisi à un nouvel événement', function (): void {
+    [$organization, $admin] = organizationWithRole(MembershipRole::Admin);
+    $venue = Venue::factory()->for($organization)->create();
+
+    $response = $this->actingAs($admin)->post('/events', [
+        'title' => 'Gala annuel',
+        'start_at' => '2026-09-08T14:30',
+        'timezone' => 'Africa/Kinshasa',
+        'venue_id' => $venue->id,
+    ]);
+
+    $event = Event::query()->where('organization_id', $organization->id)->firstOrFail();
+    $response->assertRedirect(route('events.edit', $event));
+    expect($event->venue_id)->toBe($venue->id);
+});
+
+it('crée un nouveau lieu à la volée et l\'attache à l\'événement', function (): void {
+    [$organization, $admin] = organizationWithRole(MembershipRole::Admin);
+
+    $response = $this->actingAs($admin)->post('/events', [
+        'title' => 'Gala annuel',
+        'start_at' => '2026-09-08T14:30',
+        'timezone' => 'Africa/Kinshasa',
+        'venue_name' => 'Salle des fêtes de la Gombe',
+        'venue_address' => '12 avenue de la Paix, Kinshasa',
+    ]);
+
+    $event = Event::query()->where('organization_id', $organization->id)->firstOrFail();
+    $response->assertRedirect(route('events.edit', $event));
+    expect($event->venue)->not->toBeNull();
+    expect($event->venue->name)->toBe('Salle des fêtes de la Gombe');
+    expect($event->venue->organization_id)->toBe($organization->id);
+});
+
+it('refuse un venue_id appartenant à une autre organisation', function (): void {
+    [, $admin] = organizationWithRole(MembershipRole::Admin);
+
+    $otherOrganization = Organization::factory()->create();
+    app(CurrentOrganization::class)->set($otherOrganization);
+    $otherVenue = Venue::factory()->for($otherOrganization)->create();
+
+    $response = $this->actingAs($admin)->post('/events', [
+        'title' => 'Gala annuel',
+        'start_at' => '2026-09-08T14:30',
+        'timezone' => 'Africa/Kinshasa',
+        'venue_id' => $otherVenue->id,
+    ]);
+
+    $response->assertSessionHasErrors('venue_id');
 });

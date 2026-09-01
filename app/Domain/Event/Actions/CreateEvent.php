@@ -20,6 +20,10 @@ use InvalidArgumentException;
 
 final class CreateEvent
 {
+    public function __construct(
+        private readonly CreateVenue $createVenue,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -48,6 +52,7 @@ final class CreateEvent
             'timezone' => $data['timezone'],
             'is_online' => $data['is_online'] ?? false,
             'online_url' => $data['online_url'] ?? null,
+            'venue_id' => $this->resolveVenueId($organization, $creator, $data),
             'capacity' => $data['capacity'] ?? null,
             'registration_opens_at' => $data['registration_opens_at'] ?? null,
             'registration_closes_at' => $data['registration_closes_at'] ?? null,
@@ -80,6 +85,31 @@ final class CreateEvent
     private function resolveDateTime(string|DateTimeInterface $value, string $timezone): CarbonImmutable
     {
         return CarbonImmutable::parse($value, $timezone)->utc();
+    }
+
+    /**
+     * Un événement référence un lieu déjà saisi (venue_id, réutilisation) ou
+     * en décrit un nouveau à la volée (venue_name, ...), créé au passage puis
+     * réutilisable pour les prochains événements de l'organisation.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveVenueId(Organization $organization, User $creator, array $data): ?int
+    {
+        if (isset($data['venue_id'])) {
+            return (int) $data['venue_id'];
+        }
+
+        if (isset($data['venue_name'])) {
+            return $this->createVenue->handle($organization, $creator, [
+                'name' => $data['venue_name'],
+                'address' => $data['venue_address'] ?? '',
+                'access_instructions' => $data['venue_access_instructions'] ?? null,
+                'parking_info' => $data['venue_parking_info'] ?? null,
+            ])->id;
+        }
+
+        return null;
     }
 
     private function resolveSlug(Organization $organization, string $base, ?int $ignoreEventId = null): string

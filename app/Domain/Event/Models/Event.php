@@ -36,6 +36,7 @@ final class Event extends Model
         'timezone',
         'is_online',
         'online_url',
+        'venue_id',
         'capacity',
         'registration_opens_at',
         'registration_closes_at',
@@ -85,6 +86,14 @@ final class Event extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * @return BelongsTo<Venue, $this>
+     */
+    public function venue(): BelongsTo
+    {
+        return $this->belongsTo(Venue::class);
     }
 
     /**

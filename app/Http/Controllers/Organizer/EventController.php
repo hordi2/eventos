@@ -8,6 +8,7 @@ use App\Domain\Event\Actions\CreateEvent;
 use App\Domain\Event\Actions\UpdateEvent;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventType;
+use App\Domain\Event\Models\Venue;
 use App\Domain\Organization\Models\Organization;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\Event\CreateEventRequest;
@@ -26,6 +27,7 @@ final class EventController extends Controller
             'event' => null,
             'eventTypes' => $this->eventTypeOptions(),
             'timezones' => $this->timezoneOptions(),
+            'venues' => $this->venueOptions(),
         ]);
     }
 
@@ -46,6 +48,7 @@ final class EventController extends Controller
             'event' => $this->presentEvent($event),
             'eventTypes' => $this->eventTypeOptions(),
             'timezones' => $this->timezoneOptions(),
+            'venues' => $this->venueOptions(),
         ]);
     }
 
@@ -120,6 +123,8 @@ final class EventController extends Controller
      */
     private function presentEvent(Event $event): array
     {
+        $event->loadMissing('venue');
+
         return [
             'id' => $event->id,
             'title' => $event->title,
@@ -129,6 +134,25 @@ final class EventController extends Controller
             'startAt' => $event->start_at->toIso8601String(),
             'endAt' => $event->end_at->toIso8601String(),
             'timezone' => $event->timezone,
+            'venueId' => $event->venue_id,
+            'venueName' => $event->venue?->name,
+            'venueAddress' => $event->venue?->address,
         ];
+    }
+
+    /**
+     * @return list<array{id: int, name: string, address: string}>
+     */
+    private function venueOptions(): array
+    {
+        return Venue::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'address'])
+            ->map(fn (Venue $venue): array => [
+                'id' => $venue->id,
+                'name' => $venue->name,
+                'address' => $venue->address,
+            ])
+            ->all();
     }
 }

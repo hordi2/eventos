@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Domain\Event\Models\Event;
+use App\Domain\Event\Models\Venue;
 use App\Domain\Event\Policies\EventPolicy;
+use App\Domain\Event\Policies\VenuePolicy;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Organization\Policies\OrganizationPolicy;
 use App\Support\MultiTenancy\CurrentOrganization;
@@ -29,5 +31,6 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Organization::class, OrganizationPolicy::class);
         Gate::policy(Event::class, EventPolicy::class);
+        Gate::policy(Venue::class, VenuePolicy::class);
     }
 }
