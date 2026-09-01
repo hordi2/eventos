@@ -4,7 +4,7 @@ import AuthLayout from '../../Layouts/AuthLayout';
 import InputError from '../../Components/InputError';
 import InputLabel from '../../Components/InputLabel';
 import TextInput from '../../Components/TextInput';
-import PrimaryButton from '../../Components/PrimaryButton';
+import Button from '../../Components/Button';
 
 export default function ResetPassword({ token, email }: { token: string; email: string }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -64,9 +64,9 @@ export default function ResetPassword({ token, email }: { token: string; email: 
                     <InputError message={errors.password_confirmation} />
                 </div>
 
-                <PrimaryButton type="submit" disabled={processing}>
+                <Button type="submit" disabled={processing}>
                     Réinitialiser le mot de passe
-                </PrimaryButton>
+                </Button>
             </form>
         </AuthLayout>
     );

@@ -1,7 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 import AuthLayout from '../../Layouts/AuthLayout';
-import PrimaryButton from '../../Components/PrimaryButton';
+import Button from '../../Components/Button';
 
 export default function VerifyEmail({ status }: { status?: string }) {
     const { post, processing } = useForm({});
@@ -28,9 +28,9 @@ export default function VerifyEmail({ status }: { status?: string }) {
             )}
 
             <form onSubmit={submit} className="space-y-4">
-                <PrimaryButton type="submit" disabled={processing}>
+                <Button type="submit" disabled={processing}>
                     Renvoyer l'e-mail de vérification
-                </PrimaryButton>
+                </Button>
 
                 <Link
                     href="/logout"

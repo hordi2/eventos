@@ -6,7 +6,9 @@ export default function AuthLayout({ title, children }: PropsWithChildren<{ titl
         <div className="flex min-h-screen items-center justify-center bg-bg-alt px-4 py-12">
             <div className="w-full max-w-sm space-y-8">
                 <Link href="/" className="flex justify-center">
-                    <img src="/images/logo.png" alt="Itaza Invitation" className="h-12 w-auto" />
+                    {/* dark:invert : le logo n'existe qu'en noir sur fond transparent,
+                        invisible sur un fond sombre sans cette inversion. */}
+                    <img src="/images/logo.png" alt="Itaza Invitation" className="h-12 w-auto dark:invert" />
                 </Link>
 
                 <h1 className="text-center font-serif text-2xl italic font-medium text-ink">{title}</h1>

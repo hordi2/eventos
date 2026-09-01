@@ -7,7 +7,7 @@ const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElem
     return (
         <input
             ref={ref}
-            className={`w-full border-0 border-b border-line bg-transparent px-0.5 py-2.5 font-sans text-base text-ink transition-colors duration-300 focus:border-accent focus:ring-0 focus:outline-none ${className}`}
+            className={`min-h-11 w-full border-0 border-b border-line bg-transparent px-0.5 py-2.5 font-sans text-base text-ink transition-colors duration-300 focus:border-accent focus:ring-0 focus:outline-none ${className}`}
             {...props}
         />
     );

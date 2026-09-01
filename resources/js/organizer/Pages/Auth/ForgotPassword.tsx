@@ -4,7 +4,7 @@ import AuthLayout from '../../Layouts/AuthLayout';
 import InputError from '../../Components/InputError';
 import InputLabel from '../../Components/InputLabel';
 import TextInput from '../../Components/TextInput';
-import PrimaryButton from '../../Components/PrimaryButton';
+import Button from '../../Components/Button';
 
 export default function ForgotPassword({ status }: { status?: string }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -41,9 +41,9 @@ export default function ForgotPassword({ status }: { status?: string }) {
                     <InputError message={errors.email} />
                 </div>
 
-                <PrimaryButton type="submit" disabled={processing}>
+                <Button type="submit" disabled={processing}>
                     Envoyer le lien de réinitialisation
-                </PrimaryButton>
+                </Button>
             </form>
         </AuthLayout>
     );

@@ -4,7 +4,7 @@ import AuthLayout from '../../Layouts/AuthLayout';
 import InputError from '../../Components/InputError';
 import InputLabel from '../../Components/InputLabel';
 import TextInput from '../../Components/TextInput';
-import PrimaryButton from '../../Components/PrimaryButton';
+import Button from '../../Components/Button';
 import GoogleButton from '../../Components/GoogleButton';
 
 export default function Login({ status }: { status?: string }) {
@@ -70,9 +70,9 @@ export default function Login({ status }: { status?: string }) {
                     </Link>
                 </div>
 
-                <PrimaryButton type="submit" disabled={processing}>
+                <Button type="submit" disabled={processing}>
                     Se connecter
-                </PrimaryButton>
+                </Button>
 
                 <GoogleButton />
 
