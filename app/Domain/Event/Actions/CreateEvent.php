@@ -7,9 +7,12 @@ namespace App\Domain\Event\Actions;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventAccessMode;
 use App\Domain\Event\Models\EventStatus;
+use App\Domain\Event\Models\EventType;
 use App\Domain\Organization\Models\Organization;
 use App\Models\User;
 use App\Support\MultiTenancy\OrganizationScope;
+use Carbon\CarbonImmutable;
+use DateTimeInterface;
 use DateTimeZone;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -26,17 +29,22 @@ final class CreateEvent
 
         $this->assertValidTimezone($data['timezone']);
 
+        $startAt = $this->resolveDateTime($data['start_at'], $data['timezone']);
+        $endAt = isset($data['end_at'])
+            ? $this->resolveDateTime($data['end_at'], $data['timezone'])
+            : $startAt->addHours(3);
+
         return Event::query()->create([
             'organization_id' => $organization->id,
             'created_by' => $creator->id,
             'title' => $data['title'],
             'subtitle' => $data['subtitle'] ?? null,
             'description' => $data['description'] ?? null,
-            'type' => $data['type'],
+            'type' => $data['type'] ?? EventType::Other,
             'status' => EventStatus::Draft,
             'slug' => $this->resolveSlug($organization, $data['slug'] ?? $data['title']),
-            'start_at' => $data['start_at'],
-            'end_at' => $data['end_at'],
+            'start_at' => $startAt,
+            'end_at' => $endAt,
             'timezone' => $data['timezone'],
             'is_online' => $data['is_online'] ?? false,
             'online_url' => $data['online_url'] ?? null,
@@ -57,6 +65,21 @@ final class CreateEvent
         if (! in_array($timezone, DateTimeZone::listIdentifiers(), true)) {
             throw new InvalidArgumentException("\"{$timezone}\" n'est pas un fuseau horaire IANA valide.");
         }
+    }
+
+    /**
+     * Interprète une chaîne sans fuseau (ex. saisie d'un formulaire, "2026-09-08T14:30")
+     * comme une heure locale dans le fuseau de l'événement, jamais celui du serveur
+     * (règle 4.3 du CLAUDE.md). Un DateTimeInterface déjà construit (tests, factories)
+     * conserve son propre fuseau : Carbon ignore alors le second argument.
+     *
+     * La conversion explicite en UTC est nécessaire car Eloquent formate une date
+     * castée en utilisant le fuseau *courant* de l'objet Carbon fourni, pas UTC :
+     * sans ce ->utc(), la colonne recevrait l'heure locale telle quelle.
+     */
+    private function resolveDateTime(string|DateTimeInterface $value, string $timezone): CarbonImmutable
+    {
+        return CarbonImmutable::parse($value, $timezone)->utc();
     }
 
     private function resolveSlug(Organization $organization, string $base, ?int $ignoreEventId = null): string

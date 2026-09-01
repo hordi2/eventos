@@ -12,6 +12,7 @@ use App\Http\Controllers\Organizer\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Organizer\Auth\RegisteredUserController;
 use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
 use App\Http\Controllers\Organizer\DashboardController;
+use App\Http\Controllers\Organizer\EventController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -57,5 +58,15 @@ Route::middleware('auth')->group(function (): void {
     Route::middleware(['verified', 'resolve-organization', 'can-organization:viewAuditLog'])->group(function (): void {
         Route::get('audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
         Route::get('audit-log/export', [AuditLogController::class, 'export'])->name('audit-log.export');
+    });
+
+    Route::middleware(['verified', 'resolve-organization'])->group(function (): void {
+        Route::middleware('can-organization:createEvents')->group(function (): void {
+            Route::get('events/create', [EventController::class, 'create'])->name('events.create');
+            Route::post('events', [EventController::class, 'store'])->name('events.store');
+        });
+
+        Route::get('events/{event}/edit', [EventController::class, 'edit'])->name('events.edit');
+        Route::patch('events/{event}', [EventController::class, 'update'])->name('events.update');
     });
 });

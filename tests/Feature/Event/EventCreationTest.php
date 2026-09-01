@@ -85,6 +85,19 @@ it('autorise le même slug dans deux organisations différentes', function (): v
     expect($event->slug)->toBe('gala-annuel');
 });
 
+it('utilise le type "other" et une fin à +3h par défaut quand ils sont omis', function (): void {
+    [$organization, $admin] = organizationWithMember(MembershipRole::Owner);
+
+    $event = app(CreateEvent::class)->handle($organization, $admin, [
+        'title' => 'Événement sans détails',
+        'start_at' => now()->addWeek(),
+        'timezone' => 'UTC',
+    ]);
+
+    expect($event->type)->toBe(EventType::Other);
+    expect($event->start_at->diffInHours($event->end_at))->toBe(3.0);
+});
+
 it('rejette un fuseau horaire qui n\'est pas dans la liste IANA', function (): void {
     [$organization, $admin] = organizationWithMember(MembershipRole::Owner);
 

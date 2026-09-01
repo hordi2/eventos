@@ -47,6 +47,28 @@ it('revalide l\'unicité du slug lors d\'un changement', function (): void {
     expect($updated->slug)->toBe('evenement-existant-1');
 });
 
+it('interprète une date de début envoyée sans fuseau dans le fuseau de l\'événement', function (): void {
+    [$organization, $admin] = organizationWithEditor(MembershipRole::Admin);
+    $event = Event::factory()->for($organization)->create(['timezone' => 'Africa/Kinshasa']);
+
+    $updated = app(UpdateEvent::class)->handle($event, $admin, ['start_at' => '2026-09-08T14:30']);
+
+    // 14h30 à Kinshasa (UTC+1, sans heure d'été) doit être stocké comme 13h30 UTC.
+    expect($updated->start_at->utc()->format('H:i'))->toBe('13:30');
+});
+
+it('recalcule une fin par défaut quand end_at est envoyé vide', function (): void {
+    [$organization, $admin] = organizationWithEditor(MembershipRole::Admin);
+    $event = Event::factory()->for($organization)->create(['timezone' => 'UTC']);
+
+    $updated = app(UpdateEvent::class)->handle($event, $admin, [
+        'start_at' => '2026-09-08T14:30',
+        'end_at' => null,
+    ]);
+
+    expect($updated->start_at->diffInHours($updated->end_at))->toBe(3.0);
+});
+
 it('refuse la mise à jour à un rôle qui n\'a pas la capacité updateEvents', function (): void {
     [$organization, $doorstaff] = organizationWithEditor(MembershipRole::DoorStaff);
     $event = Event::factory()->for($organization)->create();

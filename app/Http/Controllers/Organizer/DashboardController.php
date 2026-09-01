@@ -6,9 +6,11 @@ namespace App\Http\Controllers\Organizer;
 
 use App\Domain\Organization\Models\Membership;
 use App\Domain\Organization\Models\MembershipRole;
+use App\Domain\Organization\Models\Organization;
 use App\Http\Controllers\Controller;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,6 +24,9 @@ final class DashboardController extends Controller
             ->where('role', MembershipRole::Owner)
             ->exists();
 
-        return Inertia::render('Dashboard', ['isOwner' => $isOwner]);
+        $organization = Organization::query()->findOrFail(app(CurrentOrganization::class)->requireId());
+        $canCreateEvents = Gate::forUser($request->user())->allows('createEvents', $organization);
+
+        return Inertia::render('Dashboard', ['isOwner' => $isOwner, 'canCreateEvents' => $canCreateEvents]);
     }
 }
