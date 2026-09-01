@@ -81,6 +81,14 @@ export default function CreateEvent({ event, eventTypes, timezones, venues }: Cr
     const [step, setStep] = useState<1 | 2 | 3>(event ? 3 : 1);
     const [endTouched, setEndTouched] = useState(Boolean(event));
     const [venueMode, setVenueMode] = useState<'none' | 'existing' | 'new'>(event?.venueId ? 'existing' : 'none');
+    const [showDuplicate, setShowDuplicate] = useState(false);
+
+    const duplicateForm = useForm({ new_start_at: '' });
+
+    function submitDuplicate(formEvent: FormEvent) {
+        formEvent.preventDefault();
+        duplicateForm.post(`/events/${event!.id}/duplicate`);
+    }
 
     const { data, setData, post, patch, processing, errors } = useForm({
         type: event?.type ?? '',
@@ -340,9 +348,12 @@ export default function CreateEvent({ event, eventTypes, timezones, venues }: Cr
                         {event.venueName && <Row label="Lieu" value={event.venueName} />}
                     </dl>
 
-                    <div className="flex gap-4">
+                    <div className="flex flex-wrap gap-4">
                         <Button type="button" variant="secondary" onClick={() => setStep(2)}>
                             Modifier
+                        </Button>
+                        <Button type="button" variant="secondary" onClick={() => setShowDuplicate((v) => !v)}>
+                            Dupliquer
                         </Button>
                         <Link
                             href="/dashboard"
@@ -351,6 +362,30 @@ export default function CreateEvent({ event, eventTypes, timezones, venues }: Cr
                             Terminer
                         </Link>
                     </div>
+
+                    {showDuplicate && (
+                        <form onSubmit={submitDuplicate} className="space-y-4 border-t border-line pt-6">
+                            <div>
+                                <InputLabel htmlFor="new_start_at">Nouvelle date de début</InputLabel>
+                                <TextInput
+                                    id="new_start_at"
+                                    type="datetime-local"
+                                    value={duplicateForm.data.new_start_at}
+                                    onChange={(e) => duplicateForm.setData('new_start_at', e.target.value)}
+                                    required
+                                />
+                                <InputError message={duplicateForm.errors.new_start_at} />
+                                <p className="mt-2 text-sm text-ink-soft">
+                                    Toutes les dates (fin, sous-événements…) seront décalées du même écart, pas
+                                    copiées telles quelles.
+                                </p>
+                            </div>
+
+                            <Button type="submit" disabled={duplicateForm.processing}>
+                                Confirmer la duplication
+                            </Button>
+                        </form>
+                    )}
                 </div>
             )}
         </OrganizerLayout>

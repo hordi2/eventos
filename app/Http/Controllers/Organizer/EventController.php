@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Organizer;
 
 use App\Domain\Event\Actions\CreateEvent;
+use App\Domain\Event\Actions\DuplicateEvent;
 use App\Domain\Event\Actions\UpdateEvent;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventType;
@@ -12,8 +13,10 @@ use App\Domain\Event\Models\Venue;
 use App\Domain\Organization\Models\Organization;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\Event\CreateEventRequest;
+use App\Http\Requests\Organizer\Event\DuplicateEventRequest;
 use App\Http\Requests\Organizer\Event\UpdateEventRequest;
 use App\Support\MultiTenancy\CurrentOrganization;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -57,6 +60,16 @@ final class EventController extends Controller
         $updated = $action->handle($this->findEvent($event), $request->user(), $request->validated());
 
         return redirect()->route('events.edit', $updated);
+    }
+
+    public function duplicate(DuplicateEventRequest $request, int $event, DuplicateEvent $action): RedirectResponse
+    {
+        $source = $this->findEvent($event);
+        $newStartAt = CarbonImmutable::parse($request->validated('new_start_at'), $source->timezone);
+
+        $duplicate = $action->handle($source, $request->user(), $newStartAt);
+
+        return redirect()->route('events.edit', $duplicate);
     }
 
     private function findEvent(int $id): Event

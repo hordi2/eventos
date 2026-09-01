@@ -68,5 +68,6 @@ Route::middleware('auth')->group(function (): void {
 
         Route::get('events/{event}/edit', [EventController::class, 'edit'])->name('events.edit');
         Route::patch('events/{event}', [EventController::class, 'update'])->name('events.update');
+        Route::post('events/{event}/duplicate', [EventController::class, 'duplicate'])->name('events.duplicate');
     });
 });
