@@ -51,6 +51,18 @@ jobs:
 
       - run: composer install --no-interaction --prefer-dist
 
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      # Les pages Inertia (routes /register, /login, etc.) exigent le
+      # manifeste Vite (public/build/manifest.json) au moment du rendu
+      # côté serveur, y compris pendant les tests Pest.
+      - run: npm ci
+      - run: npm run build
+
       - name: Copier .env
         run: cp .env.example .env
 
