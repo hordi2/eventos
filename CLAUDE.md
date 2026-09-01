@@ -240,7 +240,7 @@ Conventions :
 
 ```bash
 ./vendor/bin/pest
-./vendor/bin/phpstan analyse
+./vendor/bin/phpstan analyse --memory-limit=512M
 ./vendor/bin/pint --test
 npm run build
 ```
@@ -334,7 +334,7 @@ php artisan db:seed --class=DemoEventSeeder
 # Qualité
 ./vendor/bin/pest
 ./vendor/bin/pest --coverage --min=75
-./vendor/bin/phpstan analyse
+./vendor/bin/phpstan analyse --memory-limit=512M
 ./vendor/bin/pint
 
 # Debug

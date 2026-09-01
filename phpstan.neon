@@ -8,3 +8,14 @@ parameters:
     level: 6
 
     tmpDir: storage/framework/phpstan
+
+    ignoreErrors:
+        -
+            # BelongsToOrganization est prêt à être utilisé par les futurs
+            # modèles de Domain/ (T-010+), mais aucun n'existe encore : rien
+            # dans app/ ne l'utilise pour l'instant, ce que PHPStan signale.
+            # Sa correction est vérifiée par des tests (voir
+            # tests/Feature/Organization/MultiTenantIsolationTest.php).
+            # À retirer dès qu'un premier modèle métier réel l'utilise.
+            identifier: trait.unused
+            path: app/Support/MultiTenancy/BelongsToOrganization.php

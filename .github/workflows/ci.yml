@@ -56,6 +56,19 @@ jobs:
 
       - run: php artisan key:generate
 
+      # POSTGRES_USER (eventos) est TOUJOURS superutilisateur sur l'image
+      # officielle Postgres, or un superutilisateur ignore la row-level
+      # security même avec FORCE ROW LEVEL SECURITY. L'application se
+      # connecte donc avec un rôle dédié non-superutilisateur, comme en
+      # local (voir docker/postgres/init.sql).
+      - name: Créer le rôle applicatif non-superutilisateur (RLS)
+        run: |
+          PGPASSWORD=eventos psql -h 127.0.0.1 -U eventos -d eventos_testing -c "
+            CREATE ROLE eventos_app WITH LOGIN PASSWORD 'eventos_app' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+            ALTER DATABASE eventos_testing OWNER TO eventos_app;
+            GRANT ALL PRIVILEGES ON SCHEMA public TO eventos_app;
+          "
+
       - name: Migrer la base de test
         run: php artisan migrate --force
         env:
@@ -63,11 +76,11 @@ jobs:
           DB_HOST: 127.0.0.1
           DB_PORT: 5432
           DB_DATABASE: eventos_testing
-          DB_USERNAME: eventos
-          DB_PASSWORD: eventos
+          DB_USERNAME: eventos_app
+          DB_PASSWORD: eventos_app
 
       # Le seuil de couverture (≥ 75 % sur app/Domain/, cf. CLAUDE.md) sera
-      # réactivé à partir de T-002, une fois qu'il y a du code métier à couvrir.
+      # réactivé à partir de T-010, une fois qu'il y a du code métier à couvrir.
       - name: Pest
         run: ./vendor/bin/pest
         env:
@@ -75,8 +88,8 @@ jobs:
           DB_HOST: 127.0.0.1
           DB_PORT: 5432
           DB_DATABASE: eventos_testing
-          DB_USERNAME: eventos
-          DB_PASSWORD: eventos
+          DB_USERNAME: eventos_app
+          DB_PASSWORD: eventos_app
           REDIS_HOST: 127.0.0.1
 
   static-analysis:
@@ -101,7 +114,7 @@ jobs:
       - run: php artisan key:generate
 
       - name: PHPStan (niveau 6)
-        run: ./vendor/bin/phpstan analyse --error-format=github
+        run: ./vendor/bin/phpstan analyse --memory-limit=512M --error-format=github
 
       - name: Pint (contrôle de style, sans modification)
         run: ./vendor/bin/pint --test

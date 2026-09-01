@@ -49,7 +49,7 @@ php artisan horizon            # workers de queue (Redis)
 ```bash
 ./vendor/bin/pest                      # tests
 ./vendor/bin/pest --coverage --min=75  # avec couverture (seuil du projet)
-./vendor/bin/phpstan analyse           # analyse statique (niveau 6)
+./vendor/bin/phpstan analyse --memory-limit=512M  # analyse statique (niveau 6)
 ./vendor/bin/pint                      # formatage automatique
 ./vendor/bin/pint --test               # vérification sans modification
 ```
