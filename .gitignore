@@ -21,6 +21,11 @@
 /storage/pail
 /storage/framework/phpstan
 /vendor
+
+# Dossier de dépôt des logos sources bruts, avec un espace en fin de nom
+# (pas des assets du projet : seuls les fichiers utiles sont copiés dans
+# public/images/).
+/image*
 Homestead.json
 Homestead.yaml
 Thumbs.db

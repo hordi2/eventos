@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { type PropsWithChildren, type ReactNode } from 'react';
+import Logo from '../Components/Logo';
 
 interface OrganizerLayoutProps {
     title: string;
@@ -18,7 +19,7 @@ export default function OrganizerLayout({
             <header className="border-b border-line bg-bg">
                 <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
                     <Link href="/dashboard">
-                        <img src="/images/logo.png" alt="Itaza Invitation" className="h-9 w-auto dark:invert" />
+                        <Logo />
                     </Link>
                     <nav className="flex items-center gap-6">
                         {nav}
