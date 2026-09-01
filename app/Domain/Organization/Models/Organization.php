@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Organization\Models;
 
+use App\Domain\Event\Models\Event;
 use App\Models\User;
 use Database\Factories\OrganizationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -57,5 +58,13 @@ final class Organization extends Model
         return $this->belongsToMany(User::class, 'memberships')
             ->withPivot('role')
             ->withTimestamps();
+    }
+
+    /**
+     * @return HasMany<Event, $this>
+     */
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class);
     }
 }

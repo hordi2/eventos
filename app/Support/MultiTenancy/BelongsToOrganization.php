@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Support\MultiTenancy;
 
 use App\Domain\Organization\Models\Organization;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 trait BelongsToOrganization
@@ -14,8 +13,8 @@ trait BelongsToOrganization
     {
         static::addGlobalScope(new OrganizationScope);
 
-        static::creating(function (Model $model): void {
-            if ($model->organization_id === null) {
+        static::creating(function (self $model): void {
+            if ($model->getAttribute('organization_id') === null) {
                 $model->organization_id = app(CurrentOrganization::class)->requireId();
             }
         });

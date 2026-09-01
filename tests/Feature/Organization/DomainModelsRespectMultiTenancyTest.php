@@ -48,8 +48,8 @@ it('tout modèle du domaine possédant organization_id déclare le trait Belongs
         $instance = new $class;
 
         if (Schema::hasColumn($instance->getTable(), 'organization_id')) {
-            expect(class_uses_recursive($class))
-                ->toContain(BelongsToOrganization::class, "{$class} a une colonne organization_id mais n'utilise pas BelongsToOrganization.");
+            expect(in_array(BelongsToOrganization::class, class_uses_recursive($class), true))
+                ->toBeTrue("{$class} a une colonne organization_id mais n'utilise pas BelongsToOrganization.");
         }
     }
 
