@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: eventos_testing
+          POSTGRES_USER: eventos
+          POSTGRES_PASSWORD: eventos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U eventos"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, pgsql, bcmath, zip, redis
+          coverage: xdebug
+
+      - name: Cache dépendances Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+
+      - run: composer install --no-interaction --prefer-dist
+
+      - name: Copier .env
+        run: cp .env.example .env
+
+      - run: php artisan key:generate
+
+      - name: Migrer la base de test
+        run: php artisan migrate --force
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: eventos_testing
+          DB_USERNAME: eventos
+          DB_PASSWORD: eventos
+
+      - name: Pest (avec couverture)
+        run: ./vendor/bin/pest --coverage --min=75
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: eventos_testing
+          DB_USERNAME: eventos
+          DB_PASSWORD: eventos
+          REDIS_HOST: 127.0.0.1
+
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, pgsql, bcmath, zip, redis
+
+      - name: Cache dépendances Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+
+      - run: composer install --no-interaction --prefer-dist
+      - run: cp .env.example .env
+      - run: php artisan key:generate
+
+      - name: PHPStan (niveau 6)
+        run: ./vendor/bin/phpstan analyse --error-format=github
+
+      - name: Pint (contrôle de style, sans modification)
+        run: ./vendor/bin/pint --test
