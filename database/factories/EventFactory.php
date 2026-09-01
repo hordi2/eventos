@@ -50,4 +50,12 @@ final class EventFactory extends Factory
     {
         return $this->state(fn (): array => ['status' => EventStatus::Archived]);
     }
+
+    public function subEventOf(Event $parent): static
+    {
+        return $this->state(fn (): array => [
+            'organization_id' => $parent->organization_id,
+            'parent_event_id' => $parent->id,
+        ]);
+    }
 }

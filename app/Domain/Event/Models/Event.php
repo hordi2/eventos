@@ -12,6 +12,7 @@ use Database\Factories\EventFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Event extends Model
@@ -37,6 +38,7 @@ final class Event extends Model
         'is_online',
         'online_url',
         'venue_id',
+        'parent_event_id',
         'capacity',
         'registration_opens_at',
         'registration_closes_at',
@@ -94,6 +96,55 @@ final class Event extends Model
     public function venue(): BelongsTo
     {
         return $this->belongsTo(Venue::class);
+    }
+
+    /**
+     * @return BelongsTo<Event, $this>
+     */
+    public function parentEvent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_event_id');
+    }
+
+    /**
+     * @return HasMany<Event, $this>
+     */
+    public function subEvents(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_event_id');
+    }
+
+    public function isSubEvent(): bool
+    {
+        return $this->parent_event_id !== null;
+    }
+
+    /**
+     * Paires de sous-événements dont les horaires se chevauchent (M1.3 du
+     * CDC : « détection des conflits d'horaires entre sessions parallèles »).
+     * Les dates sont comparées en UTC, donc indépendamment du fuseau propre
+     * à chaque sous-événement.
+     *
+     * @return list<array{Event, Event}>
+     */
+    public function detectSubEventScheduleConflicts(): array
+    {
+        $subEvents = $this->subEvents()->orderBy('start_at')->get();
+        $conflicts = [];
+
+        foreach ($subEvents as $i => $first) {
+            foreach ($subEvents as $j => $second) {
+                if ($j <= $i) {
+                    continue;
+                }
+
+                if ($first->start_at->lessThan($second->end_at) && $second->start_at->lessThan($first->end_at)) {
+                    $conflicts[] = [$first, $second];
+                }
+            }
+        }
+
+        return $conflicts;
     }
 
     /**

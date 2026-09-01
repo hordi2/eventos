@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Event\Actions;
 
+use App\Domain\Event\InvalidSubEventException;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventAccessMode;
 use App\Domain\Event\Models\EventStatus;
@@ -53,6 +54,7 @@ final class CreateEvent
             'is_online' => $data['is_online'] ?? false,
             'online_url' => $data['online_url'] ?? null,
             'venue_id' => $this->resolveVenueId($organization, $creator, $data),
+            'parent_event_id' => $this->resolveParentEventId($data),
             'capacity' => $data['capacity'] ?? null,
             'registration_opens_at' => $data['registration_opens_at'] ?? null,
             'registration_closes_at' => $data['registration_closes_at'] ?? null,
@@ -110,6 +112,27 @@ final class CreateEvent
         }
 
         return null;
+    }
+
+    /**
+     * Un seul niveau de hiérarchie est autorisé (M1.3 du CDC) : un
+     * sous-événement ne peut pas lui-même contenir de sous-événements.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveParentEventId(array $data): ?int
+    {
+        if (! isset($data['parent_event_id'])) {
+            return null;
+        }
+
+        $parent = Event::query()->findOrFail($data['parent_event_id']);
+
+        if ($parent->isSubEvent()) {
+            throw InvalidSubEventException::nestedSubEvent();
+        }
+
+        return $parent->id;
     }
 
     private function resolveSlug(Organization $organization, string $base, ?int $ignoreEventId = null): string
