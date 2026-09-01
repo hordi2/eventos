@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-it('retourne une réponse réussie sur la page d\'accueil', function () {
+it('redirige un visiteur non authentifié vers la connexion', function () {
     $response = $this->get('/');
 
-    $response->assertStatus(200);
+    $response->assertRedirect(route('login'));
 });

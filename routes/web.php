@@ -2,8 +2,54 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Organizer\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Organizer\Auth\EmailVerificationNotificationController;
+use App\Http\Controllers\Organizer\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\Organizer\Auth\GoogleAuthController;
+use App\Http\Controllers\Organizer\Auth\NewPasswordController;
+use App\Http\Controllers\Organizer\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Organizer\Auth\RegisteredUserController;
+use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route(auth()->check() ? 'dashboard' : 'login');
+});
+
+Route::middleware('guest')->group(function (): void {
+    Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
+    Route::post('register', [RegisteredUserController::class, 'store'])->middleware('throttle:6,1');
+
+    Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:6,1');
+
+    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('password.email');
+
+    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+    Route::post('reset-password', [NewPasswordController::class, 'store'])->name('password.store');
+
+    Route::get('auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
+    Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
+});
+
+Route::middleware('auth')->group(function (): void {
+    Route::get('verify-email', EmailVerificationPromptController::class)->name('verification.notice');
+
+    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
+
+    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
+
+    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+
+    Route::get('dashboard', function () {
+        return Inertia::render('Dashboard');
+    })->middleware(['verified', 'resolve-organization'])->name('dashboard');
 });
