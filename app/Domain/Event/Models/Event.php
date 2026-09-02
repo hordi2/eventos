@@ -42,6 +42,7 @@ final class Event extends Model
         'capacity',
         'registration_opens_at',
         'registration_closes_at',
+        'registration_closed_message',
         'access_mode',
         'password_hash',
         'requires_approval',
