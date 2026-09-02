@@ -21,12 +21,14 @@ final class UpdateFormDraft
 {
     public function __construct(
         private readonly WriteFormFields $writeFormFields,
+        private readonly WriteConditionalRules $writeConditionalRules,
     ) {}
 
     /**
      * @param  array<int, array<string, mixed>>  $fields
+     * @param  array<int, array<string, mixed>>  $rules
      */
-    public function handle(Form $form, User $editor, array $fields, ?string $name = null): Form
+    public function handle(Form $form, User $editor, array $fields, array $rules = [], ?string $name = null): Form
     {
         Gate::forUser($editor)->authorize('update', $form);
 
@@ -36,8 +38,11 @@ final class UpdateFormDraft
             throw InvalidFormVersionTransitionException::cannotEditPublishedDraft();
         }
 
+        // Supprimer les champs supprime en cascade (FK) les règles qui les
+        // ciblaient : pas besoin de les effacer explicitement ici.
         FormField::query()->where('form_version_id', $version->id)->delete();
         $this->writeFormFields->handle($version, $fields);
+        $this->writeConditionalRules->handle($version, $rules);
 
         if ($name !== null) {
             $form->update(['name' => $name]);

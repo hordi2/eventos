@@ -24,12 +24,14 @@ final class ReviseForm
 {
     public function __construct(
         private readonly WriteFormFields $writeFormFields,
+        private readonly WriteConditionalRules $writeConditionalRules,
     ) {}
 
     /**
      * @param  array<int, array<string, mixed>>  $fields
+     * @param  array<int, array<string, mixed>>  $rules
      */
-    public function handle(Form $form, User $editor, array $fields): FormVersion
+    public function handle(Form $form, User $editor, array $fields, array $rules = []): FormVersion
     {
         Gate::forUser($editor)->authorize('update', $form);
 
@@ -47,6 +49,7 @@ final class ReviseForm
         ]);
 
         $this->writeFormFields->handle($newVersion, $fields);
+        $this->writeConditionalRules->handle($newVersion, $rules);
 
         return $newVersion->refresh();
     }

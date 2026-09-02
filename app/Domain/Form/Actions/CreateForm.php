@@ -15,6 +15,7 @@ final class CreateForm
 {
     public function __construct(
         private readonly WriteFormFields $writeFormFields,
+        private readonly WriteConditionalRules $writeConditionalRules,
     ) {}
 
     /**
@@ -43,6 +44,7 @@ final class CreateForm
         ]);
 
         $this->writeFormFields->handle($version, $data['fields'] ?? []);
+        $this->writeConditionalRules->handle($version, $data['rules'] ?? []);
 
         return $form->refresh();
     }

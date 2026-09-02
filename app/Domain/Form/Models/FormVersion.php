@@ -59,6 +59,14 @@ final class FormVersion extends Model
         return $this->hasMany(FormField::class)->orderBy('position');
     }
 
+    /**
+     * @return HasMany<ConditionalRule, $this>
+     */
+    public function conditionalRules(): HasMany
+    {
+        return $this->hasMany(ConditionalRule::class);
+    }
+
     public function isEditableInPlace(): bool
     {
         return $this->status === FormVersionStatus::Draft;
