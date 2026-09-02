@@ -36,6 +36,16 @@ pest()->extend(TestCase::class)
 pest()->extend(TestCase::class)
     ->in('Concurrency');
 
+// Hors des testsuites de phpunit.xml, comme Concurrency : ces tests
+// traitent un vrai volume (10 000 lignes, T-041) et prennent plusieurs
+// dizaines de secondes — assez pour ralentir sensiblement le
+// ./vendor/bin/pest par défaut de chaque ticket s'ils y restaient.
+// RefreshDatabase reste pertinent ici (contrairement à Concurrency) :
+// aucun processus enfant, tout se passe dans la même connexion.
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
+    ->in('Performance');
+
 // Le contexte "organisation courante" est aussi propagé au niveau de la
 // session PostgreSQL (set_config). La connexion étant réutilisée d'un test
 // à l'autre, on la réinitialise systématiquement pour éviter toute fuite.
@@ -43,7 +53,7 @@ afterEach(function (): void {
     if (app()->bound(CurrentOrganization::class)) {
         app(CurrentOrganization::class)->clear();
     }
-})->in('Feature');
+})->in('Feature', 'Performance');
 
 /**
  * Construit un FormField en mémoire (jamais persisté) pour les tests Unit du

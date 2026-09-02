@@ -13,6 +13,7 @@ use App\Http\Controllers\Organizer\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Organizer\Auth\RegisteredUserController;
 use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
 use App\Http\Controllers\Organizer\ContactController;
+use App\Http\Controllers\Organizer\ContactImportController;
 use App\Http\Controllers\Organizer\DashboardController;
 use App\Http\Controllers\Organizer\EventController;
 use App\Http\Controllers\Organizer\FormController;
@@ -87,6 +88,12 @@ Route::middleware('auth')->group(function (): void {
         Route::post('contacts', [ContactController::class, 'store'])->name('contacts.store');
         Route::get('contacts/{contact}/edit', [ContactController::class, 'edit'])->name('contacts.edit');
         Route::patch('contacts/{contact}', [ContactController::class, 'update'])->name('contacts.update');
+
+        Route::get('contact-imports/create', [ContactImportController::class, 'create'])->name('contact-imports.create');
+        Route::post('contact-imports', [ContactImportController::class, 'store'])->name('contact-imports.store');
+        Route::get('contact-imports/{import}/mapping', [ContactImportController::class, 'mapping'])->name('contact-imports.mapping');
+        Route::post('contact-imports/{import}/mapping', [ContactImportController::class, 'confirmMapping'])->name('contact-imports.confirm-mapping');
+        Route::get('contact-imports/{import}', [ContactImportController::class, 'show'])->name('contact-imports.show');
     });
 });
 

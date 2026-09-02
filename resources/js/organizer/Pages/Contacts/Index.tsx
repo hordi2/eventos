@@ -53,12 +53,20 @@ export default function Index({ contacts, search }: { contacts: Paginated<Contac
                     </Button>
                 </form>
 
-                <Link
-                    href="/contacts/create"
-                    className="inline-flex min-h-11 items-center gap-2.5 rounded-pill bg-ink px-6 py-3 font-sans text-sm font-medium text-bg"
-                >
-                    Ajouter un contact
-                </Link>
+                <div className="flex gap-3">
+                    <Link
+                        href="/contact-imports/create"
+                        className="inline-flex min-h-11 items-center gap-2.5 rounded-pill border border-line px-6 py-3 font-sans text-sm font-medium text-ink hover:border-ink"
+                    >
+                        Importer un fichier
+                    </Link>
+                    <Link
+                        href="/contacts/create"
+                        className="inline-flex min-h-11 items-center gap-2.5 rounded-pill bg-ink px-6 py-3 font-sans text-sm font-medium text-bg"
+                    >
+                        Ajouter un contact
+                    </Link>
+                </div>
             </div>
 
             <Table

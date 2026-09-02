@@ -120,6 +120,20 @@ jobs:
           DB_PASSWORD: eventos_app
           REDIS_HOST: 127.0.0.1
 
+      # Même raison que tests/Concurrency : import de 10 000 lignes (T-041),
+      # plusieurs dizaines de secondes, hors des testsuites par défaut.
+      - name: Pest (import en volume T-041)
+        run: ./vendor/bin/pest tests/Performance
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: eventos_testing
+          DB_USERNAME: eventos_app
+          DB_PASSWORD: eventos_app
+          REDIS_HOST: 127.0.0.1
+          QUEUE_CONNECTION: sync
+
   static-analysis:
     runs-on: ubuntu-latest
     steps:
