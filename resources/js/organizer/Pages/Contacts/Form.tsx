@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 import Badge from '../../Components/Badge';
 import Button from '../../Components/Button';
@@ -104,11 +104,6 @@ export default function ContactForm({ contact, history }: { contact: ContactDraf
         <OrganizerLayout
             title={contact ? contact.first_name || contact.email || `Contact #${contact.id}` : 'Nouveau contact'}
             eyebrow="Contacts"
-            nav={
-                <Link href="/contacts" className="font-label text-xs tracking-[0.14em] text-ink-soft uppercase hover:text-ink">
-                    Tous les contacts
-                </Link>
-            }
         >
             <Head title={contact ? 'Modifier le contact' : 'Nouveau contact'} />
 

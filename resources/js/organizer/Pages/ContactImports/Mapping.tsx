@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 import Button from '../../Components/Button';
 import InputLabel from '../../Components/InputLabel';
@@ -38,15 +38,7 @@ export default function Mapping({
     }
 
     return (
-        <OrganizerLayout
-            title="Faire correspondre les colonnes"
-            eyebrow={contactImport.original_filename}
-            nav={
-                <Link href="/contacts" className="font-label text-xs tracking-[0.14em] text-ink-soft uppercase hover:text-ink">
-                    Tous les contacts
-                </Link>
-            }
-        >
+        <OrganizerLayout title="Faire correspondre les colonnes" eyebrow={contactImport.original_filename}>
             <Head title="Faire correspondre les colonnes" />
 
             <form onSubmit={handleSubmit}>

@@ -117,6 +117,22 @@ final class ImportContactRow
             }
         }
 
+        // Numéro de téléphone déjà normalisé en E.164 à ce stade (voir
+        // handle()) : une correspondance exacte est aussi fiable qu'un
+        // e-mail identique, même si le nom orthographié diffère (WhatsApp
+        // étant un canal de premier rang, le numéro est souvent la donnée
+        // la plus stable pour un même contact — CLAUDE.md §1).
+        if (($data['phone_e164'] ?? '') !== '') {
+            $existing = Contact::query()
+                ->where('organization_id', $organizationId)
+                ->where('phone_e164', $data['phone_e164'])
+                ->first();
+
+            if ($existing !== null) {
+                return [$existing, 100];
+            }
+        }
+
         if (($data['last_name'] ?? '') === '') {
             return [null, 0];
         }

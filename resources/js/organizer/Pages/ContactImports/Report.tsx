@@ -58,15 +58,7 @@ export default function Report({ import: contactImport, rows }: { import: Import
     }, [isRunning]);
 
     return (
-        <OrganizerLayout
-            title="Rapport d'import"
-            eyebrow={contactImport.original_filename}
-            nav={
-                <Link href="/contacts" className="font-label text-xs tracking-[0.14em] text-ink-soft uppercase hover:text-ink">
-                    Tous les contacts
-                </Link>
-            }
-        >
+        <OrganizerLayout title="Rapport d'import" eyebrow={contactImport.original_filename}>
             <Head title="Rapport d'import" />
 
             <div className="mb-8 flex flex-wrap items-center gap-3">

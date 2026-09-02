@@ -20,15 +20,7 @@ interface Paginated<T> {
 
 export default function Index({ logs }: { logs: Paginated<AuditLogRow> }) {
     return (
-        <OrganizerLayout
-            title="Journal d'audit"
-            eyebrow="Sécurité"
-            nav={
-                <Link href="/dashboard" className="font-label text-xs tracking-[0.14em] text-ink-soft uppercase hover:text-ink">
-                    Tableau de bord
-                </Link>
-            }
-        >
+        <OrganizerLayout title="Journal d'audit" eyebrow="Sécurité">
             <Head title="Journal d'audit" />
 
             <div className="mb-6 flex justify-end">

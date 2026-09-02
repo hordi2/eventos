@@ -110,6 +110,36 @@ it('fusionne un doublon détecté par e-mail sans écraser les champs non fourni
     expect($import->duplicate_count)->toBe(1);
 });
 
+it('fusionne un doublon détecté par numéro de téléphone quand les noms diffèrent', function (): void {
+    Storage::fake('local');
+    [$organization, $admin] = organizationWithContactRole(MembershipRole::Admin);
+    $existing = Contact::factory()->for($organization)->create([
+        'phone_e164' => '+243812345678',
+        'first_name' => 'Grace',
+        'last_name' => 'Mbuyi',
+        'company' => 'Kin Événements',
+    ]);
+
+    // Même personne, mais orthographe différente et pas d'e-mail commun :
+    // seul le numéro de téléphone permet de la relier au contact existant.
+    $csv = "Prénom,Nom,Téléphone\nGrace M.,Mbuyi-Kalala,+243 812 345 678\n";
+    $this->actingAs($admin)->post('/contact-imports', ['file' => csvUploadFor($csv)]);
+    $import = ContactImport::query()->firstOrFail();
+
+    $this->actingAs($admin)->post(route('contact-imports.confirm-mapping', $import), [
+        'mapping' => ['Prénom' => 'first_name', 'Nom' => 'last_name', 'Téléphone' => 'phone_e164'],
+        'duplicate_strategy' => 'merge',
+    ]);
+
+    expect(Contact::query()->count())->toBe(1);
+    $merged = $existing->fresh();
+    expect($merged->last_name)->toBe('Mbuyi-Kalala');
+    expect($merged->company)->toBe('Kin Événements');
+
+    $import->refresh();
+    expect($import->duplicate_count)->toBe(1);
+});
+
 it('ignore un doublon détecté quand la stratégie est "ignorer"', function (): void {
     Storage::fake('local');
     [$organization, $admin] = organizationWithContactRole(MembershipRole::Admin);

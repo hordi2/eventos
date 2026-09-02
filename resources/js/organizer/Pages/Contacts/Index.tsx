@@ -29,15 +29,7 @@ export default function Index({ contacts, search }: { contacts: Paginated<Contac
     }
 
     return (
-        <OrganizerLayout
-            title="Contacts"
-            eyebrow="Invités"
-            nav={
-                <Link href="/dashboard" className="font-label text-xs tracking-[0.14em] text-ink-soft uppercase hover:text-ink">
-                    Tableau de bord
-                </Link>
-            }
-        >
+        <OrganizerLayout title="Contacts" eyebrow="Invités">
             <Head title="Contacts" />
 
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4">

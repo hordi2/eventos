@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 import Button from '../../Components/Button';
 import InputError from '../../Components/InputError';
@@ -14,15 +14,7 @@ export default function Upload() {
     }
 
     return (
-        <OrganizerLayout
-            title="Importer des contacts"
-            eyebrow="Contacts"
-            nav={
-                <Link href="/contacts" className="font-label text-xs tracking-[0.14em] text-ink-soft uppercase hover:text-ink">
-                    Tous les contacts
-                </Link>
-            }
-        >
+        <OrganizerLayout title="Importer des contacts" eyebrow="Contacts">
             <Head title="Importer des contacts" />
 
             <div className="max-w-lg">
