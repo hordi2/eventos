@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', config('app.name', 'Itaza Invitation'))</title>
     <link rel="icon" type="image/png" href="/favicon.png">
-    @vite(['resources/css/guest.css'])
+    @vite(['resources/css/guest.css', 'resources/js/guest.ts'])
 </head>
 <body class="min-h-screen bg-bg-alt antialiased">
     @yield('content')

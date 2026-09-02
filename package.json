@@ -9,6 +9,7 @@
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
+        "@types/alpinejs": "^3.13.11",
         "@types/react": "^19.2.18",
         "@types/react-dom": "^19.2.5",
         "@vitejs/plugin-react": "^4.7.0",
@@ -21,6 +22,7 @@
     },
     "dependencies": {
         "@inertiajs/react": "^3.7.0",
+        "alpinejs": "^3.17.1",
         "react": "^19.2.8",
         "react-dom": "^19.2.8"
     }

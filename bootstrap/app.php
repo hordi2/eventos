@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Middleware\AuthorizeOrganizationAbility;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ResolveCurrentOrganization;
+use App\Http\Middleware\ResolveGuestEvent;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'resolve-organization' => ResolveCurrentOrganization::class,
             'can-organization' => AuthorizeOrganizationAbility::class,
+            'resolve-guest-event' => ResolveGuestEvent::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Guest\RegistrationController;
 use App\Http\Controllers\Organizer\AuditLogController;
 use App\Http\Controllers\Organizer\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Organizer\Auth\EmailVerificationNotificationController;
@@ -81,3 +82,28 @@ Route::middleware('auth')->group(function (): void {
         Route::post('forms/{form}/publish', [FormController::class, 'publish'])->name('forms.publish');
     });
 });
+
+// Page RSVP publique (T-031) : jamais d'authentification, jamais de
+// création de compte demandée à l'invité. resolve-guest-event résout
+// organisation + événement depuis le slug et pose le contexte multi-tenant.
+Route::middleware('resolve-guest-event')
+    ->prefix('r/{organization}/{event}')
+    ->name('guest.registration.')
+    ->group(function (): void {
+        Route::get('mot-de-passe', [RegistrationController::class, 'passwordShow'])->name('password.show');
+        Route::post('mot-de-passe', [RegistrationController::class, 'passwordVerify'])->name('password.verify');
+
+        Route::get('/', [RegistrationController::class, 'start'])->name('start');
+
+        Route::get('{token}/identite', [RegistrationController::class, 'identityShow'])->name('identity.show');
+        Route::post('{token}/identite', [RegistrationController::class, 'identityStore'])->name('identity.store');
+
+        Route::get('{token}/reponses', [RegistrationController::class, 'answersShow'])->name('answers.show');
+        Route::post('{token}/reponses', [RegistrationController::class, 'answersStore'])->name('answers.store');
+
+        Route::get('{token}/recap', [RegistrationController::class, 'reviewShow'])->name('review.show');
+        Route::post('{token}/recap', [RegistrationController::class, 'reviewConfirm'])->name('review.confirm');
+
+        Route::get('{token}/confirmation', [RegistrationController::class, 'confirmation'])->name('confirmation');
+        Route::get('{token}/deja-inscrit', [RegistrationController::class, 'duplicate'])->name('duplicate');
+    });

@@ -20,6 +20,7 @@ use App\Domain\Form\OptionFullException;
 use App\Domain\Form\RegistrationClosedException;
 use App\Domain\Form\Support\BuildFormValidationRules;
 use App\Domain\Form\Support\EvaluateFormVisibility;
+use App\Domain\Form\Support\IsRegistrationWindowOpen;
 use App\Support\Capacity\Actions\ReserveCapacity;
 use App\Support\Capacity\Data\ReservationOutcome;
 use App\Support\MultiTenancy\CurrentOrganization;
@@ -41,6 +42,7 @@ final class SubmitRegistration
         private readonly BuildFormValidationRules $buildFormValidationRules,
         private readonly NormalizeFieldAnswer $normalizeFieldAnswer,
         private readonly ReserveCapacity $reserveCapacity,
+        private readonly IsRegistrationWindowOpen $isRegistrationWindowOpen,
     ) {}
 
     /**
@@ -136,12 +138,7 @@ final class SubmitRegistration
 
     private function assertRegistrationWindowOpen(EventRegistrationContext $context): void
     {
-        $now = CarbonImmutable::now($context->timezone);
-
-        $opensAt = $context->registrationOpensAt?->setTimezone($context->timezone);
-        $closesAt = $context->registrationClosesAt?->setTimezone($context->timezone);
-
-        if (($opensAt !== null && $now->lessThan($opensAt)) || ($closesAt !== null && $now->greaterThan($closesAt))) {
+        if (! $this->isRegistrationWindowOpen->handle($context)) {
             throw RegistrationClosedException::outsideWindow($context->registrationClosedMessage);
         }
     }
