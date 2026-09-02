@@ -12,6 +12,7 @@ use App\Http\Controllers\Organizer\Auth\NewPasswordController;
 use App\Http\Controllers\Organizer\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Organizer\Auth\RegisteredUserController;
 use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
+use App\Http\Controllers\Organizer\ContactController;
 use App\Http\Controllers\Organizer\DashboardController;
 use App\Http\Controllers\Organizer\EventController;
 use App\Http\Controllers\Organizer\FormController;
@@ -80,6 +81,12 @@ Route::middleware('auth')->group(function (): void {
         Route::get('forms/{form}/edit', [FormController::class, 'edit'])->name('forms.edit');
         Route::patch('forms/{form}', [FormController::class, 'update'])->name('forms.update');
         Route::post('forms/{form}/publish', [FormController::class, 'publish'])->name('forms.publish');
+
+        Route::get('contacts', [ContactController::class, 'index'])->name('contacts.index');
+        Route::get('contacts/create', [ContactController::class, 'create'])->name('contacts.create');
+        Route::post('contacts', [ContactController::class, 'store'])->name('contacts.store');
+        Route::get('contacts/{contact}/edit', [ContactController::class, 'edit'])->name('contacts.edit');
+        Route::patch('contacts/{contact}', [ContactController::class, 'update'])->name('contacts.update');
     });
 });
 

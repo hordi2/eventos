@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domain\Contact\Models\Contact;
+use App\Domain\Contact\Policies\ContactPolicy;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\Venue;
 use App\Domain\Event\Policies\EventPolicy;
 use App\Domain\Event\Policies\VenuePolicy;
+use App\Domain\Form\Events\RegistrationCreated;
 use App\Domain\Form\Listeners\ConfirmPromotedRegistration;
 use App\Domain\Form\Models\Form;
 use App\Domain\Form\Policies\FormPolicy;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Organization\Policies\OrganizationPolicy;
+use App\Listeners\LinkRegistrationToContact;
 use App\Support\Capacity\Events\WaitlistEntryPromoted;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Support\Facades\Event as EventFacade;
@@ -38,7 +42,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Event::class, EventPolicy::class);
         Gate::policy(Venue::class, VenuePolicy::class);
         Gate::policy(Form::class, FormPolicy::class);
+        Gate::policy(Contact::class, ContactPolicy::class);
 
         EventFacade::listen(WaitlistEntryPromoted::class, ConfirmPromotedRegistration::class);
+        EventFacade::listen(RegistrationCreated::class, LinkRegistrationToContact::class);
     }
 }

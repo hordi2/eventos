@@ -94,3 +94,21 @@ function makeGuestReadyEvent(array $fields = [], array $eventOverrides = []): ar
 
     return ['organization' => $organization, 'event' => $event];
 }
+
+/**
+ * Une organisation avec un unique membre du rôle donné — même fixture que
+ * organizationWithVenueRole/organizationWithFormBuilderRole, factorisée ici
+ * car les tests Contact (T-040) la déclinent sur trois fichiers.
+ *
+ * @return array{0: Organization, 1: User}
+ */
+function organizationWithContactRole(MembershipRole $role): array
+{
+    $organization = Organization::factory()->create();
+    app(CurrentOrganization::class)->set($organization);
+
+    $user = User::factory()->create();
+    $user->memberships()->create(['organization_id' => $organization->id, 'role' => $role]);
+
+    return [$organization, $user];
+}

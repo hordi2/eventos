@@ -20,3 +20,10 @@ arch('aucune classe métier n\'utilise directement env()')
 arch('Domain/Form ne dépend pas des modèles de Domain/Event')
     ->expect('App\Domain\Form')
     ->not->toUse('App\Domain\Event\Models');
+
+// Même règle pour Contact (T-040) : l'historique de participation d'une
+// fiche contact traverse Registration (Domain/Form) au niveau du
+// contrôleur, jamais via une relation Eloquent portée par le modèle.
+arch('Domain/Contact ne dépend pas des modèles de Domain/Form')
+    ->expect('App\Domain\Contact')
+    ->not->toUse('App\Domain\Form\Models');

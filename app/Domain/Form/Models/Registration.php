@@ -14,15 +14,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Pas de relation Eloquent event() : même règle que Form (section 3 du
- * CLAUDE.md) — event_id reste une simple colonne, jamais une relation vers
- * un modèle de Domain/Event.
- *
- * Pas de contact_id : ce champ appartient au modèle cible du CDC (§7.2),
- * mais Contact (M3, T-040) n'existe pas encore. L'identité de l'invité est
- * donc portée directement ici (email/first_name/last_name/phone_e164) —
- * décision prise pour ce ticket, à remplacer par une vraie relation Contact
- * quand T-040 sera construit.
+ * Pas de relation Eloquent event() ni contact() : même règle que pour Form
+ * vis-à-vis d'Event (section 3 du CLAUDE.md) — event_id/contact_id restent
+ * de simples colonnes, jamais des relations vers un modèle d'un autre
+ * module de Domain/. contact_id est renseigné par LinkRegistrationToContact
+ * (app/Listeners, en dehors de Domain/Form et Domain/Contact — T-040) ;
+ * l'identité reste dupliquée ici (email/first_name/last_name/phone_e164)
+ * car une réponse déjà soumise ne doit jamais changer de sens si la fiche
+ * contact est modifiée depuis (§4.7 du CLAUDE.md).
  */
 final class Registration extends Model
 {
@@ -36,6 +35,7 @@ final class Registration extends Model
         'organization_id',
         'event_id',
         'form_version_id',
+        'contact_id',
         'status',
         'reservation_key',
         'email',
