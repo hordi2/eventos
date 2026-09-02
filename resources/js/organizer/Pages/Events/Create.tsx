@@ -356,6 +356,12 @@ export default function CreateEvent({ event, eventTypes, timezones, venues }: Cr
                             Dupliquer
                         </Button>
                         <Link
+                            href={`/events/${event.id}/form/create`}
+                            className="inline-flex min-h-11 items-center justify-center gap-2.5 rounded-pill border border-line px-8 py-4 font-sans text-[14.5px] font-medium text-ink transition-all duration-300 hover:-translate-y-0.5 hover:border-ink"
+                        >
+                            Créer le formulaire d'inscription
+                        </Link>
+                        <Link
                             href="/dashboard"
                             className="inline-flex min-h-11 items-center justify-center gap-2.5 rounded-pill bg-ink px-8 py-4 font-sans text-[14.5px] font-medium text-bg transition-all duration-300 hover:-translate-y-0.5 hover:opacity-90"
                         >

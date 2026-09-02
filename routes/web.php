@@ -13,6 +13,7 @@ use App\Http\Controllers\Organizer\Auth\RegisteredUserController;
 use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
 use App\Http\Controllers\Organizer\DashboardController;
 use App\Http\Controllers\Organizer\EventController;
+use App\Http\Controllers\Organizer\FormController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -69,5 +70,14 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/edit', [EventController::class, 'edit'])->name('events.edit');
         Route::patch('events/{event}', [EventController::class, 'update'])->name('events.update');
         Route::post('events/{event}/duplicate', [EventController::class, 'duplicate'])->name('events.duplicate');
+
+        Route::middleware('can-organization:createEvents')->group(function (): void {
+            Route::get('events/{event}/form/create', [FormController::class, 'create'])->name('forms.create');
+            Route::post('events/{event}/form', [FormController::class, 'store'])->name('forms.store');
+        });
+
+        Route::get('forms/{form}/edit', [FormController::class, 'edit'])->name('forms.edit');
+        Route::patch('forms/{form}', [FormController::class, 'update'])->name('forms.update');
+        Route::post('forms/{form}/publish', [FormController::class, 'publish'])->name('forms.publish');
     });
 });
