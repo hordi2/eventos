@@ -106,4 +106,11 @@ Route::middleware('resolve-guest-event')
 
         Route::get('{token}/confirmation', [RegistrationController::class, 'confirmation'])->name('confirmation');
         Route::get('{token}/deja-inscrit', [RegistrationController::class, 'duplicate'])->name('duplicate');
+
+        // Lien signé (T-033) : la signature protège {registration} contre
+        // toute manipulation, inutile d'y ajouter un jeton non devinable.
+        Route::middleware('signed')->group(function (): void {
+            Route::match(['GET', 'POST'], 'inscriptions/{registration}/modifier', [RegistrationController::class, 'edit'])->name('edit');
+            Route::match(['GET', 'POST'], 'inscriptions/{registration}/annuler', [RegistrationController::class, 'cancel'])->name('cancel');
+        });
     });

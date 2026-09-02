@@ -20,6 +20,18 @@
             @endif
         </p>
 
-        <p class="text-sm text-ink-soft">Inscription enregistrée avec l'adresse {{ $registration->email }}.</p>
+        <p class="mb-8 text-sm text-ink-soft">Inscription enregistrée avec l'adresse {{ $registration->email }}.</p>
+
+        @if ($editUrl || $cancelUrl)
+            <div class="flex items-center justify-center gap-6 text-sm">
+                @if ($editUrl)
+                    <a href="{{ $editUrl }}" class="text-accent underline">Modifier mon inscription</a>
+                @endif
+                @if ($cancelUrl)
+                    <a href="{{ $cancelUrl }}" class="text-accent underline">Annuler mon inscription</a>
+                @endif
+            </div>
+            <p class="mt-6 text-xs text-ink-soft">Conservez ces liens : ils vous permettent de revenir modifier ou annuler votre inscription.</p>
+        @endif
     </div>
 @endsection

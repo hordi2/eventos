@@ -8,4 +8,5 @@ enum RegistrationStatus: string
 {
     case Confirmed = 'confirmed';
     case Waitlisted = 'waitlisted';
+    case Cancelled = 'cancelled';
 }

@@ -5,15 +5,19 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Guest;
 
 use App\Domain\Event\Models\Event;
+use App\Domain\Form\Actions\CancelRegistration;
 use App\Domain\Form\Actions\SaveRegistrationDraft;
 use App\Domain\Form\Actions\StartRegistrationDraft;
 use App\Domain\Form\Actions\SubmitRegistration;
+use App\Domain\Form\Actions\UpdateRegistration;
 use App\Domain\Form\Data\AttendeeIdentity;
+use App\Domain\Form\Data\EventEditPolicy;
 use App\Domain\Form\Data\EventRegistrationContext;
 use App\Domain\Form\Data\RegistrationSubmissionMetadata;
 use App\Domain\Form\Data\SubmitRegistrationOutcome;
 use App\Domain\Form\EventFullException;
 use App\Domain\Form\Models\Form;
+use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationDraft;
 use App\Domain\Form\OptionFullException;
 use App\Domain\Form\RegistrationClosedException;
@@ -22,11 +26,15 @@ use App\Domain\Form\Support\IsRegistrationWindowOpen;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Guest\SaveAnswersRequest;
 use App\Http\Requests\Guest\SaveIdentityRequest;
+use App\Http\Requests\Guest\UpdateRegistrationRequest;
 use App\Http\Requests\Guest\VerifyEventPasswordRequest;
 use App\Support\Capacity\Actions\GetRemainingCapacity;
+use Carbon\CarbonImmutable;
+use DateTimeInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -165,10 +173,15 @@ final class RegistrationController extends Controller
     public function confirmation(Request $request, string $organization, string $event, string $token): View
     {
         $draft = $this->draft($token);
+        $eventModel = $this->event($request);
+        $registration = $draft->registration()->firstOrFail();
+        $policy = $this->editPolicyFor($eventModel);
 
         return view('guest.registration.confirmation', [
-            'event' => $this->event($request),
-            'registration' => $draft->registration()->firstOrFail(),
+            'event' => $eventModel,
+            'registration' => $registration,
+            'editUrl' => $policy->isLocked() ? null : $this->signedEditUrl($organization, $event, $eventModel, $registration),
+            'cancelUrl' => $policy->isLocked() ? null : $this->signedCancelUrl($organization, $event, $eventModel, $registration),
         ]);
     }
 
@@ -180,6 +193,106 @@ final class RegistrationController extends Controller
             'event' => $this->event($request),
             'registration' => $draft->registration()->firstOrFail(),
         ]);
+    }
+
+    public function edit(UpdateRegistrationRequest $request, string $organization, string $event, int $registration): View|RedirectResponse
+    {
+        $eventModel = $this->event($request);
+        $registrationModel = $this->registrationFor($eventModel, $registration);
+        $policy = $this->editPolicyFor($eventModel);
+
+        if ($policy->isLocked()) {
+            return view('guest.registration.edit-locked', ['event' => $eventModel]);
+        }
+
+        if ($request->isMethod('post')) {
+            $data = $request->validated();
+
+            try {
+                app(UpdateRegistration::class)->handle(
+                    $registrationModel,
+                    $policy,
+                    new AttendeeIdentity($data['email'], $data['first_name'] ?? null, $data['last_name'] ?? null, $data['phone'] ?? null),
+                    $data,
+                );
+            } catch (OptionFullException $e) {
+                return back()->withErrors(['submission' => $e->getMessage()]);
+            }
+
+            return view('guest.registration.edit-success', ['event' => $eventModel]);
+        }
+
+        $version = $registrationModel->formVersion()->with(['fields.options', 'conditionalRules.targetField'])->firstOrFail();
+        $answers = $registrationModel->answers()->with('formField')->get()
+            ->mapWithKeys(fn ($answer) => [$answer->formField->key => $this->denormalizeForDisplay($answer->formField->type->value, $answer->value)])
+            ->all();
+        $visibility = app(EvaluateFormVisibility::class)->handle($version, $answers);
+
+        return view('guest.registration.edit', [
+            'event' => $eventModel,
+            'registration' => $registrationModel,
+            'version' => $version,
+            'visibility' => $visibility,
+            'answers' => $answers,
+        ]);
+    }
+
+    public function cancel(Request $request, string $organization, string $event, int $registration): View
+    {
+        $eventModel = $this->event($request);
+        $registrationModel = $this->registrationFor($eventModel, $registration);
+        $policy = $this->editPolicyFor($eventModel);
+
+        if ($policy->isLocked()) {
+            return view('guest.registration.edit-locked', ['event' => $eventModel]);
+        }
+
+        if ($request->isMethod('post')) {
+            app(CancelRegistration::class)->handle($registrationModel, $policy, (string) $request->input('reason') ?: null);
+
+            return view('guest.registration.cancel-success', ['event' => $eventModel]);
+        }
+
+        return view('guest.registration.cancel', ['event' => $eventModel, 'registration' => $registrationModel]);
+    }
+
+    private function registrationFor(Event $event, int $registrationId): Registration
+    {
+        return Registration::query()->where('event_id', $event->id)->findOrFail($registrationId);
+    }
+
+    private function editPolicyFor(Event $event): EventEditPolicy
+    {
+        return new EventEditPolicy($event->allow_guest_edit, $event->edit_deadline, $event->timezone);
+    }
+
+    private function signedEditUrl(string $organization, string $event, Event $eventModel, Registration $registration): string
+    {
+        return URL::temporarySignedRoute('guest.registration.edit', $this->linkExpiry($eventModel), [$organization, $event, $registration->id]);
+    }
+
+    private function signedCancelUrl(string $organization, string $event, Event $eventModel, Registration $registration): string
+    {
+        return URL::temporarySignedRoute('guest.registration.cancel', $this->linkExpiry($eventModel), [$organization, $event, $registration->id]);
+    }
+
+    private function linkExpiry(Event $event): DateTimeInterface
+    {
+        return $event->edit_deadline ?? now()->addYear();
+    }
+
+    /**
+     * Reconvertit une valeur normalisée et stockée (NormalizeFieldAnswer,
+     * T-021) vers la forme attendue par un champ de formulaire HTML, pour
+     * préremplir le formulaire de modification.
+     */
+    private function denormalizeForDisplay(string $type, mixed $value): mixed
+    {
+        return match ($type) {
+            'yes_no' => $value ? '1' : '0',
+            'date' => $value ? CarbonImmutable::parse($value)->format('Y-m-d') : $value,
+            default => $value,
+        };
     }
 
     private function event(Request $request): Event

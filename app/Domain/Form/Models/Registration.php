@@ -49,6 +49,8 @@ final class Registration extends Model
         'user_agent',
         'locale',
         'registered_at',
+        'cancelled_at',
+        'cancellation_reason',
     ];
 
     protected function casts(): array
@@ -57,6 +59,7 @@ final class Registration extends Model
             'status' => RegistrationStatus::class,
             'utm' => 'array',
             'registered_at' => 'immutable_datetime',
+            'cancelled_at' => 'immutable_datetime',
         ];
     }
 
@@ -87,5 +90,13 @@ final class Registration extends Model
     public function answers(): HasMany
     {
         return $this->hasMany(RegistrationAnswer::class);
+    }
+
+    /**
+     * @return HasMany<RegistrationRevision, $this>
+     */
+    public function revisions(): HasMany
+    {
+        return $this->hasMany(RegistrationRevision::class);
     }
 }

@@ -8,11 +8,14 @@ use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\Venue;
 use App\Domain\Event\Policies\EventPolicy;
 use App\Domain\Event\Policies\VenuePolicy;
+use App\Domain\Form\Listeners\ConfirmPromotedRegistration;
 use App\Domain\Form\Models\Form;
 use App\Domain\Form\Policies\FormPolicy;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Organization\Policies\OrganizationPolicy;
+use App\Support\Capacity\Events\WaitlistEntryPromoted;
 use App\Support\MultiTenancy\CurrentOrganization;
+use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -35,5 +38,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Event::class, EventPolicy::class);
         Gate::policy(Venue::class, VenuePolicy::class);
         Gate::policy(Form::class, FormPolicy::class);
+
+        EventFacade::listen(WaitlistEntryPromoted::class, ConfirmPromotedRegistration::class);
     }
 }

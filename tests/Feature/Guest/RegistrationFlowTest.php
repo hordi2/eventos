@@ -3,37 +3,11 @@
 declare(strict_types=1);
 
 use App\Domain\Event\Models\Event;
-use App\Domain\Form\Actions\CreateForm;
-use App\Domain\Form\Actions\PublishFormVersion;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationDraft;
-use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Organization\Models\Organization;
-use App\Models\User;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Support\Facades\Hash;
-
-/**
- * @param  array<int, array<string, mixed>>  $fields
- * @return array{organization: Organization, event: Event}
- */
-function makeGuestReadyEvent(array $fields = [], array $eventOverrides = []): array
-{
-    $organization = Organization::factory()->create();
-    app(CurrentOrganization::class)->set($organization);
-
-    $admin = User::factory()->create();
-    $admin->memberships()->create(['organization_id' => $organization->id, 'role' => MembershipRole::Admin]);
-
-    $event = Event::factory()->for($organization)->published()->create($eventOverrides);
-
-    $form = app(CreateForm::class)->handle($organization, $event->id, $admin, ['name' => 'Inscription', 'fields' => $fields]);
-    app(PublishFormVersion::class)->handle($form, $admin);
-
-    app(CurrentOrganization::class)->clear();
-
-    return ['organization' => $organization, 'event' => $event];
-}
 
 it('parcourt les trois étapes et confirme une inscription', function (): void {
     ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent([
