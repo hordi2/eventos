@@ -38,6 +38,9 @@ final class EventFactory extends Factory
             'end_at' => $endAt,
             'timezone' => 'Africa/Kinshasa',
             'access_mode' => EventAccessMode::Public,
+            'requires_approval' => false,
+            'allow_waitlist' => false,
+            'allow_guest_edit' => false,
         ];
     }
 

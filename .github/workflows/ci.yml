@@ -104,6 +104,22 @@ jobs:
           DB_PASSWORD: eventos_app
           REDIS_HOST: 127.0.0.1
 
+      # Hors des trois testsuites de phpunit.xml (Unit/Feature/Architecture,
+      # rapides) : ce test lance de vrais processus `php artisan` concurrents
+      # pour prouver le verrou de capacité (T-024) sous charge réelle, donc
+      # nettement plus lent — il tourne dans son propre step plutôt que de
+      # ralentir la suite par défaut de chaque ticket.
+      - name: Pest (test de concurrence T-024)
+        run: ./vendor/bin/pest tests/Concurrency
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: eventos_testing
+          DB_USERNAME: eventos_app
+          DB_PASSWORD: eventos_app
+          REDIS_HOST: 127.0.0.1
+
   static-analysis:
     runs-on: ubuntu-latest
     steps:

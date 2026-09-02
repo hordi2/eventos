@@ -20,6 +20,16 @@ pest()->extend(TestCase::class)
 pest()->extend(TestCase::class)
     ->in('Unit');
 
+// Pas de RefreshDatabase non plus ici, pour une raison différente : ces tests
+// lancent de vrais processus `php artisan` concurrents (Process::pool) pour
+// prouver que le verrou Redis empêche le dépassement de capacité sous charge
+// réelle (T-024). Ces processus enfants ouvrent leur propre connexion et
+// commitent réellement leurs écritures ; ils resteraient invisibles pour ce
+// test s'il tournait dans la transaction non commitée de RefreshDatabase.
+// Chaque test nettoie donc lui-même les lignes qu'il a créées.
+pest()->extend(TestCase::class)
+    ->in('Concurrency');
+
 // Le contexte "organisation courante" est aussi propagé au niveau de la
 // session PostgreSQL (set_config). La connexion étant réutilisée d'un test
 // à l'autre, on la réinitialise systématiquement pour éviter toute fuite.
