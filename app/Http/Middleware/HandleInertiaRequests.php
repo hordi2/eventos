@@ -90,6 +90,12 @@ class HandleInertiaRequests extends Middleware
                     ['label' => 'Créer un événement', 'href' => route('events.create')],
                 ],
             ] : null,
+            $gate->allows('sendCommunications', $organization) ? [
+                'label' => 'Communications',
+                'items' => [
+                    ['label' => "Modèles d'e-mails", 'href' => route('email-templates.index')],
+                ],
+            ] : null,
             $gate->allows('viewAuditLog', $organization) ? [
                 'label' => 'Organisation',
                 'items' => [

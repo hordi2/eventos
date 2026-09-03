@@ -17,6 +17,7 @@ use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
 use App\Http\Controllers\Organizer\ContactController;
 use App\Http\Controllers\Organizer\ContactImportController;
 use App\Http\Controllers\Organizer\DashboardController;
+use App\Http\Controllers\Organizer\EmailTemplateController;
 use App\Http\Controllers\Organizer\EventController;
 use App\Http\Controllers\Organizer\EventSegmentController;
 use App\Http\Controllers\Organizer\FormController;
@@ -110,6 +111,17 @@ Route::middleware('auth')->group(function (): void {
         Route::post('events/{event}/segments/{segment}/tag', [EventSegmentController::class, 'applyTag'])->name('events.segments.apply-tag');
 
         Route::post('attendees/{attendee}/toggle-check-in', [AttendeeController::class, 'toggleCheckIn'])->name('attendees.toggle-check-in');
+
+        Route::get('email-templates', [EmailTemplateController::class, 'index'])->name('email-templates.index');
+        Route::get('email-templates/create', [EmailTemplateController::class, 'create'])->name('email-templates.create');
+        Route::post('email-templates', [EmailTemplateController::class, 'store'])->name('email-templates.store');
+        Route::get('email-templates/{emailTemplate}/edit', [EmailTemplateController::class, 'edit'])->name('email-templates.edit');
+        Route::patch('email-templates/{emailTemplate}', [EmailTemplateController::class, 'update'])->name('email-templates.update');
+        Route::delete('email-templates/{emailTemplate}', [EmailTemplateController::class, 'destroy'])->name('email-templates.destroy');
+        Route::get('email-templates/{emailTemplate}/preview', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
+        Route::post('email-templates/{emailTemplate}/test-send', [EmailTemplateController::class, 'sendTest'])
+            ->middleware('throttle:10,1')
+            ->name('email-templates.test-send');
     });
 });
 

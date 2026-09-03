@@ -34,3 +34,10 @@ arch('Domain/Contact ne dépend pas des modèles de Domain/Form')
 arch('Domain/Messaging ne dépend pas des modèles de Domain/Contact')
     ->expect('App\Domain\Messaging')
     ->not->toUse('App\Domain\Contact\Models');
+
+// Même règle encore pour Event (T-044) : les variables de fusion qui
+// touchent à l'événement (date, lieu, lien RSVP) sont résolues par
+// App\Support\Messaging\ResolveMergeVariables, jamais par Domain/Messaging.
+arch('Domain/Messaging ne dépend pas des modèles de Domain/Event')
+    ->expect('App\Domain\Messaging')
+    ->not->toUse('App\Domain\Event\Models');
