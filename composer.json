@@ -14,6 +14,7 @@
         "laravel/socialite": "^5.30",
         "laravel/tinker": "^2.10.1",
         "predis/predis": "^3.6",
+        "stripe/stripe-php": "^21.3",
         "symfony/http-client": "^7.4",
         "symfony/postmark-mailer": "^7.4",
         "twilio/sdk": "^8.12"

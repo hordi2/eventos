@@ -25,6 +25,7 @@ use App\Http\Controllers\Organizer\MessageAutomationController;
 use App\Http\Controllers\Organizer\TagController;
 use App\Http\Controllers\Organizer\WhatsappTemplateController;
 use App\Http\Controllers\Webhooks\PostmarkWebhookController;
+use App\Http\Controllers\Webhooks\StripeWebhookController;
 use App\Http\Controllers\Webhooks\TwilioWhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -193,3 +194,10 @@ Route::post('webhooks/postmark', PostmarkWebhookController::class)
 Route::post('webhooks/twilio-whatsapp', TwilioWhatsappWebhookController::class)
     ->middleware('throttle:300,1')
     ->name('webhooks.twilio-whatsapp');
+
+// Webhook Stripe (confirmation/échec de paiement, T-052) : public, protégé
+// par la signature Stripe-Signature (voir StripeWebhookController), jamais
+// par CSRF — même raisonnement que les webhooks Postmark/Twilio ci-dessus.
+Route::post('webhooks/stripe', StripeWebhookController::class)
+    ->middleware('throttle:300,1')
+    ->name('webhooks.stripe');

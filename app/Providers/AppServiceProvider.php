@@ -23,6 +23,8 @@ use App\Support\Capacity\Events\WaitlistEntryPromoted;
 use App\Support\Messaging\TwilioWhatsappProvider;
 use App\Support\Messaging\WhatsappProvider;
 use App\Support\MultiTenancy\CurrentOrganization;
+use App\Support\Payments\CardCheckoutProvider;
+use App\Support\Payments\StripeCheckoutProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\Facades\Gate;
@@ -38,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(CurrentOrganization::class);
         $this->app->bind(WhatsappProvider::class, TwilioWhatsappProvider::class);
+        $this->app->bind(CardCheckoutProvider::class, StripeCheckoutProvider::class);
     }
 
     /**

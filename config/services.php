@@ -56,4 +56,11 @@ return [
         'whatsapp_from' => env('TWILIO_WHATSAPP_FROM'),
     ],
 
+    'stripe' => [
+        'secret' => env('STRIPE_SECRET'),
+        // Distinct de la clé secrète : signe les événements de webhook,
+        // jamais utilisé pour appeler l'API Stripe (T-052).
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
 ];
