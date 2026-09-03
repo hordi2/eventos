@@ -13,6 +13,7 @@ final class CreateContact
 {
     public function __construct(
         private readonly FindOrCreateHousehold $findOrCreateHousehold,
+        private readonly SyncContactTags $syncContactTags,
     ) {}
 
     /**
@@ -28,7 +29,7 @@ final class CreateContact
             $householdId = $this->findOrCreateHousehold->handle($organization, $data['household_name'])->id;
         }
 
-        return Contact::query()->create([
+        $contact = Contact::query()->create([
             'organization_id' => $organization->id,
             'household_id' => $householdId,
             'first_name' => $data['first_name'] ?? null,
@@ -40,5 +41,9 @@ final class CreateContact
             'preferred_language' => $data['preferred_language'] ?? null,
             'preferred_channel' => $data['preferred_channel'] ?? null,
         ]);
+
+        $this->syncContactTags->handle($contact, $data['tag_ids'] ?? []);
+
+        return $contact;
     }
 }

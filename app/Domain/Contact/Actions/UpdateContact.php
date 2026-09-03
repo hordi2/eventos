@@ -13,6 +13,7 @@ final class UpdateContact
 {
     public function __construct(
         private readonly FindOrCreateHousehold $findOrCreateHousehold,
+        private readonly SyncContactTags $syncContactTags,
     ) {}
 
     /**
@@ -44,6 +45,10 @@ final class UpdateContact
             ...$this->consentChanges($contact, 'sms', $data['sms_consent'] ?? null),
             ...$this->consentChanges($contact, 'whatsapp', $data['whatsapp_consent'] ?? null),
         ]);
+
+        if (array_key_exists('tag_ids', $data)) {
+            $this->syncContactTags->handle($contact, $data['tag_ids']);
+        }
 
         return $contact->fresh();
     }

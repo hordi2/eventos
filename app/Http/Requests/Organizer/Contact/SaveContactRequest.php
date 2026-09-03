@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Organizer\Contact;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 final class SaveContactRequest extends FormRequest
 {
@@ -31,6 +32,8 @@ final class SaveContactRequest extends FormRequest
             'email_consent' => ['nullable', 'boolean'],
             'sms_consent' => ['nullable', 'boolean'],
             'whatsapp_consent' => ['nullable', 'boolean'],
+            'tag_ids' => ['nullable', 'array'],
+            'tag_ids.*' => ['integer', Rule::exists('tags', 'id')],
         ];
     }
 }

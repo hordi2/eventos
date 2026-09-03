@@ -29,6 +29,7 @@ interface ContactDraft {
     whatsapp_consent: boolean;
     whatsapp_consent_source: string | null;
     whatsapp_consent_at: string | null;
+    tag_ids: number[];
 }
 
 interface HistoryEntry {
@@ -36,6 +37,12 @@ interface HistoryEntry {
     event_id: number;
     status: string;
     registered_at: string;
+}
+
+interface TagOption {
+    id: number;
+    name: string;
+    color: string;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -74,7 +81,15 @@ function ConsentField({
     );
 }
 
-export default function ContactForm({ contact, history }: { contact: ContactDraft | null; history?: HistoryEntry[] }) {
+export default function ContactForm({
+    contact,
+    history,
+    availableTags = [],
+}: {
+    contact: ContactDraft | null;
+    history?: HistoryEntry[];
+    availableTags?: TagOption[];
+}) {
     const { data, setData, post, patch, processing, errors } = useForm({
         first_name: contact?.first_name ?? '',
         last_name: contact?.last_name ?? '',
@@ -88,6 +103,7 @@ export default function ContactForm({ contact, history }: { contact: ContactDraf
         email_consent: contact?.email_consent ?? false,
         sms_consent: contact?.sms_consent ?? false,
         whatsapp_consent: contact?.whatsapp_consent ?? false,
+        tag_ids: contact?.tag_ids ?? [],
     });
 
     function handleSubmit(e: FormEvent) {
@@ -98,6 +114,10 @@ export default function ContactForm({ contact, history }: { contact: ContactDraf
         } else {
             post('/contacts');
         }
+    }
+
+    function toggleTag(tagId: number) {
+        setData('tag_ids', data.tag_ids.includes(tagId) ? data.tag_ids.filter((id) => id !== tagId) : [...data.tag_ids, tagId]);
     }
 
     return (
@@ -168,6 +188,31 @@ export default function ContactForm({ contact, history }: { contact: ContactDraf
                             <option value="whatsapp">WhatsApp</option>
                         </Select>
                     </div>
+
+                    {availableTags.length > 0 && (
+                        <div className="mb-8">
+                            <InputLabel>Tags</InputLabel>
+                            <div className="flex flex-wrap gap-2">
+                                {availableTags.map((tag) => {
+                                    const active = data.tag_ids.includes(tag.id);
+
+                                    return (
+                                        <button
+                                            key={tag.id}
+                                            type="button"
+                                            onClick={() => toggleTag(tag.id)}
+                                            className={`inline-flex items-center gap-1.5 rounded-pill border px-3 py-1.5 text-sm ${
+                                                active ? 'border-ink text-ink' : 'border-line text-ink-soft'
+                                            }`}
+                                        >
+                                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: tag.color }} />
+                                            {tag.name}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                     <h2 className="mb-4 font-label text-xs tracking-[0.14em] text-ink-soft uppercase">Consentements</h2>
 

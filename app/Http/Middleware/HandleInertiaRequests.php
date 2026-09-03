@@ -81,6 +81,7 @@ class HandleInertiaRequests extends Middleware
                     ['label' => 'Tous les contacts', 'href' => route('contacts.index')],
                     $gate->allows('updateGuests', $organization) ? ['label' => 'Ajouter un contact', 'href' => route('contacts.create')] : null,
                     $gate->allows('updateGuests', $organization) ? ['label' => 'Importer des contacts', 'href' => route('contact-imports.create')] : null,
+                    $gate->allows('updateGuests', $organization) ? ['label' => 'Tags', 'href' => route('tags.index')] : null,
                 ])),
             ] : null,
             $gate->allows('createEvents', $organization) ? [

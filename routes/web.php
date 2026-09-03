@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Guest\RegistrationController;
+use App\Http\Controllers\Organizer\AttendeeController;
 use App\Http\Controllers\Organizer\AuditLogController;
 use App\Http\Controllers\Organizer\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Organizer\Auth\EmailVerificationNotificationController;
@@ -16,7 +17,9 @@ use App\Http\Controllers\Organizer\ContactController;
 use App\Http\Controllers\Organizer\ContactImportController;
 use App\Http\Controllers\Organizer\DashboardController;
 use App\Http\Controllers\Organizer\EventController;
+use App\Http\Controllers\Organizer\EventSegmentController;
 use App\Http\Controllers\Organizer\FormController;
+use App\Http\Controllers\Organizer\TagController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -94,6 +97,17 @@ Route::middleware('auth')->group(function (): void {
         Route::get('contact-imports/{import}/mapping', [ContactImportController::class, 'mapping'])->name('contact-imports.mapping');
         Route::post('contact-imports/{import}/mapping', [ContactImportController::class, 'confirmMapping'])->name('contact-imports.confirm-mapping');
         Route::get('contact-imports/{import}', [ContactImportController::class, 'show'])->name('contact-imports.show');
+
+        Route::get('tags', [TagController::class, 'index'])->name('tags.index');
+        Route::post('tags', [TagController::class, 'store'])->name('tags.store');
+        Route::patch('tags/{tag}', [TagController::class, 'update'])->name('tags.update');
+        Route::delete('tags/{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
+
+        Route::get('events/{event}/segments', [EventSegmentController::class, 'index'])->name('events.segments.index');
+        Route::get('events/{event}/segments/{segment}', [EventSegmentController::class, 'show'])->name('events.segments.show');
+        Route::post('events/{event}/segments/{segment}/tag', [EventSegmentController::class, 'applyTag'])->name('events.segments.apply-tag');
+
+        Route::post('attendees/{attendee}/toggle-check-in', [AttendeeController::class, 'toggleCheckIn'])->name('attendees.toggle-check-in');
     });
 });
 

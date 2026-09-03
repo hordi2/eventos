@@ -32,12 +32,16 @@ final class Attendee extends Model
         'last_name',
         'email',
         'is_primary',
+        'checked_in_at',
     ];
 
     protected function casts(): array
     {
         return [
             'is_primary' => 'boolean',
+            // Marqué manuellement pour l'instant (T-042) — le vrai check-in
+            // par scan QR viendra avec T-060/061.
+            'checked_in_at' => 'immutable_datetime',
         ];
     }
 

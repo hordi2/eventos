@@ -123,19 +123,20 @@ export default function Dashboard({ services }: { services: Services }) {
                             <p className="text-sm text-ink-soft">Aucun événement pour l'instant.</p>
                         ) : (
                             services.events.recent.map((event) => (
-                                <Link
-                                    key={event.id}
-                                    href={`/events/${event.id}/edit`}
-                                    className="flex items-center justify-between gap-3 text-sm hover:text-ink"
-                                >
-                                    <span className="truncate text-ink">{event.title}</span>
-                                    <span className="flex shrink-0 items-center gap-2 text-ink-soft">
+                                <div key={event.id} className="flex items-center justify-between gap-3 text-sm">
+                                    <Link href={`/events/${event.id}/edit`} className="truncate text-ink hover:underline">
+                                        {event.title}
+                                    </Link>
+                                    <span className="flex shrink-0 items-center gap-3 text-ink-soft">
                                         {event.start_at_formatted}
                                         <Badge variant={event.status === 'published' ? 'success' : 'neutral'}>
                                             {EVENT_STATUS_LABELS[event.status] ?? event.status}
                                         </Badge>
+                                        <Link href={`/events/${event.id}/segments`} className="font-label text-xs tracking-[0.08em] uppercase hover:text-ink">
+                                            Segments
+                                        </Link>
                                     </span>
-                                </Link>
+                                </div>
                             ))
                         )}
                     </ServiceCard>

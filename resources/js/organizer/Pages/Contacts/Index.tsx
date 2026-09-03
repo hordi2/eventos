@@ -5,12 +5,19 @@ import Table from '../../Components/Table';
 import TextInput from '../../Components/TextInput';
 import OrganizerLayout from '../../Layouts/OrganizerLayout';
 
+interface ContactTag {
+    id: number;
+    name: string;
+    color: string;
+}
+
 interface ContactRow {
     id: number;
     full_name: string;
     email: string | null;
     phone_e164: string | null;
     household_name: string | null;
+    tags: ContactTag[];
 }
 
 interface Paginated<T> {
@@ -77,6 +84,26 @@ export default function Index({ contacts, search }: { contacts: Paginated<Contac
                     { key: 'email', header: 'E-mail', render: (contact) => contact.email ?? '—' },
                     { key: 'phone', header: 'Téléphone', render: (contact) => contact.phone_e164 ?? '—' },
                     { key: 'household', header: 'Foyer', render: (contact) => contact.household_name ?? '—' },
+                    {
+                        key: 'tags',
+                        header: 'Tags',
+                        render: (contact) =>
+                            contact.tags.length === 0 ? (
+                                '—'
+                            ) : (
+                                <div className="flex flex-wrap gap-1.5">
+                                    {contact.tags.map((tag) => (
+                                        <span
+                                            key={tag.id}
+                                            className="inline-flex items-center gap-1 rounded-pill bg-bg-deep px-2 py-0.5 text-xs text-ink-soft"
+                                        >
+                                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tag.color }} />
+                                            {tag.name}
+                                        </span>
+                                    ))}
+                                </div>
+                            ),
+                    },
                 ]}
                 rows={contacts.data}
             />

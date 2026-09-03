@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Organizer;
 use App\Domain\Contact\Actions\CreateContact;
 use App\Domain\Contact\Actions\UpdateContact;
 use App\Domain\Contact\Models\Contact;
+use App\Domain\Contact\Models\Tag;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Organization\Models\Organization;
 use App\Http\Controllers\Controller;
@@ -27,7 +28,7 @@ final class ContactController extends Controller
         $search = trim((string) $request->query('q', ''));
 
         $contacts = Contact::query()
-            ->with('household')
+            ->with(['household', 'tags'])
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($q) use ($search): void {
                     $q->where('first_name', 'ilike', "%{$search}%")
@@ -45,6 +46,7 @@ final class ContactController extends Controller
                 'email' => $contact->email,
                 'phone_e164' => $contact->phone_e164,
                 'household_name' => $contact->household?->name,
+                'tags' => $contact->tags->map(fn (Tag $tag): array => ['id' => $tag->id, 'name' => $tag->name, 'color' => $tag->color]),
             ]);
 
         return Inertia::render('Contacts/Index', ['contacts' => $contacts, 'search' => $search]);
@@ -54,7 +56,7 @@ final class ContactController extends Controller
     {
         Gate::authorize('create', [Contact::class, $this->currentOrganization()]);
 
-        return Inertia::render('Contacts/Form', ['contact' => null]);
+        return Inertia::render('Contacts/Form', ['contact' => null, 'availableTags' => $this->availableTags()]);
     }
 
     public function store(SaveContactRequest $request, CreateContact $action): RedirectResponse
@@ -69,6 +71,7 @@ final class ContactController extends Controller
         $contact = $this->findContact($contact);
 
         Gate::authorize('view', $contact);
+        $contact->loadMissing('tags');
 
         $history = Registration::query()
             ->where('contact_id', $contact->id)
@@ -103,8 +106,10 @@ final class ContactController extends Controller
                 'whatsapp_consent' => $contact->whatsapp_consent,
                 'whatsapp_consent_source' => $contact->whatsapp_consent_source,
                 'whatsapp_consent_at' => $contact->whatsapp_consent_at?->toIso8601String(),
+                'tag_ids' => $contact->tags->pluck('id'),
             ],
             'history' => $history,
+            'availableTags' => $this->availableTags(),
         ]);
     }
 
@@ -118,6 +123,18 @@ final class ContactController extends Controller
     private function findContact(int $id): Contact
     {
         return Contact::query()->findOrFail($id);
+    }
+
+    /**
+     * @return list<array{id: int, name: string, color: string}>
+     */
+    private function availableTags(): array
+    {
+        return Tag::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'color'])
+            ->map(fn (Tag $tag): array => ['id' => $tag->id, 'name' => $tag->name, 'color' => $tag->color])
+            ->all();
     }
 
     private function currentOrganization(): Organization
