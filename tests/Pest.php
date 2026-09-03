@@ -169,3 +169,15 @@ function registerContactForEvent(
 
     return $registration;
 }
+
+/**
+ * Organisation prête pour un envoi (e-mail ou WhatsApp), sans membre —
+ * T-043/T-045, partagée entre SendEmailTest et SendWhatsappTest.
+ */
+function makeOrganizationForMessaging(): Organization
+{
+    $organization = Organization::factory()->create();
+    app(CurrentOrganization::class)->set($organization);
+
+    return $organization;
+}

@@ -48,4 +48,12 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'twilio' => [
+        'sid' => env('TWILIO_ACCOUNT_SID'),
+        'auth_token' => env('TWILIO_AUTH_TOKEN'),
+        // Numéro WhatsApp Business approuvé chez Twilio, sans le préfixe
+        // "whatsapp:" (ajouté au moment de l'appel) — ex. +14155238886.
+        'whatsapp_from' => env('TWILIO_WHATSAPP_FROM'),
+    ],
+
 ];

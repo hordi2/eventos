@@ -4,19 +4,9 @@ declare(strict_types=1);
 
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Messaging\Models\EmailMessage;
-use App\Domain\Organization\Models\Organization;
 use App\Mail\GenericMail;
 use App\Support\Messaging\SendEmailToContact;
-use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Support\Facades\Mail;
-
-function makeOrganizationForMessaging(): Organization
-{
-    $organization = Organization::factory()->create();
-    app(CurrentOrganization::class)->set($organization);
-
-    return $organization;
-}
 
 it('envoie un e-mail à un contact éligible et journalise le message', function (): void {
     Mail::fake();

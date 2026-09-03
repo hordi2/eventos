@@ -52,6 +52,8 @@ final class Contact extends Model
         'unsubscribed_at',
         'email_invalid_at',
         'email_invalid_reason',
+        'whatsapp_invalid_at',
+        'whatsapp_invalid_reason',
         'engagement_score',
     ];
 
@@ -67,6 +69,7 @@ final class Contact extends Model
             'whatsapp_consent_at' => 'immutable_datetime',
             'unsubscribed_at' => 'immutable_datetime',
             'email_invalid_at' => 'immutable_datetime',
+            'whatsapp_invalid_at' => 'immutable_datetime',
             'engagement_score' => 'integer',
         ];
     }
@@ -81,6 +84,18 @@ final class Contact extends Model
     public function isEmailSuppressed(): bool
     {
         return $this->unsubscribed_at !== null || $this->email_invalid_at !== null;
+    }
+
+    /**
+     * Contrairement à isEmailSuppressed(), exige explicitement le
+     * consentement : WhatsApp Business (règle Meta) impose un opt-in
+     * explicite avant tout message d'initiative commerciale, alors qu'un
+     * e-mail transactionnel s'appuie sur le contexte de l'inscription elle-
+     * même. Un bounce dur équivalent (whatsapp_invalid_at) exclut aussi.
+     */
+    public function isWhatsappSuppressed(): bool
+    {
+        return ! $this->whatsapp_consent || $this->whatsapp_invalid_at !== null;
     }
 
     protected static function newFactory(): ContactFactory

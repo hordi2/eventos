@@ -94,6 +94,7 @@ class HandleInertiaRequests extends Middleware
                 'label' => 'Communications',
                 'items' => [
                     ['label' => "Modèles d'e-mails", 'href' => route('email-templates.index')],
+                    ['label' => 'Modèles WhatsApp', 'href' => route('whatsapp-templates.index')],
                 ],
             ] : null,
             $gate->allows('viewAuditLog', $organization) ? [

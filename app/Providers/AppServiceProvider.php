@@ -19,6 +19,8 @@ use App\Domain\Organization\Policies\OrganizationPolicy;
 use App\Listeners\LinkRegistrationToContact;
 use App\Listeners\SendConfirmationEmail;
 use App\Support\Capacity\Events\WaitlistEntryPromoted;
+use App\Support\Messaging\TwilioWhatsappProvider;
+use App\Support\Messaging\WhatsappProvider;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Event as EventFacade;
@@ -34,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(CurrentOrganization::class);
+        $this->app->bind(WhatsappProvider::class, TwilioWhatsappProvider::class);
     }
 
     /**
@@ -57,5 +60,10 @@ class AppServiceProvider extends ServiceProvider
         // mais rien dans le CDC n'impose un chiffre précis — à ajuster
         // depuis un seul endroit si le prestataire ou le forfait change.
         RateLimiter::for('email-sends', fn (): Limit => Limit::perMinute(120));
+
+        // Plus prudent encore que l'e-mail : le débit WhatsApp effectif
+        // dépend du palier de qualité Twilio (souvent ~1 msg/s pour un
+        // numéro récent) — à relever une fois le palier réel connu.
+        RateLimiter::for('whatsapp-sends', fn (): Limit => Limit::perMinute(60));
     }
 }

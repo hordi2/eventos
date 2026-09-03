@@ -23,7 +23,9 @@ use App\Http\Controllers\Organizer\EventController;
 use App\Http\Controllers\Organizer\EventSegmentController;
 use App\Http\Controllers\Organizer\FormController;
 use App\Http\Controllers\Organizer\TagController;
+use App\Http\Controllers\Organizer\WhatsappTemplateController;
 use App\Http\Controllers\Webhooks\PostmarkWebhookController;
+use App\Http\Controllers\Webhooks\TwilioWhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -127,6 +129,15 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/automations', [EmailAutomationController::class, 'index'])->name('events.automations.index');
         Route::post('events/{event}/automations', [EmailAutomationController::class, 'store'])->name('events.automations.store');
         Route::post('email-automations/{emailAutomation}/cancel', [EmailAutomationController::class, 'cancel'])->name('email-automations.cancel');
+
+        Route::get('whatsapp-templates', [WhatsappTemplateController::class, 'index'])->name('whatsapp-templates.index');
+        Route::post('whatsapp-templates', [WhatsappTemplateController::class, 'store'])->name('whatsapp-templates.store');
+        Route::patch('whatsapp-templates/{whatsappTemplate}', [WhatsappTemplateController::class, 'update'])->name('whatsapp-templates.update');
+        Route::delete('whatsapp-templates/{whatsappTemplate}', [WhatsappTemplateController::class, 'destroy'])->name('whatsapp-templates.destroy');
+        Route::get('whatsapp-templates/{whatsappTemplate}/preview', [WhatsappTemplateController::class, 'preview'])->name('whatsapp-templates.preview');
+        Route::post('whatsapp-templates/{whatsappTemplate}/test-send', [WhatsappTemplateController::class, 'sendTest'])
+            ->middleware('throttle:10,1')
+            ->name('whatsapp-templates.test-send');
     });
 });
 
@@ -175,3 +186,10 @@ Route::get('unsubscribe/{organization}/{contact}', UnsubscribeController::class)
 Route::post('webhooks/postmark', PostmarkWebhookController::class)
     ->middleware('throttle:300,1')
     ->name('webhooks.postmark');
+
+// Webhook Twilio (statut de livraison WhatsApp) : public, protégé par la
+// signature X-Twilio-Signature (voir TwilioWhatsappWebhookController),
+// jamais par CSRF — même raisonnement que le webhook Postmark ci-dessus.
+Route::post('webhooks/twilio-whatsapp', TwilioWhatsappWebhookController::class)
+    ->middleware('throttle:300,1')
+    ->name('webhooks.twilio-whatsapp');

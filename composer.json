@@ -15,7 +15,8 @@
         "laravel/tinker": "^2.10.1",
         "predis/predis": "^3.6",
         "symfony/http-client": "^7.4",
-        "symfony/postmark-mailer": "^7.4"
+        "symfony/postmark-mailer": "^7.4",
+        "twilio/sdk": "^8.12"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

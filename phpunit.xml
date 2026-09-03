@@ -21,6 +21,11 @@
         </include>
     </source>
     <php>
+        <!-- Le test d'architecture (analyse AST de tout app/Domain via
+             nikic/php-parser) a fini par dépasser les 128M par défaut du
+             CLI PHP à mesure que le code métier a grandi — épuisement de
+             mémoire réel, pas un bug applicatif. -->
+        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
