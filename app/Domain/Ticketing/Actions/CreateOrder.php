@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Ticketing\Actions;
 
+use App\Domain\Ticketing\Models\Donation;
 use App\Domain\Ticketing\Models\Order;
 use App\Domain\Ticketing\Models\OrderItem;
 use App\Domain\Ticketing\Models\OrderStatus;
@@ -61,6 +62,8 @@ final class CreateOrder
         array $items,
         string $reservationKey,
         int $reservationMinutes = 15,
+        ?Money $donation = null,
+        ?string $donationCause = null,
     ): Order {
         $this->currentOrganization->set($organizationId);
 
@@ -72,6 +75,7 @@ final class CreateOrder
 
         $this->assertValidBuyer($buyer);
         $this->assertValidItems($items);
+        $this->assertValidDonation($donation);
 
         $resolved = [];
 
@@ -85,7 +89,7 @@ final class CreateOrder
             throw $exception;
         }
 
-        $order = DB::transaction(function () use ($organizationId, $eventId, $buyer, $resolved, $reservationKey, $reservationMinutes): Order {
+        $order = DB::transaction(function () use ($organizationId, $eventId, $buyer, $resolved, $reservationKey, $reservationMinutes, $donation, $donationCause): Order {
             $order = Order::query()->create([
                 'organization_id' => $organizationId,
                 'event_id' => $eventId,
@@ -115,6 +119,17 @@ final class CreateOrder
                 ]);
             }
 
+            if ($donation !== null) {
+                $total = $total === null ? $donation : $total->add($donation);
+
+                Donation::query()->create([
+                    'organization_id' => $order->organization_id,
+                    'order_id' => $order->id,
+                    'amount' => $donation,
+                    'cause' => $donationCause,
+                ]);
+            }
+
             $order->update(['total' => $total]);
 
             return $order;
@@ -122,7 +137,7 @@ final class CreateOrder
 
         ExpireOrderJob::dispatch($order->id, $organizationId)->delay($order->reserved_until);
 
-        return $order->fresh(['items']);
+        return $order->fresh(['items', 'donations']);
     }
 
     /**
@@ -220,6 +235,13 @@ final class CreateOrder
             if ($item['quantity'] < 1) {
                 throw new InvalidArgumentException('La quantité de chaque ligne doit être d\'au moins 1.');
             }
+        }
+    }
+
+    private function assertValidDonation(?Money $donation): void
+    {
+        if ($donation !== null && ! $donation->isPositive()) {
+            throw new InvalidArgumentException('Le montant du don doit être strictement positif.');
         }
     }
 

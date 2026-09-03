@@ -1,0 +1,54 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Ticketing\Models;
+
+use App\Support\Auditing\Auditable;
+use App\Support\Casts\AsMoney;
+use App\Support\Money;
+use App\Support\MultiTenancy\BelongsToOrganization;
+use Database\Factories\DonationFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+/**
+ * @property Money $amount
+ */
+final class Donation extends Model
+{
+    /** @use HasFactory<DonationFactory> */
+    use Auditable, BelongsToOrganization, HasFactory, SoftDeletes;
+
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'organization_id',
+        'order_id',
+        'amount',
+        'cause',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'amount' => AsMoney::class,
+        ];
+    }
+
+    protected static function newFactory(): DonationFactory
+    {
+        return DonationFactory::new();
+    }
+
+    /**
+     * @return BelongsTo<Order, $this>
+     */
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+}
