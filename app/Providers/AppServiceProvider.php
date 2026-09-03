@@ -24,6 +24,8 @@ use App\Support\Messaging\TwilioWhatsappProvider;
 use App\Support\Messaging\WhatsappProvider;
 use App\Support\MultiTenancy\CurrentOrganization;
 use App\Support\Payments\CardCheckoutProvider;
+use App\Support\Payments\FlutterwaveMobileMoneyProvider;
+use App\Support\Payments\MobileMoneyProvider;
 use App\Support\Payments\StripeCheckoutProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Event as EventFacade;
@@ -41,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(CurrentOrganization::class);
         $this->app->bind(WhatsappProvider::class, TwilioWhatsappProvider::class);
         $this->app->bind(CardCheckoutProvider::class, StripeCheckoutProvider::class);
+        $this->app->bind(MobileMoneyProvider::class, FlutterwaveMobileMoneyProvider::class);
     }
 
     /**

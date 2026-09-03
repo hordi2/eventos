@@ -30,9 +30,15 @@ use Illuminate\Support\Facades\Log;
  * voir ChooseOnSitePayment).
  *
  * Idempotence des webhooks de paiement (§4.4 CLAUDE.md) : un
- * provider_payment_id déjà traité est ignoré silencieusement (log info),
- * jamais rejoué en double — la commande peut recevoir la même confirmation
- * plusieurs fois (retry réseau du prestataire).
+ * provider_payment_id déjà traité (Payment au statut succeeded) est ignoré
+ * silencieusement (log info), jamais rejoué en double — la commande peut
+ * recevoir la même confirmation plusieurs fois (retry réseau du
+ * prestataire).
+ *
+ * Un provider_payment_id qui correspond à un Payment encore "pending" n'est
+ * pas un doublon : c'est le cas Mobile Money (T-053), où
+ * InitiateMobileMoneyPayment a déjà créé la ligne au moment de la demande
+ * de charge — cette ligne est mise à jour ici plutôt que dupliquée.
  */
 final class MarkOrderPaid
 {
@@ -43,7 +49,9 @@ final class MarkOrderPaid
 
     public function handle(Order $order, string $provider, string $providerPaymentId, Money $amount, ?User $collector = null): Order
     {
-        if (Payment::query()->where('provider_payment_id', $providerPaymentId)->exists()) {
+        $existingPayment = Payment::query()->where('provider_payment_id', $providerPaymentId)->first();
+
+        if ($existingPayment !== null && $existingPayment->status === PaymentStatus::Succeeded) {
             Log::info('Paiement déjà traité, rejoué de façon idempotente.', [
                 'order_id' => $order->id,
                 'provider_payment_id' => $providerPaymentId,
@@ -56,18 +64,25 @@ final class MarkOrderPaid
             throw InvalidOrderTransitionException::notPending($order->id, $order->status);
         }
 
-        DB::transaction(function () use ($order, $provider, $providerPaymentId, $amount, $collector): void {
-            Payment::query()->create([
-                'organization_id' => $order->organization_id,
-                'order_id' => $order->id,
-                'provider' => $provider,
-                'collected_by' => $collector?->id,
-                'provider_payment_id' => $providerPaymentId,
-                'status' => PaymentStatus::Succeeded,
-                'amount' => $amount,
-                'attempted_at' => CarbonImmutable::now(),
-                'succeeded_at' => CarbonImmutable::now(),
-            ]);
+        DB::transaction(function () use ($order, $provider, $providerPaymentId, $amount, $collector, $existingPayment): void {
+            if ($existingPayment !== null) {
+                $existingPayment->update([
+                    'status' => PaymentStatus::Succeeded,
+                    'succeeded_at' => CarbonImmutable::now(),
+                ]);
+            } else {
+                Payment::query()->create([
+                    'organization_id' => $order->organization_id,
+                    'order_id' => $order->id,
+                    'provider' => $provider,
+                    'collected_by' => $collector?->id,
+                    'provider_payment_id' => $providerPaymentId,
+                    'status' => PaymentStatus::Succeeded,
+                    'amount' => $amount,
+                    'attempted_at' => CarbonImmutable::now(),
+                    'succeeded_at' => CarbonImmutable::now(),
+                ]);
+            }
 
             $order->update([
                 'status' => OrderStatus::Paid,

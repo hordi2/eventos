@@ -24,6 +24,7 @@ use App\Http\Controllers\Organizer\FormController;
 use App\Http\Controllers\Organizer\MessageAutomationController;
 use App\Http\Controllers\Organizer\TagController;
 use App\Http\Controllers\Organizer\WhatsappTemplateController;
+use App\Http\Controllers\Webhooks\FlutterwaveWebhookController;
 use App\Http\Controllers\Webhooks\PostmarkWebhookController;
 use App\Http\Controllers\Webhooks\StripeWebhookController;
 use App\Http\Controllers\Webhooks\TwilioWhatsappWebhookController;
@@ -201,3 +202,11 @@ Route::post('webhooks/twilio-whatsapp', TwilioWhatsappWebhookController::class)
 Route::post('webhooks/stripe', StripeWebhookController::class)
     ->middleware('throttle:300,1')
     ->name('webhooks.stripe');
+
+// Webhook Flutterwave (confirmation/échec Mobile Money, T-053) : public,
+// protégé par la signature flutterwave-signature (voir
+// FlutterwaveWebhookController), jamais par CSRF — même raisonnement que
+// les webhooks Postmark/Twilio/Stripe ci-dessus.
+Route::post('webhooks/flutterwave', FlutterwaveWebhookController::class)
+    ->middleware('throttle:300,1')
+    ->name('webhooks.flutterwave');

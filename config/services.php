@@ -63,4 +63,14 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    'flutterwave' => [
+        'secret' => env('FLUTTERWAVE_SECRET'),
+        // Hash secret dédié aux webhooks (flutterwave-signature), distinct
+        // de la clé secrète d'API — même principe que Stripe (T-053).
+        'webhook_secret' => env('FLUTTERWAVE_WEBHOOK_SECRET'),
+        // Environnement sandbox par défaut, en attendant un compte réel —
+        // à remplacer par l'URL de production le moment venu.
+        'base_url' => env('FLUTTERWAVE_BASE_URL', 'https://developersandbox-api.flutterwave.com'),
+    ],
+
 ];

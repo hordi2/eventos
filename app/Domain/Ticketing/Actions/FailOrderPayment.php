@@ -16,6 +16,11 @@ use Illuminate\Support\Facades\DB;
  * Échec de paiement : contrairement à l'expiration (délai écoulé), le stock
  * est libéré immédiatement — inutile d'attendre les 15 minutes puisque le
  * prestataire a déjà répondu.
+ *
+ * Si providerPaymentId correspond à un Payment déjà créé "pending" (Mobile
+ * Money, T-053 : InitiateMobileMoneyPayment crée la ligne dès la demande de
+ * charge), cette ligne est mise à jour plutôt que dupliquée — sans quoi
+ * l'unicité de provider_payment_id serait violée.
  */
 final class FailOrderPayment
 {
@@ -27,18 +32,30 @@ final class FailOrderPayment
             throw InvalidOrderTransitionException::notPending($order->id, $order->status);
         }
 
-        DB::transaction(function () use ($order, $provider, $providerPaymentId, $reason): void {
-            Payment::query()->create([
-                'organization_id' => $order->organization_id,
-                'order_id' => $order->id,
-                'provider' => $provider,
-                'provider_payment_id' => $providerPaymentId,
-                'status' => PaymentStatus::Failed,
-                'failure_reason' => $reason,
-                'amount' => $order->total,
-                'attempted_at' => CarbonImmutable::now(),
-                'failed_at' => CarbonImmutable::now(),
-            ]);
+        $existingPayment = $providerPaymentId !== null
+            ? Payment::query()->where('provider_payment_id', $providerPaymentId)->first()
+            : null;
+
+        DB::transaction(function () use ($order, $provider, $providerPaymentId, $reason, $existingPayment): void {
+            if ($existingPayment !== null) {
+                $existingPayment->update([
+                    'status' => PaymentStatus::Failed,
+                    'failure_reason' => $reason,
+                    'failed_at' => CarbonImmutable::now(),
+                ]);
+            } else {
+                Payment::query()->create([
+                    'organization_id' => $order->organization_id,
+                    'order_id' => $order->id,
+                    'provider' => $provider,
+                    'provider_payment_id' => $providerPaymentId,
+                    'status' => PaymentStatus::Failed,
+                    'failure_reason' => $reason,
+                    'amount' => $order->total,
+                    'attempted_at' => CarbonImmutable::now(),
+                    'failed_at' => CarbonImmutable::now(),
+                ]);
+            }
 
             $order->update([
                 'status' => OrderStatus::Failed,
