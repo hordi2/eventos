@@ -73,4 +73,12 @@ return [
         'base_url' => env('FLUTTERWAVE_BASE_URL', 'https://developersandbox-api.flutterwave.com'),
     ],
 
+    'ticket_qr' => [
+        // Secret dédié à la signature des JWT de billet (§4.6 CLAUDE.md),
+        // distinct de APP_KEY pour pouvoir le faire tourner sans invalider
+        // les sessions/le chiffrement applicatif — repli sur APP_KEY tant
+        // qu'aucun secret dédié n'est configuré.
+        'secret' => env('TICKET_QR_SECRET', env('APP_KEY')),
+    ],
+
 ];

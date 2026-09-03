@@ -24,6 +24,7 @@ final class Ticket extends Model
         'order_item_id',
         'ticket_type_id',
         'status',
+        'qr_jti',
     ];
 
     protected function casts(): array
