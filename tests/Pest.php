@@ -2,16 +2,23 @@
 
 declare(strict_types=1);
 
+use App\Domain\Contact\Models\Contact;
 use App\Domain\Event\Models\Event;
 use App\Domain\Form\Actions\CreateForm;
 use App\Domain\Form\Actions\PublishFormVersion;
+use App\Domain\Form\Models\Attendee;
 use App\Domain\Form\Models\FieldOption;
 use App\Domain\Form\Models\FieldType;
+use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormField;
+use App\Domain\Form\Models\FormVersion;
+use App\Domain\Form\Models\Registration;
+use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Organization\Models\Organization;
 use App\Models\User;
 use App\Support\MultiTenancy\CurrentOrganization;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -121,4 +128,44 @@ function organizationWithContactRole(MembershipRole $role): array
     $user->memberships()->create(['organization_id' => $organization->id, 'role' => $role]);
 
     return [$organization, $user];
+}
+
+/**
+ * Construit une inscription réelle pour un contact donné, avec son
+ * Attendee principal (T-042, réutilisé par T-045) — event_id/form_version_id
+ * sont des clés étrangères réelles : chaque niveau doit explicitement
+ * partager la même organisation, sans quoi les factories imbriquées en
+ * créeraient chacune une nouvelle, rejetée par la RLS (même gotcha que
+ * ConfirmPromotedRegistrationTest).
+ */
+function registerContactForEvent(
+    Organization $organization,
+    Event $event,
+    Contact $contact,
+    RegistrationStatus $status,
+    ?CarbonImmutable $checkedInAt = null,
+): Registration {
+    $form = Form::factory()->create([
+        'organization_id' => $organization->id,
+        'event_id' => $event->id,
+        'created_by' => User::factory()->create()->id,
+    ]);
+    $version = FormVersion::factory()->create(['organization_id' => $organization->id, 'form_id' => $form->id]);
+
+    $registration = Registration::factory()->create([
+        'organization_id' => $organization->id,
+        'event_id' => $event->id,
+        'form_version_id' => $version->id,
+        'contact_id' => $contact->id,
+        'status' => $status,
+    ]);
+
+    Attendee::factory()->create([
+        'organization_id' => $organization->id,
+        'registration_id' => $registration->id,
+        'is_primary' => true,
+        'checked_in_at' => $checkedInAt,
+    ]);
+
+    return $registration;
 }

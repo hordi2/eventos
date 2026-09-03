@@ -12,9 +12,14 @@ export default function Index({ event, segments }: { event: { id: number; title:
         <OrganizerLayout title="Segments" eyebrow={event.title}>
             <Head title="Segments" />
 
-            <p className="mb-8 max-w-lg text-sm text-ink-soft">
-                Chaque segment est recalculé à chaque consultation, jamais figé : il reflète toujours l'état actuel des inscriptions.
-            </p>
+            <div className="mb-8 flex items-center justify-between gap-4">
+                <p className="max-w-lg text-sm text-ink-soft">
+                    Chaque segment est recalculé à chaque consultation, jamais figé : il reflète toujours l'état actuel des inscriptions.
+                </p>
+                <Link href={`/events/${event.id}/automations`} className="shrink-0 font-label text-xs tracking-[0.1em] text-ink-soft uppercase hover:text-ink">
+                    Automatisations
+                </Link>
+            </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {segments.map((segment) => (

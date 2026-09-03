@@ -26,6 +26,7 @@ final class SendEmail
         ?int $contactId,
         bool $isTransactional,
         ?string $unsubscribeUrl,
+        ?string $icsAttachment = null,
     ): EmailMessage {
         $emailMessage = EmailMessage::query()->create([
             'organization_id' => $organization->id,
@@ -36,7 +37,7 @@ final class SendEmail
             'status' => EmailMessageStatus::Queued,
         ]);
 
-        SendEmailMessageJob::dispatch($emailMessage->id, $organization->id, $bodyHtml, $unsubscribeUrl);
+        SendEmailMessageJob::dispatch($emailMessage->id, $organization->id, $bodyHtml, $unsubscribeUrl, $icsAttachment);
 
         return $emailMessage;
     }

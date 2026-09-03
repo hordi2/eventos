@@ -39,6 +39,7 @@ final class SendEmailMessageJob implements ShouldQueue
         private readonly int $organizationId,
         private readonly string $bodyHtml,
         private readonly ?string $unsubscribeUrl,
+        private readonly ?string $icsAttachment = null,
     ) {}
 
     /**
@@ -60,6 +61,7 @@ final class SendEmailMessageJob implements ShouldQueue
                 $emailMessage->subject,
                 $this->bodyHtml,
                 $this->unsubscribeUrl,
+                $this->icsAttachment,
             ));
 
             $emailMessage->update([

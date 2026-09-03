@@ -17,6 +17,7 @@ use App\Domain\Form\Policies\FormPolicy;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Organization\Policies\OrganizationPolicy;
 use App\Listeners\LinkRegistrationToContact;
+use App\Listeners\SendConfirmationEmail;
 use App\Support\Capacity\Events\WaitlistEntryPromoted;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -47,7 +48,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Contact::class, ContactPolicy::class);
 
         EventFacade::listen(WaitlistEntryPromoted::class, ConfirmPromotedRegistration::class);
+        // Ordre important : LinkRegistrationToContact doit s'exécuter en
+        // premier, c'est lui qui renseigne contact_id (T-045).
         EventFacade::listen(RegistrationCreated::class, LinkRegistrationToContact::class);
+        EventFacade::listen(RegistrationCreated::class, SendConfirmationEmail::class);
 
         // Débit par défaut prudent (T-043) : Postmark autorise bien plus,
         // mais rien dans le CDC n'impose un chiffre précis — à ajuster

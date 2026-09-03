@@ -17,6 +17,7 @@ use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
 use App\Http\Controllers\Organizer\ContactController;
 use App\Http\Controllers\Organizer\ContactImportController;
 use App\Http\Controllers\Organizer\DashboardController;
+use App\Http\Controllers\Organizer\EmailAutomationController;
 use App\Http\Controllers\Organizer\EmailTemplateController;
 use App\Http\Controllers\Organizer\EventController;
 use App\Http\Controllers\Organizer\EventSegmentController;
@@ -122,6 +123,10 @@ Route::middleware('auth')->group(function (): void {
         Route::post('email-templates/{emailTemplate}/test-send', [EmailTemplateController::class, 'sendTest'])
             ->middleware('throttle:10,1')
             ->name('email-templates.test-send');
+
+        Route::get('events/{event}/automations', [EmailAutomationController::class, 'index'])->name('events.automations.index');
+        Route::post('events/{event}/automations', [EmailAutomationController::class, 'store'])->name('events.automations.store');
+        Route::post('email-automations/{emailAutomation}/cancel', [EmailAutomationController::class, 'cancel'])->name('email-automations.cancel');
     });
 });
 

@@ -6,6 +6,7 @@ namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -24,6 +25,7 @@ final class GenericMail extends Mailable
         public readonly string $mailSubject,
         public readonly string $bodyHtml,
         public readonly ?string $unsubscribeUrl,
+        public readonly ?string $icsAttachment = null,
     ) {}
 
     public function envelope(): Envelope
@@ -37,5 +39,20 @@ final class GenericMail extends Mailable
             view: 'emails.generic',
             with: ['bodyHtml' => $this->bodyHtml, 'unsubscribeUrl' => $this->unsubscribeUrl],
         );
+    }
+
+    /**
+     * @return list<Attachment>
+     */
+    public function attachments(): array
+    {
+        if ($this->icsAttachment === null) {
+            return [];
+        }
+
+        return [
+            Attachment::fromData(fn (): string => $this->icsAttachment, 'invitation.ics')
+                ->withMime('text/calendar'),
+        ];
     }
 }

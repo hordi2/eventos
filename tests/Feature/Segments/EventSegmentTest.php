@@ -5,53 +5,9 @@ declare(strict_types=1);
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Contact\Models\Tag;
 use App\Domain\Event\Models\Event;
-use App\Domain\Form\Models\Attendee;
-use App\Domain\Form\Models\Form;
-use App\Domain\Form\Models\FormVersion;
-use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Organization\Models\MembershipRole;
-use App\Domain\Organization\Models\Organization;
-use App\Models\User;
 use Carbon\CarbonImmutable;
-
-/**
- * event_id/form_version_id sont des clés étrangères réelles : chaque niveau
- * doit explicitement partager la même organisation, sans quoi les factories
- * imbriquées en créeraient chacune une nouvelle, rejetée par la RLS (même
- * gotcha que ConfirmPromotedRegistrationTest).
- */
-function registerContactForEvent(
-    Organization $organization,
-    Event $event,
-    Contact $contact,
-    RegistrationStatus $status,
-    ?CarbonImmutable $checkedInAt = null,
-): Registration {
-    $form = Form::factory()->create([
-        'organization_id' => $organization->id,
-        'event_id' => $event->id,
-        'created_by' => User::factory()->create()->id,
-    ]);
-    $version = FormVersion::factory()->create(['organization_id' => $organization->id, 'form_id' => $form->id]);
-
-    $registration = Registration::factory()->create([
-        'organization_id' => $organization->id,
-        'event_id' => $event->id,
-        'form_version_id' => $version->id,
-        'contact_id' => $contact->id,
-        'status' => $status,
-    ]);
-
-    Attendee::factory()->create([
-        'organization_id' => $organization->id,
-        'registration_id' => $registration->id,
-        'is_primary' => true,
-        'checked_in_at' => $checkedInAt,
-    ]);
-
-    return $registration;
-}
 
 it('classe les contacts dans les 4 segments déductibles de Registration.status', function (): void {
     [$organization, $admin] = organizationWithContactRole(MembershipRole::Admin);
