@@ -23,6 +23,8 @@ use InvalidArgumentException;
  */
 final class CreateTicketType
 {
+    use ValidatesTicketTypeRules;
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -87,28 +89,6 @@ final class CreateTicketType
             throw new InvalidArgumentException(
                 'Le choix "frais absorbés ou répercutés" doit être fait explicitement (M5.1).'
             );
-        }
-    }
-
-    private function assertValidOrderBounds(int $minPerOrder, ?int $maxPerOrder): void
-    {
-        if ($minPerOrder < 1) {
-            throw new InvalidArgumentException('La quantité minimale par commande doit être d\'au moins 1.');
-        }
-
-        if ($maxPerOrder !== null && $maxPerOrder < $minPerOrder) {
-            throw new InvalidArgumentException('La quantité maximale par commande ne peut pas être inférieure au minimum.');
-        }
-    }
-
-    private function assertValidVat(VatMode $vatMode, int $vatRateBp): void
-    {
-        if ($vatRateBp < 0) {
-            throw new InvalidArgumentException('Le taux de TVA ne peut pas être négatif.');
-        }
-
-        if ($vatMode === VatMode::None && $vatRateBp !== 0) {
-            throw new InvalidArgumentException('Un taux de TVA ne peut être renseigné sans régime de TVA (incluse/en sus).');
         }
     }
 

@@ -97,7 +97,10 @@ export default function Index({
         <OrganizerLayout title="Automatisations" eyebrow={event.title}>
             <Head title="Automatisations" />
 
-            <div className="mb-8 flex justify-end">
+            <div className="mb-8 flex justify-end gap-4">
+                <Link href={`/events/${event.id}/ticket-types`} className="font-label text-xs tracking-[0.1em] text-ink-soft uppercase hover:text-ink">
+                    Billets
+                </Link>
                 <Link href={`/events/${event.id}/segments`} className="font-label text-xs tracking-[0.1em] text-ink-soft uppercase hover:text-ink">
                     Segments
                 </Link>

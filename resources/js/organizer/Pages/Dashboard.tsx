@@ -132,6 +132,9 @@ export default function Dashboard({ services }: { services: Services }) {
                                         <Badge variant={event.status === 'published' ? 'success' : 'neutral'}>
                                             {EVENT_STATUS_LABELS[event.status] ?? event.status}
                                         </Badge>
+                                        <Link href={`/events/${event.id}/ticket-types`} className="font-label text-xs tracking-[0.08em] uppercase hover:text-ink">
+                                            Billets
+                                        </Link>
                                         <Link href={`/events/${event.id}/segments`} className="font-label text-xs tracking-[0.08em] uppercase hover:text-ink">
                                             Segments
                                         </Link>

@@ -10,6 +10,11 @@ use App\Models\User;
 
 final class TicketTypePolicy
 {
+    public function viewAny(User $user, Organization $organization): bool
+    {
+        return $user->can('manageTicketing', $organization);
+    }
+
     public function create(User $user, Organization $organization): bool
     {
         return $user->can('manageTicketing', $organization);

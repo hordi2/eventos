@@ -23,6 +23,7 @@ use App\Http\Controllers\Organizer\EventSegmentController;
 use App\Http\Controllers\Organizer\FormController;
 use App\Http\Controllers\Organizer\MessageAutomationController;
 use App\Http\Controllers\Organizer\TagController;
+use App\Http\Controllers\Organizer\TicketTypeController;
 use App\Http\Controllers\Organizer\WhatsappTemplateController;
 use App\Http\Controllers\Webhooks\FlutterwaveWebhookController;
 use App\Http\Controllers\Webhooks\PostmarkWebhookController;
@@ -131,6 +132,14 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/automations', [MessageAutomationController::class, 'index'])->name('events.automations.index');
         Route::post('events/{event}/automations', [MessageAutomationController::class, 'store'])->name('events.automations.store');
         Route::post('message-automations/{messageAutomation}/cancel', [MessageAutomationController::class, 'cancel'])->name('message-automations.cancel');
+
+        Route::get('events/{event}/ticket-types', [TicketTypeController::class, 'index'])->name('events.ticket-types.index');
+        Route::post('events/{event}/ticket-types', [TicketTypeController::class, 'store'])->name('events.ticket-types.store');
+        Route::patch('ticket-types/{ticketType}', [TicketTypeController::class, 'update'])->name('ticket-types.update');
+        Route::delete('ticket-types/{ticketType}', [TicketTypeController::class, 'destroy'])->name('ticket-types.destroy');
+        Route::post('ticket-types/{ticketType}/price-tiers', [TicketTypeController::class, 'storeTier'])->name('ticket-types.price-tiers.store');
+        Route::patch('price-tiers/{priceTier}', [TicketTypeController::class, 'updateTier'])->name('price-tiers.update');
+        Route::delete('price-tiers/{priceTier}', [TicketTypeController::class, 'destroyTier'])->name('price-tiers.destroy');
 
         Route::get('whatsapp-templates', [WhatsappTemplateController::class, 'index'])->name('whatsapp-templates.index');
         Route::post('whatsapp-templates', [WhatsappTemplateController::class, 'store'])->name('whatsapp-templates.store');
