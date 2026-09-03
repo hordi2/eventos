@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\Event\Models\Event;
+use App\Domain\Event\Models\EventType;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationDraft;
 use App\Domain\Organization\Models\Organization;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\Hash;
 it('parcourt les trois étapes et confirme une inscription', function (): void {
     ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent([
         ['key' => 'allergies', 'type' => 'short_text', 'label' => 'Allergies'],
-    ]);
+    ], ['type' => EventType::Conference]);
 
     $start = $this->get("/r/{$organization->slug}/{$event->slug}");
     $start->assertRedirect();
@@ -43,7 +44,10 @@ it('parcourt les trois étapes et confirme une inscription', function (): void {
 });
 
 it('redirige vers la page « déjà inscrit » en cas de doublon', function (): void {
-    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent();
+    // Type fixé (au lieu du tirage aléatoire par défaut de EventFactory) :
+    // ce test soumet l'identité sans téléphone, obligatoire depuis T-045
+    // pour un type "personnel".
+    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent(eventOverrides: ['type' => EventType::Conference]);
 
     $firstStart = $this->get("/r/{$organization->slug}/{$event->slug}");
     $firstToken = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->latest('id')->firstOrFail()->resume_token;
@@ -65,7 +69,7 @@ it('redirige vers la page « déjà inscrit » en cas de doublon', function (): 
 });
 
 it('affiche la page fermée quand l\'événement affiche complet sans liste d\'attente', function (): void {
-    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent([], ['capacity' => 1, 'allow_waitlist' => false]);
+    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent([], ['capacity' => 1, 'allow_waitlist' => false, 'type' => EventType::Conference]);
 
     $this->get("/r/{$organization->slug}/{$event->slug}");
     $token = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->firstOrFail()->resume_token;

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Guest;
 
+use App\Domain\Event\Models\Event;
+use App\Domain\Event\Models\EventCategory;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Support\BuildFormValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
@@ -40,13 +42,27 @@ final class UpdateRegistrationRequest extends FormRequest
     {
         $registration = Registration::query()->findOrFail($this->route('registration'));
         $version = $registration->formVersion()->with(['fields.options', 'conditionalRules.targetField'])->firstOrFail();
+        // Registration ne porte jamais de relation Eloquent vers Event
+        // (section 3 du CLAUDE.md) : chargé ici séparément, ce Form Request
+        // n'étant pas sous Domain/Form, il peut le faire librement.
+        $event = Event::query()->findOrFail($registration->event_id);
 
         return [
             'email' => ['required', 'email:rfc'],
             'first_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:32'],
+            'phone' => [$event->type->category() === EventCategory::Personal ? 'required' : 'nullable', 'string', 'max:32'],
             ...app(BuildFormValidationRules::class)->handle($version, $this->all()),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'phone.required' => 'Le numéro de téléphone est obligatoire pour ce type d\'événement.',
         ];
     }
 }

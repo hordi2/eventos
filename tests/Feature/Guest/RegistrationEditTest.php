@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\Event\Models\Event;
+use App\Domain\Event\Models\EventType;
 use App\Domain\Form\Models\FieldOption;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationDraft;
@@ -22,7 +23,11 @@ use Tests\TestCase;
  */
 function registerGuestFor(TestCase $test, array $fields, array $eventOverrides, array $answers = [], string $email = 'invite@gmail.com'): array
 {
-    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent($fields, $eventOverrides);
+    // "type" par défaut fixé à un type "corporate" (au lieu du tirage
+    // aléatoire de EventFactory) : les identités soumises dans ce fichier
+    // n'incluent pas de téléphone, obligatoire depuis T-045 pour un type
+    // "personnel" — un appelant peut toujours l'écraser explicitement.
+    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent($fields, ['type' => EventType::Conference, ...$eventOverrides]);
 
     $test->get("/r/{$organization->slug}/{$event->slug}");
     $token = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->latest('id')->firstOrFail()->resume_token;

@@ -4,8 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Guest;
 
+use App\Domain\Event\Models\Event;
+use App\Domain\Event\Models\EventCategory;
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * En dehors de Domain/Form (App\Http\Requests), donc libre de référencer
+ * Event/EventType — contrairement à AttendeeIdentity et au reste de
+ * Domain/Form, qui ne le peuvent jamais (section 3 du CLAUDE.md).
+ */
 final class SaveIdentityRequest extends FormRequest
 {
     public function authorize(): bool
@@ -27,7 +34,28 @@ final class SaveIdentityRequest extends FormRequest
             'email' => ['required', 'email:rfc'],
             'first_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:32'],
+            // Obligatoire pour un événement personnel (mariage, anniversaire...
+            // — accord explicite) : posé par ResolveGuestEvent avant que ce
+            // Form Request ne soit résolu.
+            'phone' => [$this->isPersonalEvent() ? 'required' : 'nullable', 'string', 'max:32'],
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'phone.required' => 'Le numéro de téléphone est obligatoire pour ce type d\'événement.',
+        ];
+    }
+
+    private function isPersonalEvent(): bool
+    {
+        /** @var Event $event */
+        $event = $this->attributes->get('guestEvent');
+
+        return $event->type->category() === EventCategory::Personal;
     }
 }

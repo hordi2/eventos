@@ -39,4 +39,19 @@ enum EventType: string
     // Agence / autre
     case Agency = 'agency';
     case Other = 'other';
+
+    /**
+     * Regroupement en deux catégories (accord explicite) : personnel couvre
+     * les événements de vie individuels/familiaux (mariage, anniversaire,
+     * baptême, deuil) et religieux (communautaire/familial, plus proche de
+     * "personnel" que d'"entreprise" dans ce contexte) — tout le reste
+     * (entreprise, associatif, éducation, agence/autre) reste "corporate".
+     */
+    public function category(): EventCategory
+    {
+        return match ($this) {
+            self::Wedding, self::Birthday, self::Baptism, self::Memorial, self::Religious => EventCategory::Personal,
+            default => EventCategory::Corporate,
+        };
+    }
 }

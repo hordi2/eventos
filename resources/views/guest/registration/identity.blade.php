@@ -31,9 +31,13 @@
                 </div>
             </div>
 
+            @php $phoneRequired = $event->type->category() === \App\Domain\Event\Models\EventCategory::Personal; @endphp
             <div class="mb-8">
-                <label for="phone" class="mb-1.5 block text-sm font-medium text-ink">Téléphone</label>
-                <input type="tel" id="phone" name="phone" value="{{ old('phone', $draft->identity['phone'] ?? '') }}" placeholder="+243 8xx xxx xxx" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                <label for="phone" class="mb-1.5 block text-sm font-medium text-ink">Téléphone{{ $phoneRequired ? ' *' : '' }}</label>
+                <input type="tel" id="phone" name="phone" value="{{ old('phone', $draft->identity['phone'] ?? '') }}" placeholder="+243 8xx xxx xxx" @required($phoneRequired) class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                @error('phone')
+                    <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                @enderror
             </div>
 
             <button type="submit" class="min-h-11 w-full rounded-pill bg-ink px-8 py-3 font-medium text-bg">Continuer</button>
