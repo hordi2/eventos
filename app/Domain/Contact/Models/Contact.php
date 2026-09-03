@@ -50,6 +50,8 @@ final class Contact extends Model
         'whatsapp_consent_source',
         'whatsapp_consent_at',
         'unsubscribed_at',
+        'email_invalid_at',
+        'email_invalid_reason',
         'engagement_score',
     ];
 
@@ -64,8 +66,21 @@ final class Contact extends Model
             'whatsapp_consent' => 'boolean',
             'whatsapp_consent_at' => 'immutable_datetime',
             'unsubscribed_at' => 'immutable_datetime',
+            'email_invalid_at' => 'immutable_datetime',
             'engagement_score' => 'integer',
         ];
+    }
+
+    /**
+     * Exclusion des envois (T-043) : choix de l'invité (unsubscribed_at) ou
+     * constat automatique d'un bounce dur / d'une plainte (email_invalid_at)
+     * — les deux excluent des envois futurs, mais restent des colonnes
+     * distinctes pour ne jamais confondre un choix humain avec un fait
+     * technique.
+     */
+    public function isEmailSuppressed(): bool
+    {
+        return $this->unsubscribed_at !== null || $this->email_invalid_at !== null;
     }
 
     protected static function newFactory(): ContactFactory

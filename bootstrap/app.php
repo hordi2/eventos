@@ -26,6 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'can-organization' => AuthorizeOrganizationAbility::class,
             'resolve-guest-event' => ResolveGuestEvent::class,
         ]);
+
+        // Un webhook de prestataire (Postmark, T-043) ne porte jamais de
+        // jeton CSRF — protégé par Basic Auth à la place, voir
+        // PostmarkWebhookController.
+        $middleware->validateCsrfTokens(except: ['webhooks/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

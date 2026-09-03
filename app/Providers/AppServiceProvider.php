@@ -19,8 +19,10 @@ use App\Domain\Organization\Policies\OrganizationPolicy;
 use App\Listeners\LinkRegistrationToContact;
 use App\Support\Capacity\Events\WaitlistEntryPromoted;
 use App\Support\MultiTenancy\CurrentOrganization;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -46,5 +48,10 @@ class AppServiceProvider extends ServiceProvider
 
         EventFacade::listen(WaitlistEntryPromoted::class, ConfirmPromotedRegistration::class);
         EventFacade::listen(RegistrationCreated::class, LinkRegistrationToContact::class);
+
+        // Débit par défaut prudent (T-043) : Postmark autorise bien plus,
+        // mais rien dans le CDC n'impose un chiffre précis — à ajuster
+        // depuis un seul endroit si le prestataire ou le forfait change.
+        RateLimiter::for('email-sends', fn (): Limit => Limit::perMinute(120));
     }
 }

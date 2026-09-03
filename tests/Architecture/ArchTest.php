@@ -27,3 +27,10 @@ arch('Domain/Form ne dépend pas des modèles de Domain/Event')
 arch('Domain/Contact ne dépend pas des modèles de Domain/Form')
     ->expect('App\Domain\Contact')
     ->not->toUse('App\Domain\Form\Models');
+
+// Même règle pour Messaging (T-043) : qui a le droit de recevoir un e-mail
+// (Contact) est décidé par App\Support\Messaging\SendEmailToContact, jamais
+// par Domain/Messaging lui-même.
+arch('Domain/Messaging ne dépend pas des modèles de Domain/Contact')
+    ->expect('App\Domain\Messaging')
+    ->not->toUse('App\Domain\Contact\Models');

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Guest\RegistrationController;
+use App\Http\Controllers\Guest\UnsubscribeController;
 use App\Http\Controllers\Organizer\AttendeeController;
 use App\Http\Controllers\Organizer\AuditLogController;
 use App\Http\Controllers\Organizer\Auth\AuthenticatedSessionController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\Organizer\EventController;
 use App\Http\Controllers\Organizer\EventSegmentController;
 use App\Http\Controllers\Organizer\FormController;
 use App\Http\Controllers\Organizer\TagController;
+use App\Http\Controllers\Webhooks\PostmarkWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -142,3 +144,17 @@ Route::middleware('resolve-guest-event')
             Route::match(['GET', 'POST'], 'inscriptions/{registration}/annuler', [RegistrationController::class, 'cancel'])->name('cancel');
         });
     });
+
+// Lien de désabonnement (T-043) : signé, jamais authentifié — comme les
+// liens de modification/annulation d'inscription ci-dessus.
+Route::get('unsubscribe/{organization}/{contact}', UnsubscribeController::class)
+    ->middleware('signed')
+    ->name('unsubscribe.show');
+
+// Webhook Postmark (T-043) : public, protégé par Basic Auth (voir
+// PostmarkWebhookController), jamais par CSRF — un webhook ne porte pas de
+// jeton de session (exclusion dans bootstrap/app.php). Limité en débit
+// comme tout endpoint public (§7 du CLAUDE.md).
+Route::post('webhooks/postmark', PostmarkWebhookController::class)
+    ->middleware('throttle:300,1')
+    ->name('webhooks.postmark');

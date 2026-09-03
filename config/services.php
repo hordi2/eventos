@@ -18,6 +18,11 @@ return [
 
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
+        // Basic Auth sur l'URL du webhook (recommandation officielle
+        // Postmark) — jamais la session organisateur, un webhook n'en
+        // porte pas.
+        'webhook_username' => env('POSTMARK_WEBHOOK_USERNAME'),
+        'webhook_password' => env('POSTMARK_WEBHOOK_PASSWORD'),
     ],
 
     'resend' => [
