@@ -41,6 +41,7 @@ final class OrganizationPolicy
         'updateGuests' => [MembershipRole::Owner, MembershipRole::Admin, MembershipRole::Editor],
         'sendCommunications' => [MembershipRole::Owner, MembershipRole::Admin, MembershipRole::Editor],
         'checkIn' => [MembershipRole::Owner, MembershipRole::Admin, MembershipRole::Editor, MembershipRole::DoorStaff],
+        'manageTicketing' => [MembershipRole::Owner, MembershipRole::Admin, MembershipRole::Editor],
         'refundTickets' => [MembershipRole::Owner, MembershipRole::Admin],
         'viewAuditLog' => [MembershipRole::Owner, MembershipRole::Admin],
     ];
@@ -95,6 +96,11 @@ final class OrganizationPolicy
     }
 
     public function checkIn(User $user, Organization $organization): bool
+    {
+        return $this->check($user, $organization, __FUNCTION__);
+    }
+
+    public function manageTicketing(User $user, Organization $organization): bool
     {
         return $this->check($user, $organization, __FUNCTION__);
     }
