@@ -18,4 +18,9 @@ final class InvalidOrderTransitionException extends RuntimeException
     {
         return new self("La commande #{$orderId} n'est pas payée (statut actuel : {$actual->value}), impossible de la rembourser.");
     }
+
+    public static function notPaymentOnSite(int $orderId, OrderStatus $actual): self
+    {
+        return new self("La commande #{$orderId} n'a pas choisi le paiement à l'arrivée (statut actuel : {$actual->value}).");
+    }
 }

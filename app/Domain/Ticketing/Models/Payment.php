@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Ticketing\Models;
 
+use App\Models\User;
 use App\Support\Auditing\Auditable;
 use App\Support\Casts\AsMoney;
 use App\Support\Money;
@@ -29,6 +30,7 @@ final class Payment extends Model
         'organization_id',
         'order_id',
         'provider',
+        'collected_by',
         'provider_payment_id',
         'status',
         'failure_reason',
@@ -60,5 +62,13 @@ final class Payment extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function collector(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'collected_by');
     }
 }
