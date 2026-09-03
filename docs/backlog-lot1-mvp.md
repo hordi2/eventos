@@ -512,6 +512,60 @@ reçu automatique.
 
 ---
 
+### T-057 · Configuration des billets et tarifs (interface organisateur) · L
+**Réf** : M5.1, M5.2 · **Dépend de** T-050
+
+Écran de configuration des types de billets côté organisateur — T-050 n'avait
+livré que les modèles, sans interface. CRUD complet d'un type de billet
+(gratuit ou payant), gestion des paliers de tarification (early bird → normal
+→ tardif) avec dates et quotas, choix TVA incluse/en sus, choix frais
+absorbés/répercutés affiché explicitement, quantité min/max par commande,
+quota global par type de billet.
+
+**Critères d'acceptation**
+- [ ] Création d'un type de billet gratuit ou payant en moins de 2 minutes
+- [ ] Ajout/suppression d'un palier avec aperçu de la bascule automatique (dates + quota)
+- [ ] Choix TVA et frais absorbés/répercutés visibles et modifiables, avec aperçu du prix final affiché à l'acheteur
+- [ ] Liste des types de billets d'un événement avec quantité vendue/restante en temps réel
+- [ ] Erreurs de bornes incohérentes (min/max, palier sans dates ni quota) affichées clairement
+
+---
+
+### T-058 · Page publique de sélection des billets et panier (invité) · L
+**Réf** : M5.4 · **Dépend de** T-057, T-055
+
+Interface publique (Blade/Alpine, même contrainte de poids que la page RSVP
+T-031) : sélection des types de billets et quantités sur la page événement,
+ajout d'un don libre ou suggéré au moment du paiement, récapitulatif du
+panier, formulaire acheteur (nom/e-mail/téléphone), déclenchement de
+`CreateOrder`.
+
+**Critères d'acceptation**
+- [ ] Page RSVP < 500 Ko, premier rendu < 2 s en 3G (§2 CLAUDE.md)
+- [ ] Sélection de quantité respecte min/max par commande et le quota affiché en temps réel
+- [ ] Bascule visuelle du palier actif (ex. early bird épuisé → palier normal affiché)
+- [ ] Don optionnel avec montants suggérés et montant libre
+- [ ] Erreur claire si le quota est atteint entre l'affichage et la soumission
+
+---
+
+### T-059 · Choix et confirmation du moyen de paiement (invité) · L
+**Réf** : M5.3 · **Dépend de** T-058, T-052, T-053, T-054
+
+Écran de choix du moyen de paiement (carte via Stripe Checkout, Mobile Money
+via Flutterwave, paiement à l'arrivée), écran d'attente Mobile Money avec
+relance de statut, page de confirmation avec téléchargement du billet PDF
+(T-055) une fois la commande payée.
+
+**Critères d'acceptation**
+- [ ] Redirection Stripe Checkout fonctionnelle, retour sur la page de confirmation après paiement
+- [ ] Écran d'attente Mobile Money avec relance de statut, timeout géré (message clair + option de réessayer)
+- [ ] Paiement à l'arrivée : confirmation immédiate de la réservation, rappel du mode choisi
+- [ ] Téléchargement du/des billets PDF disponible dès la commande payée
+- [ ] Message clair et action de réessai en cas d'échec de paiement
+
+---
+
 # SPRINT 7 — JOUR J
 
 ---
@@ -701,10 +755,10 @@ présente sur place, relevé de tous les incidents.
 | 3 | Formulaires | T-020 → T-024 | ~26 j |
 | 4 | Inscription et parcours invité | T-030 → T-033 | ~19 j |
 | 5 | Contacts et communication | T-040 → T-045 | ~28 j |
-| 6 | Billetterie et paiements | T-050 → T-056 | ~27 j |
+| 6 | Billetterie et paiements | T-050 → T-059 | ~42 j |
 | 7 | Jour J | T-060 → T-064 | ~24 j |
 | 8 | Pilotage et stabilisation | T-070 → T-078 | ~32 j |
-| | | **48 tickets** | **~194 j** |
+| | | **51 tickets** | **~209 j** |
 
 *Charge en jours de développement, hors design, QA dédiée, gestion de projet et
 provision pour imprévus. Rapprocher de l'estimation §16.2 du CDC (560 j/h tous
