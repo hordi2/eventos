@@ -17,11 +17,11 @@ use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
 use App\Http\Controllers\Organizer\ContactController;
 use App\Http\Controllers\Organizer\ContactImportController;
 use App\Http\Controllers\Organizer\DashboardController;
-use App\Http\Controllers\Organizer\EmailAutomationController;
 use App\Http\Controllers\Organizer\EmailTemplateController;
 use App\Http\Controllers\Organizer\EventController;
 use App\Http\Controllers\Organizer\EventSegmentController;
 use App\Http\Controllers\Organizer\FormController;
+use App\Http\Controllers\Organizer\MessageAutomationController;
 use App\Http\Controllers\Organizer\TagController;
 use App\Http\Controllers\Organizer\WhatsappTemplateController;
 use App\Http\Controllers\Webhooks\PostmarkWebhookController;
@@ -126,9 +126,9 @@ Route::middleware('auth')->group(function (): void {
             ->middleware('throttle:10,1')
             ->name('email-templates.test-send');
 
-        Route::get('events/{event}/automations', [EmailAutomationController::class, 'index'])->name('events.automations.index');
-        Route::post('events/{event}/automations', [EmailAutomationController::class, 'store'])->name('events.automations.store');
-        Route::post('email-automations/{emailAutomation}/cancel', [EmailAutomationController::class, 'cancel'])->name('email-automations.cancel');
+        Route::get('events/{event}/automations', [MessageAutomationController::class, 'index'])->name('events.automations.index');
+        Route::post('events/{event}/automations', [MessageAutomationController::class, 'store'])->name('events.automations.store');
+        Route::post('message-automations/{messageAutomation}/cancel', [MessageAutomationController::class, 'cancel'])->name('message-automations.cancel');
 
         Route::get('whatsapp-templates', [WhatsappTemplateController::class, 'index'])->name('whatsapp-templates.index');
         Route::post('whatsapp-templates', [WhatsappTemplateController::class, 'store'])->name('whatsapp-templates.store');

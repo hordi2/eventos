@@ -12,6 +12,8 @@ interface AutomationRow {
     id: number;
     type: string;
     type_label: string;
+    channel: string;
+    channel_label: string;
     template_name: string;
     segment: string | null;
     status: string;
@@ -20,6 +22,11 @@ interface AutomationRow {
 }
 
 interface TypeOption {
+    value: string;
+    label: string;
+}
+
+interface ChannelOption {
     value: string;
     label: string;
 }
@@ -53,18 +60,27 @@ export default function Index({
     event,
     automations,
     types,
-    templates,
+    channels,
+    emailTemplates,
+    whatsappTemplates,
 }: {
     event: { id: number; title: string };
     automations: AutomationRow[];
     types: TypeOption[];
-    templates: TemplateOption[];
+    channels: ChannelOption[];
+    emailTemplates: TemplateOption[];
+    whatsappTemplates: TemplateOption[];
 }) {
     const { data, setData, post, processing, errors, reset } = useForm({
-        email_template_id: templates[0]?.id ?? '',
+        channel: channels[0]?.value ?? 'email',
+        email_template_id: emailTemplates[0]?.id ?? '',
+        whatsapp_template_id: whatsappTemplates[0]?.id ?? '',
         type: types[0]?.value ?? '',
         scheduled_at: '',
     });
+
+    const templates = data.channel === 'whatsapp' ? whatsappTemplates : emailTemplates;
+    const templateField = data.channel === 'whatsapp' ? 'whatsapp_template_id' : 'email_template_id';
 
     function submit(e: FormEvent) {
         e.preventDefault();
@@ -73,7 +89,7 @@ export default function Index({
 
     function cancelAutomation(automation: AutomationRow) {
         if (confirm(`Annuler l'automatisation « ${automation.type_label} » ?`)) {
-            router.post(`/email-automations/${automation.id}/cancel`);
+            router.post(`/message-automations/${automation.id}/cancel`);
         }
     }
 
@@ -89,6 +105,17 @@ export default function Index({
 
             <form onSubmit={submit} className="mb-10 flex flex-wrap items-end gap-4 rounded-card border border-line bg-bg p-4">
                 <div>
+                    <InputLabel htmlFor="channel">Canal</InputLabel>
+                    <Select id="channel" value={data.channel} onChange={(e) => setData('channel', e.target.value)}>
+                        {channels.map((channel) => (
+                            <option key={channel.value} value={channel.value}>
+                                {channel.label}
+                            </option>
+                        ))}
+                    </Select>
+                </div>
+
+                <div>
                     <InputLabel htmlFor="type">Type</InputLabel>
                     <Select id="type" value={data.type} onChange={(e) => setData('type', e.target.value)}>
                         {types.map((type) => (
@@ -100,8 +127,12 @@ export default function Index({
                 </div>
 
                 <div>
-                    <InputLabel htmlFor="email_template_id">Modèle</InputLabel>
-                    <Select id="email_template_id" value={data.email_template_id} onChange={(e) => setData('email_template_id', Number(e.target.value))}>
+                    <InputLabel htmlFor="template_id">Modèle</InputLabel>
+                    <Select
+                        id="template_id"
+                        value={data[templateField]}
+                        onChange={(e) => setData(templateField, Number(e.target.value))}
+                    >
                         {templates.map((template) => (
                             <option key={template.id} value={template.id}>
                                 {template.name}
@@ -130,11 +161,11 @@ export default function Index({
 
             {templates.length === 0 && (
                 <p className="mb-6 text-sm text-ink-soft">
-                    Aucun modèle d'e-mail créé pour l'instant —{' '}
-                    <Link href="/email-templates/create" className="underline underline-offset-2">
+                    Aucun modèle {data.channel === 'whatsapp' ? 'WhatsApp' : "d'e-mail"} créé pour l'instant —{' '}
+                    <Link href={data.channel === 'whatsapp' ? '/whatsapp-templates' : '/email-templates/create'} className="underline underline-offset-2">
                         crée un modèle
                     </Link>{' '}
-                    avant de configurer une automatisation.
+                    avant de configurer une automatisation sur ce canal.
                 </p>
             )}
 
@@ -143,6 +174,7 @@ export default function Index({
                 emptyMessage="Aucune automatisation configurée pour l'instant."
                 columns={[
                     { key: 'type', header: 'Type', render: (automation) => automation.type_label },
+                    { key: 'channel', header: 'Canal', render: (automation) => automation.channel_label },
                     { key: 'template', header: 'Modèle', render: (automation) => automation.template_name },
                     {
                         key: 'segment',

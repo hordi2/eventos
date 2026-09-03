@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Organizer;
 
 use App\Domain\Event\Models\Event;
-use App\Domain\Messaging\Actions\CancelEmailAutomation;
-use App\Domain\Messaging\Actions\CreateEmailAutomation;
-use App\Domain\Messaging\Models\EmailAutomation;
-use App\Domain\Messaging\Models\EmailAutomationType;
+use App\Domain\Messaging\Actions\CancelMessageAutomation;
+use App\Domain\Messaging\Actions\CreateMessageAutomation;
 use App\Domain\Messaging\Models\EmailTemplate;
+use App\Domain\Messaging\Models\MessageAutomation;
+use App\Domain\Messaging\Models\MessageAutomationType;
+use App\Domain\Messaging\Models\MessageChannel;
+use App\Domain\Messaging\Models\WhatsappTemplate;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Organizer\EmailAutomation\SaveEmailAutomationRequest;
+use App\Http\Requests\Organizer\MessageAutomation\SaveMessageAutomationRequest;
 use App\Support\Segments\EventSegment;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -22,50 +24,58 @@ use Inertia\Inertia;
 use Inertia\Response;
 use LogicException;
 
-final class EmailAutomationController extends Controller
+final class MessageAutomationController extends Controller
 {
     public function index(int $event): Response
     {
         $event = $this->findEvent($event);
-        Gate::authorize('viewAny', [EmailAutomation::class, $event->organization]);
+        Gate::authorize('viewAny', [MessageAutomation::class, $event->organization]);
 
-        $automations = EmailAutomation::query()
+        $automations = MessageAutomation::query()
             ->where('event_id', $event->id)
-            ->with('emailTemplate')
+            ->with(['emailTemplate', 'whatsappTemplate'])
             ->latest('created_at')
             ->get()
-            ->map(fn (EmailAutomation $automation): array => [
+            ->map(fn (MessageAutomation $automation): array => [
                 'id' => $automation->id,
                 'type' => $automation->type->value,
                 'type_label' => $automation->type->label(),
-                'template_name' => $automation->emailTemplate->name,
+                'channel' => $automation->channel->value,
+                'channel_label' => $automation->channel->label(),
+                'template_name' => ($automation->emailTemplate ?? $automation->whatsappTemplate)->name,
                 'segment' => $automation->segment?->value,
                 'status' => $automation->status->value,
                 'scheduled_at' => $automation->scheduled_at?->toIso8601String(),
                 'sent_at' => $automation->sent_at?->toIso8601String(),
             ]);
 
-        return Inertia::render('EmailAutomations/Index', [
+        return Inertia::render('MessageAutomations/Index', [
             'event' => ['id' => $event->id, 'title' => $event->title],
             'automations' => $automations,
-            'types' => array_map(fn (EmailAutomationType $type): array => ['value' => $type->value, 'label' => $type->label()], EmailAutomationType::cases()),
-            'templates' => EmailTemplate::query()->orderBy('name')->get(['id', 'name']),
+            'types' => array_map(fn (MessageAutomationType $type): array => ['value' => $type->value, 'label' => $type->label()], MessageAutomationType::cases()),
+            'channels' => array_map(fn (MessageChannel $channel): array => ['value' => $channel->value, 'label' => $channel->label()], MessageChannel::cases()),
+            'emailTemplates' => EmailTemplate::query()->orderBy('name')->get(['id', 'name']),
+            'whatsappTemplates' => WhatsappTemplate::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
-    public function store(SaveEmailAutomationRequest $request, int $event, CreateEmailAutomation $action): RedirectResponse
+    public function store(SaveMessageAutomationRequest $request, int $event, CreateMessageAutomation $action): RedirectResponse
     {
         $event = $this->findEvent($event);
-        $template = EmailTemplate::query()->findOrFail($request->validated('email_template_id'));
-        $type = EmailAutomationType::from($request->validated('type'));
+        $channel = MessageChannel::from($request->validated('channel'));
+        $type = MessageAutomationType::from($request->validated('type'));
         $segment = $request->validated('segment') !== null ? EventSegment::from($request->validated('segment')) : null;
+        $templateId = (int) ($channel === MessageChannel::Email
+            ? $request->validated('email_template_id')
+            : $request->validated('whatsapp_template_id'));
 
         try {
             $action->handle(
                 $event->organization,
                 $request->user(),
                 $event->id,
-                $template,
+                $channel,
+                $templateId,
                 $type,
                 $this->scheduledAt($event, $type, $request->validated('scheduled_at')),
                 $segment,
@@ -77,9 +87,9 @@ final class EmailAutomationController extends Controller
         return redirect()->route('events.automations.index', $event);
     }
 
-    public function cancel(Request $request, int $emailAutomation, CancelEmailAutomation $action): RedirectResponse
+    public function cancel(Request $request, int $messageAutomation, CancelMessageAutomation $action): RedirectResponse
     {
-        $automation = EmailAutomation::query()->findOrFail($emailAutomation);
+        $automation = MessageAutomation::query()->findOrFail($messageAutomation);
 
         try {
             $action->handle($automation, $request->user());
@@ -96,13 +106,13 @@ final class EmailAutomationController extends Controller
      * fuseau. Accord explicite pour utiliser celui de l'événement à la
      * place — déjà la convention de toute l'app (règle 4.3 du CLAUDE.md).
      */
-    private function scheduledAt(Event $event, EmailAutomationType $type, ?string $organizerProvided): ?CarbonImmutable
+    private function scheduledAt(Event $event, MessageAutomationType $type, ?string $organizerProvided): ?CarbonImmutable
     {
         $scheduledAt = match ($type) {
-            EmailAutomationType::Confirmation => null,
-            EmailAutomationType::ReminderJ7 => $event->start_at->subDays(7),
-            EmailAutomationType::ReminderJ1 => $event->start_at->subDay(),
-            EmailAutomationType::ThankYou => $event->end_at->addDay(),
+            MessageAutomationType::Confirmation => null,
+            MessageAutomationType::ReminderJ7 => $event->start_at->subDays(7),
+            MessageAutomationType::ReminderJ1 => $event->start_at->subDay(),
+            MessageAutomationType::ThankYou => $event->end_at->addDay(),
             // Le <input type="datetime-local"> du formulaire renvoie une
             // heure murale sans fuseau ("2026-12-01T14:00") : l'interpréter
             // sans préciser de fuseau la ferait tomber dans celui du serveur
@@ -111,7 +121,7 @@ final class EmailAutomationController extends Controller
             // ->utc() est indispensable : sans lui, Eloquent formate l'heure
             // locale telle quelle pour la colonne (même piège documenté dans
             // CreateEvent::resolveDateTime()).
-            EmailAutomationType::Invitation, EmailAutomationType::ReminderUnanswered => CarbonImmutable::parse($organizerProvided, $event->timezone)->utc(),
+            MessageAutomationType::Invitation, MessageAutomationType::ReminderUnanswered => CarbonImmutable::parse($organizerProvided, $event->timezone)->utc(),
         };
 
         if ($scheduledAt !== null && $scheduledAt->isPast()) {

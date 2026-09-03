@@ -8,9 +8,10 @@ use App\Domain\Contact\Models\Contact;
 use App\Domain\Event\Models\Event;
 use App\Domain\Form\Events\RegistrationCreated;
 use App\Domain\Form\Models\RegistrationStatus;
-use App\Domain\Messaging\Models\EmailAutomation;
-use App\Domain\Messaging\Models\EmailAutomationStatus;
-use App\Domain\Messaging\Models\EmailAutomationType;
+use App\Domain\Messaging\Models\MessageAutomation;
+use App\Domain\Messaging\Models\MessageAutomationStatus;
+use App\Domain\Messaging\Models\MessageAutomationType;
+use App\Domain\Messaging\Models\MessageChannel;
 use App\Domain\Organization\Models\Organization;
 use App\Support\Messaging\GenerateEventIcs;
 use App\Support\Messaging\RenderEmailTemplate;
@@ -31,7 +32,9 @@ use App\Support\Messaging\SendEmailToContact;
  *
  * Doit toujours s'exécuter après LinkRegistrationToContact (voir l'ordre
  * d'enregistrement dans AppServiceProvider) : c'est lui qui renseigne
- * contact_id.
+ * contact_id. Voir SendConfirmationWhatsapp pour le même mécanisme côté
+ * WhatsApp — deux listeners distincts plutôt qu'un seul branchant sur le
+ * canal, chacun ne dépendant que de son propre canal d'envoi.
  */
 final class SendConfirmationEmail
 {
@@ -49,10 +52,11 @@ final class SendConfirmationEmail
             return;
         }
 
-        $automation = EmailAutomation::query()
+        $automation = MessageAutomation::query()
             ->where('event_id', $registration->event_id)
-            ->where('type', EmailAutomationType::Confirmation)
-            ->where('status', EmailAutomationStatus::Active)
+            ->where('type', MessageAutomationType::Confirmation)
+            ->where('status', MessageAutomationStatus::Active)
+            ->where('channel', MessageChannel::Email)
             ->with('emailTemplate')
             ->first();
 

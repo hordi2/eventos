@@ -6,8 +6,9 @@ namespace App\Jobs;
 
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Event\Models\Event;
-use App\Domain\Messaging\Models\EmailAutomation;
-use App\Domain\Messaging\Models\EmailAutomationStatus;
+use App\Domain\Messaging\Models\MessageAutomation;
+use App\Domain\Messaging\Models\MessageAutomationStatus;
+use App\Domain\Messaging\Models\MessageChannel;
 use App\Domain\Organization\Models\Organization;
 use App\Support\Messaging\GenerateEventIcs;
 use App\Support\Messaging\RenderEmailTemplate;
@@ -22,16 +23,18 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Envoi en masse d'une automatisation planifiée (T-045 : invitation, rappel
- * de réponse, rappel J-7/J-1, remerciement). Reçoit des ID, jamais les
- * modèles : même piège que ProcessContactImportJob (T-041) —
- * SerializesModels re-résoudrait EmailAutomation via son global scope avant
- * que CurrentOrganization ne soit positionné.
+ * Envoi en masse d'une automatisation planifiée sur le canal e-mail (T-045 :
+ * invitation, rappel de réponse, rappel J-7/J-1, remerciement) — voir
+ * SendWhatsappAutomationJob pour le même mécanisme côté WhatsApp. Reçoit
+ * des ID, jamais les modèles : même piège que ProcessContactImportJob
+ * (T-041) — SerializesModels re-résoudrait MessageAutomation via son
+ * global scope avant que CurrentOrganization ne soit positionné.
  *
  * Idempotent (§4.4 du CLAUDE.md) : si le statut n'est plus "scheduled" à
- * l'exécution — déjà traité, ou annulé entre-temps (CancelEmailAutomation)
- * — le job ne fait rien. C'est aussi tout le mécanisme d'annulation : pas
- * besoin de retrouver ni de supprimer le job Redis déjà en attente.
+ * l'exécution — déjà traité, ou annulé entre-temps
+ * (CancelMessageAutomation) — le job ne fait rien. C'est aussi tout le
+ * mécanisme d'annulation : pas besoin de retrouver ni de supprimer le job
+ * Redis déjà en attente.
  */
 final class SendEmailAutomationJob implements ShouldQueue
 {
@@ -53,9 +56,9 @@ final class SendEmailAutomationJob implements ShouldQueue
     ): void {
         $currentOrganization->set($this->organizationId);
 
-        $automation = EmailAutomation::query()->with('emailTemplate')->find($this->automationId);
+        $automation = MessageAutomation::query()->with('emailTemplate')->find($this->automationId);
 
-        if ($automation === null || $automation->status !== EmailAutomationStatus::Scheduled) {
+        if ($automation === null || $automation->status !== MessageAutomationStatus::Scheduled || $automation->channel !== MessageChannel::Email) {
             return;
         }
 
@@ -80,6 +83,6 @@ final class SendEmailAutomationJob implements ShouldQueue
             );
         }
 
-        $automation->update(['status' => EmailAutomationStatus::Sent, 'sent_at' => CarbonImmutable::now()]);
+        $automation->update(['status' => MessageAutomationStatus::Sent, 'sent_at' => CarbonImmutable::now()]);
     }
 }

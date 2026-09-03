@@ -18,6 +18,7 @@ use App\Domain\Organization\Models\Organization;
 use App\Domain\Organization\Policies\OrganizationPolicy;
 use App\Listeners\LinkRegistrationToContact;
 use App\Listeners\SendConfirmationEmail;
+use App\Listeners\SendConfirmationWhatsapp;
 use App\Support\Capacity\Events\WaitlistEntryPromoted;
 use App\Support\Messaging\TwilioWhatsappProvider;
 use App\Support\Messaging\WhatsappProvider;
@@ -55,6 +56,7 @@ class AppServiceProvider extends ServiceProvider
         // premier, c'est lui qui renseigne contact_id (T-045).
         EventFacade::listen(RegistrationCreated::class, LinkRegistrationToContact::class);
         EventFacade::listen(RegistrationCreated::class, SendConfirmationEmail::class);
+        EventFacade::listen(RegistrationCreated::class, SendConfirmationWhatsapp::class);
 
         // Débit par défaut prudent (T-043) : Postmark autorise bien plus,
         // mais rien dans le CDC n'impose un chiffre précis — à ajuster

@@ -5,10 +5,10 @@ declare(strict_types=1);
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Event\Models\Event;
 use App\Domain\Form\Models\RegistrationStatus;
-use App\Domain\Messaging\Models\EmailAutomation;
-use App\Domain\Messaging\Models\EmailAutomationStatus;
-use App\Domain\Messaging\Models\EmailAutomationType;
 use App\Domain\Messaging\Models\EmailTemplate;
+use App\Domain\Messaging\Models\MessageAutomation;
+use App\Domain\Messaging\Models\MessageAutomationStatus;
+use App\Domain\Messaging\Models\MessageAutomationType;
 use App\Domain\Organization\Models\MembershipRole;
 use App\Jobs\SendEmailAutomationJob;
 use App\Mail\GenericMail;
@@ -41,20 +41,20 @@ it('envoie uniquement aux contacts du segment ciblé, avec l\'ICS pour une invit
     $confirme = Contact::factory()->for($organization)->create(['email' => 'confirme@example.org']);
     registerContactForEvent($organization, $event, $confirme, RegistrationStatus::Confirmed);
 
-    $automation = EmailAutomation::factory()->for($organization)->create([
+    $automation = MessageAutomation::factory()->for($organization)->create([
         'event_id' => $event->id,
         'email_template_id' => $template->id,
         'created_by' => $admin->id,
-        'type' => EmailAutomationType::Invitation,
+        'type' => MessageAutomationType::Invitation,
         'segment' => EventSegment::SansReponse,
-        'status' => EmailAutomationStatus::Scheduled,
+        'status' => MessageAutomationStatus::Scheduled,
     ]);
 
     runEmailAutomationJob($automation->id, $organization->id);
 
     Mail::assertSent(GenericMail::class, fn (GenericMail $mail): bool => $mail->hasTo('sans-reponse@example.org') && $mail->icsAttachment !== null);
     Mail::assertNotSent(GenericMail::class, fn (GenericMail $mail): bool => $mail->hasTo('confirme@example.org'));
-    expect($automation->fresh()->status)->toBe(EmailAutomationStatus::Sent);
+    expect($automation->fresh()->status)->toBe(MessageAutomationStatus::Sent);
 });
 
 it('ne renvoie rien si l\'automatisation a été annulée avant son exécution', function (): void {
@@ -64,17 +64,17 @@ it('ne renvoie rien si l\'automatisation a été annulée avant son exécution',
     $template = EmailTemplate::factory()->for($organization)->create(['created_by' => $admin->id]);
     Contact::factory()->for($organization)->create();
 
-    $automation = EmailAutomation::factory()->for($organization)->create([
+    $automation = MessageAutomation::factory()->for($organization)->create([
         'event_id' => $event->id,
         'email_template_id' => $template->id,
         'created_by' => $admin->id,
-        'type' => EmailAutomationType::Invitation,
+        'type' => MessageAutomationType::Invitation,
         'segment' => null,
-        'status' => EmailAutomationStatus::Cancelled,
+        'status' => MessageAutomationStatus::Cancelled,
     ]);
 
     runEmailAutomationJob($automation->id, $organization->id);
 
     Mail::assertNothingSent();
-    expect($automation->fresh()->status)->toBe(EmailAutomationStatus::Cancelled);
+    expect($automation->fresh()->status)->toBe(MessageAutomationStatus::Cancelled);
 });

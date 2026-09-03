@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domain\Messaging\Policies;
 
-use App\Domain\Messaging\Models\EmailAutomation;
+use App\Domain\Messaging\Models\MessageAutomation;
 use App\Domain\Organization\Models\Organization;
 use App\Models\User;
 
-final class EmailAutomationPolicy
+final class MessageAutomationPolicy
 {
     public function viewAny(User $user, Organization $organization): bool
     {
@@ -20,8 +20,8 @@ final class EmailAutomationPolicy
         return $user->can('sendCommunications', $organization);
     }
 
-    public function cancel(User $user, EmailAutomation $emailAutomation): bool
+    public function cancel(User $user, MessageAutomation $messageAutomation): bool
     {
-        return $user->can('sendCommunications', $emailAutomation->organization);
+        return $user->can('sendCommunications', $messageAutomation->organization);
     }
 }

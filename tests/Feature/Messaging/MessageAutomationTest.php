@@ -3,15 +3,17 @@
 declare(strict_types=1);
 
 use App\Domain\Event\Models\Event;
-use App\Domain\Messaging\Models\EmailAutomation;
-use App\Domain\Messaging\Models\EmailAutomationStatus;
 use App\Domain\Messaging\Models\EmailTemplate;
+use App\Domain\Messaging\Models\MessageAutomation;
+use App\Domain\Messaging\Models\MessageAutomationStatus;
+use App\Domain\Messaging\Models\WhatsappTemplate;
 use App\Domain\Organization\Models\MembershipRole;
 use App\Jobs\SendEmailAutomationJob;
+use App\Jobs\SendWhatsappAutomationJob;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Queue;
 
-it('planifie une invitation à l\'échéance choisie par l\'organisateur', function (): void {
+it('planifie une invitation par e-mail à l\'échéance choisie par l\'organisateur', function (): void {
     Queue::fake();
     [$organization, $admin] = organizationWithContactRole(MembershipRole::Admin);
     $event = Event::factory()->for($organization)->create();
@@ -19,17 +21,42 @@ it('planifie une invitation à l\'échéance choisie par l\'organisateur', funct
     $scheduledAt = now()->addDays(2)->toIso8601String();
 
     $response = $this->actingAs($admin)->post(route('events.automations.store', $event), [
+        'channel' => 'email',
         'email_template_id' => $template->id,
         'type' => 'invitation',
         'scheduled_at' => $scheduledAt,
     ]);
 
     $response->assertRedirect(route('events.automations.index', $event));
-    $automation = EmailAutomation::query()->firstOrFail();
-    expect($automation->status)->toBe(EmailAutomationStatus::Scheduled);
+    $automation = MessageAutomation::query()->firstOrFail();
+    expect($automation->status)->toBe(MessageAutomationStatus::Scheduled);
     expect($automation->scheduled_at->toIso8601String())->toBe(now()->parse($scheduledAt)->toIso8601String());
 
     Queue::assertPushed(SendEmailAutomationJob::class, fn (SendEmailAutomationJob $job): bool => $job->automationId === $automation->id && $job->delay !== null);
+});
+
+it('planifie une invitation par WhatsApp à l\'échéance choisie par l\'organisateur', function (): void {
+    Queue::fake();
+    [$organization, $admin] = organizationWithContactRole(MembershipRole::Admin);
+    $event = Event::factory()->for($organization)->create();
+    $whatsappTemplate = WhatsappTemplate::factory()->for($organization)->create(['created_by' => $admin->id]);
+    $scheduledAt = now()->addDays(2)->toIso8601String();
+
+    $response = $this->actingAs($admin)->post(route('events.automations.store', $event), [
+        'channel' => 'whatsapp',
+        'whatsapp_template_id' => $whatsappTemplate->id,
+        'type' => 'invitation',
+        'scheduled_at' => $scheduledAt,
+    ]);
+
+    $response->assertRedirect(route('events.automations.index', $event));
+    $automation = MessageAutomation::query()->firstOrFail();
+    expect($automation->channel->value)->toBe('whatsapp');
+    expect($automation->whatsapp_template_id)->toBe($whatsappTemplate->id);
+    expect($automation->email_template_id)->toBeNull();
+
+    Queue::assertPushed(SendWhatsappAutomationJob::class, fn (SendWhatsappAutomationJob $job): bool => $job->automationId === $automation->id && $job->delay !== null);
+    Queue::assertNotPushed(SendEmailAutomationJob::class);
 });
 
 it('interprète une échéance sans fuseau (datetime-local) dans le fuseau de l\'événement, jamais celui du serveur', function (): void {
@@ -42,6 +69,7 @@ it('interprète une échéance sans fuseau (datetime-local) dans le fuseau de l\
     $wallClock = now()->addDays(2)->format('Y-m-d').'T14:00';
 
     $this->actingAs($admin)->post(route('events.automations.store', $event), [
+        'channel' => 'email',
         'email_template_id' => $template->id,
         'type' => 'invitation',
         // Chaîne "murale", sans offset — exactement ce qu'envoie un
@@ -49,7 +77,7 @@ it('interprète une échéance sans fuseau (datetime-local) dans le fuseau de l\
         'scheduled_at' => $wallClock,
     ])->assertRedirect();
 
-    $automation = EmailAutomation::query()->firstOrFail();
+    $automation = MessageAutomation::query()->firstOrFail();
     // 14h murale à Kinshasa (UTC+1) doit devenir 13h UTC en base — jamais
     // 14h UTC, ce que donnerait une interprétation dans le fuseau du
     // serveur ou d'app.timezone plutôt que celui de l'événement.
@@ -64,11 +92,12 @@ it('calcule automatiquement l\'échéance J-7 depuis la date de l\'événement',
     $template = EmailTemplate::factory()->for($organization)->create(['created_by' => $admin->id]);
 
     $this->actingAs($admin)->post(route('events.automations.store', $event), [
+        'channel' => 'email',
         'email_template_id' => $template->id,
         'type' => 'reminder_j7',
     ])->assertRedirect();
 
-    $automation = EmailAutomation::query()->firstOrFail();
+    $automation = MessageAutomation::query()->firstOrFail();
     expect((int) $automation->scheduled_at->diffInDays($event->start_at))->toBe(7);
     expect($automation->segment?->value)->toBe('confirmes');
 });
@@ -81,11 +110,12 @@ it('refuse un rappel J-7 dont l\'échéance calculée est déjà passée', funct
     $template = EmailTemplate::factory()->for($organization)->create(['created_by' => $admin->id]);
 
     $this->actingAs($admin)->post(route('events.automations.store', $event), [
+        'channel' => 'email',
         'email_template_id' => $template->id,
         'type' => 'reminder_j7',
     ])->assertSessionHasErrors('type');
 
-    expect(EmailAutomation::query()->count())->toBe(0);
+    expect(MessageAutomation::query()->count())->toBe(0);
     Queue::assertNothingPushed();
 });
 
@@ -96,35 +126,40 @@ it('active une confirmation automatique sans échéance ni file d\'attente', fun
     $template = EmailTemplate::factory()->for($organization)->create(['created_by' => $admin->id]);
 
     $this->actingAs($admin)->post(route('events.automations.store', $event), [
+        'channel' => 'email',
         'email_template_id' => $template->id,
         'type' => 'confirmation',
     ])->assertRedirect();
 
-    $automation = EmailAutomation::query()->firstOrFail();
-    expect($automation->status)->toBe(EmailAutomationStatus::Active);
+    $automation = MessageAutomation::query()->firstOrFail();
+    expect($automation->status)->toBe(MessageAutomationStatus::Active);
     expect($automation->scheduled_at)->toBeNull();
     Queue::assertNothingPushed();
 });
 
-it('refuse une deuxième confirmation active pour le même événement', function (): void {
+it('refuse une deuxième confirmation active pour le même événement, même sur un autre canal', function (): void {
     [$organization, $admin] = organizationWithContactRole(MembershipRole::Admin);
     $event = Event::factory()->for($organization)->create();
     $template = EmailTemplate::factory()->for($organization)->create(['created_by' => $admin->id]);
-    EmailAutomation::factory()->for($organization)->create([
+    $whatsappTemplate = WhatsappTemplate::factory()->for($organization)->create(['created_by' => $admin->id]);
+    MessageAutomation::factory()->for($organization)->create([
         'event_id' => $event->id,
         'email_template_id' => $template->id,
         'created_by' => $admin->id,
         'type' => 'confirmation',
         'scheduled_at' => null,
-        'status' => EmailAutomationStatus::Active,
+        'status' => MessageAutomationStatus::Active,
     ]);
 
+    // Même en changeant de canal : une confirmation WhatsApp en double
+    // enverrait quand même deux confirmations à chaque inscription.
     $this->actingAs($admin)->post(route('events.automations.store', $event), [
-        'email_template_id' => $template->id,
+        'channel' => 'whatsapp',
+        'whatsapp_template_id' => $whatsappTemplate->id,
         'type' => 'confirmation',
     ])->assertSessionHasErrors('type');
 
-    expect(EmailAutomation::query()->count())->toBe(1);
+    expect(MessageAutomation::query()->count())->toBe(1);
 });
 
 it('annule une automatisation planifiée', function (): void {
@@ -132,16 +167,16 @@ it('annule une automatisation planifiée', function (): void {
     [$organization, $admin] = organizationWithContactRole(MembershipRole::Admin);
     $event = Event::factory()->for($organization)->create();
     $template = EmailTemplate::factory()->for($organization)->create(['created_by' => $admin->id]);
-    $automation = EmailAutomation::factory()->for($organization)->create([
+    $automation = MessageAutomation::factory()->for($organization)->create([
         'event_id' => $event->id,
         'email_template_id' => $template->id,
         'created_by' => $admin->id,
     ]);
 
-    $this->actingAs($admin)->post(route('email-automations.cancel', $automation))
+    $this->actingAs($admin)->post(route('message-automations.cancel', $automation))
         ->assertRedirect(route('events.automations.index', $event));
 
-    expect($automation->fresh()->status)->toBe(EmailAutomationStatus::Cancelled);
+    expect($automation->fresh()->status)->toBe(MessageAutomationStatus::Cancelled);
 });
 
 it('refuse la création d\'une automatisation à un rôle sans capacité sendCommunications', function (): void {
@@ -150,6 +185,7 @@ it('refuse la création d\'une automatisation à un rôle sans capacité sendCom
     $template = EmailTemplate::factory()->for($organization)->create(['created_by' => $doorStaff->id]);
 
     $this->actingAs($doorStaff)->post(route('events.automations.store', $event), [
+        'channel' => 'email',
         'email_template_id' => $template->id,
         'type' => 'invitation',
         'scheduled_at' => now()->addDay()->toIso8601String(),

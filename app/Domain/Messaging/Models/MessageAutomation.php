@@ -8,7 +8,7 @@ use App\Models\User;
 use App\Support\Auditing\Auditable;
 use App\Support\MultiTenancy\BelongsToOrganization;
 use App\Support\Segments\EventSegment;
-use Database\Factories\EmailAutomationFactory;
+use Database\Factories\MessageAutomationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,10 +19,16 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Domain/Messaging ne dépend d'aucun modèle de Domain/Event (section 3 du
  * CLAUDE.md, test d'architecture) — même règle que Registration vis-à-vis
  * d'Event.
+ *
+ * Exactement un des deux template_id est renseigné selon channel — jamais
+ * les deux, jamais aucun (garanti par CreateMessageAutomation, pas par une
+ * contrainte SQL : une contrainte CHECK inter-colonnes aurait ajouté une
+ * migration supplémentaire pour un gain marginal, la seule voie d'écriture
+ * est déjà cette action).
  */
-final class EmailAutomation extends Model
+final class MessageAutomation extends Model
 {
-    /** @use HasFactory<EmailAutomationFactory> */
+    /** @use HasFactory<MessageAutomationFactory> */
     use Auditable, BelongsToOrganization, HasFactory, SoftDeletes;
 
     /**
@@ -31,7 +37,9 @@ final class EmailAutomation extends Model
     protected $fillable = [
         'organization_id',
         'event_id',
+        'channel',
         'email_template_id',
+        'whatsapp_template_id',
         'created_by',
         'type',
         'segment',
@@ -43,17 +51,18 @@ final class EmailAutomation extends Model
     protected function casts(): array
     {
         return [
-            'type' => EmailAutomationType::class,
+            'channel' => MessageChannel::class,
+            'type' => MessageAutomationType::class,
             'segment' => EventSegment::class,
-            'status' => EmailAutomationStatus::class,
+            'status' => MessageAutomationStatus::class,
             'scheduled_at' => 'immutable_datetime',
             'sent_at' => 'immutable_datetime',
         ];
     }
 
-    protected static function newFactory(): EmailAutomationFactory
+    protected static function newFactory(): MessageAutomationFactory
     {
-        return EmailAutomationFactory::new();
+        return MessageAutomationFactory::new();
     }
 
     /**
@@ -62,6 +71,14 @@ final class EmailAutomation extends Model
     public function emailTemplate(): BelongsTo
     {
         return $this->belongsTo(EmailTemplate::class);
+    }
+
+    /**
+     * @return BelongsTo<WhatsappTemplate, $this>
+     */
+    public function whatsappTemplate(): BelongsTo
+    {
+        return $this->belongsTo(WhatsappTemplate::class);
     }
 
     /**

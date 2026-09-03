@@ -16,6 +16,16 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // La découverte automatique des listeners (scan de App\Listeners par
+    // signature de handle()) doublait silencieusement chaque abonnement déjà
+    // posé explicitement dans AppServiceProvider::boot() — un
+    // RegistrationCreated déclenchait deux fois SendConfirmationEmail et
+    // SendConfirmationWhatsapp (bug réel trouvé en testant T-045bis, invisible
+    // jusqu'ici car aucun test n'affirmait un compte exact d'envois).
+    // AppServiceProvider reste la seule source de vérité, y compris pour
+    // l'ordre (LinkRegistrationToContact avant les deux listeners de
+    // confirmation).
+    ->withEvents(discover: false)
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             HandleInertiaRequests::class,

@@ -9,10 +9,11 @@ use App\Support\Segments\EventSegment;
 /**
  * Les 6 automatisations du CDC (M4.3, T-045). "confirmation" est
  * déclenchée par inscription (Registration créée), jamais par une date —
- * voir App\Listeners\SendConfirmationEmail. Les cinq autres sont des
- * envois planifiés (App\Jobs\SendEmailAutomationJob).
+ * voir App\Listeners\SendConfirmation* (un listener par canal). Les cinq
+ * autres sont des envois planifiés (App\Jobs\Send*AutomationJob, un job
+ * par canal — voir MessageChannel).
  */
-enum EmailAutomationType: string
+enum MessageAutomationType: string
 {
     case Invitation = 'invitation';
     case Confirmation = 'confirmation';
@@ -42,7 +43,10 @@ enum EmailAutomationType: string
      * Un envoi (invitation, ICS joint) autant qu'une confirmation
      * marquent le début du parcours de l'invité : les deux méritent le
      * fichier ICS. Les rappels/remerciements ne le rejoignent pas — déjà
-     * reçu à la confirmation.
+     * reçu à la confirmation. Concept propre au canal e-mail : un modèle
+     * WhatsApp déjà approuvé (accord explicite) ne peut pas joindre de
+     * pièce jointe libre — seul App\Jobs\SendEmailAutomationJob consulte
+     * cette méthode.
      */
     public function includesIcsAttachment(): bool
     {
