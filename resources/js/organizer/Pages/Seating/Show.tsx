@@ -276,6 +276,9 @@ export default function Show({ event, tables: initialTables, unassignedGuests: i
             <div className="mb-6 flex items-center justify-between">
                 <h1 className="text-2xl">Plan de table</h1>
                 <div className="flex gap-3">
+                    <a href={`/events/${event.id}/seating/overview`} className="text-sm text-accent underline underline-offset-2">
+                        Vue d'ensemble de la salle
+                    </a>
                     <a href={`/events/${event.id}/seating/export/plan`} className="text-sm text-accent underline underline-offset-2">
                         Exporter le plan (PDF)
                     </a>

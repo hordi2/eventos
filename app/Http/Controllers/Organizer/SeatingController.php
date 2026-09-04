@@ -60,6 +60,25 @@ final class SeatingController extends Controller
         ]);
     }
 
+    /**
+     * Vue d'ensemble en lecture seule de la disposition des tables dans la
+     * salle (demande explicite de l'utilisateur, en complément de l'éditeur
+     * interactif de `index()`) : ni glisser-déposer, ni formulaires, pensée
+     * pour être affichée telle quelle le jour de l'événement.
+     */
+    public function overview(int $event, GetSeatingPlan $getSeatingPlan): InertiaResponse
+    {
+        $event = $this->findEvent($event);
+        Gate::authorize('viewGuests', $event->organization);
+
+        $plan = $getSeatingPlan->handle($event);
+
+        return Inertia::render('Seating/Overview', [
+            'event' => ['id' => $event->id, 'title' => $event->title],
+            'tables' => array_map($this->serializeTable(...), $plan->tables),
+        ]);
+    }
+
     public function storeTable(int $event, StoreSeatingTableRequest $request, CreateSeatingTable $action): JsonResponse
     {
         $event = $this->findEvent($event);

@@ -698,14 +698,18 @@ dans l'e-mail de rappel (M4), et rester consultable par l'équipe d'accueil
 au check-in (T-062) sans dépendre du plan visuel lui-même.
 
 **Critères d'acceptation**
-- [ ] Éditeur visuel : créer, positionner et redimensionner des tables (formes ronde, rectangulaire, en U, cocktail, rangées), capacité définie par table
-- [ ] Numérotation automatique des tables
-- [ ] Affectation d'un invité à une table par glisser-déposer ; un invité n'est jamais affecté à deux tables à la fois
-- [ ] Placement automatique assisté : remplit les tables en respectant leur capacité et en équilibrant le remplissage
-- [ ] Contraintes manuelles « doit être avec » / « ne doit pas être avec » respectées par le placement automatique, et signalées si violées après une affectation manuelle
-- [ ] Export PDF du plan de salle et des listes d'invités par table
-- [ ] Le numéro de table assigné apparaît sur le badge (T-064) et dans l'e-mail de rappel
-- [ ] Vue « qui est à quelle table » consultable par l'équipe d'accueil, indépendamment de l'éditeur visuel
+- [x] Éditeur visuel : créer, positionner et redimensionner des tables (formes ronde, rectangulaire, en U, cocktail, rangées), capacité définie par table
+- [x] Numérotation automatique des tables
+- [x] Affectation d'un invité à une table par glisser-déposer ; un invité n'est jamais affecté à deux tables à la fois
+- [x] Placement automatique assisté : remplit les tables en respectant leur capacité et en équilibrant le remplissage
+- [x] Contraintes manuelles « doit être avec » / « ne doit pas être avec » respectées par le placement automatique, et signalées si violées après une affectation manuelle
+- [x] Export PDF du plan de salle et des listes d'invités par table
+- [x] Le numéro de table assigné apparaît sur le badge (T-064) et dans l'e-mail de rappel
+- [x] Vue « qui est à quelle table » consultable par l'équipe d'accueil, indépendamment de l'éditeur visuel
+
+Deux ajouts demandés par l'utilisateur après la première livraison :
+- chaque table est entourée d'une place (« boule ») par siège de capacité — occupée (initiales de l'invité) ou vide (pointillé, « + ») — un clic permet d'assigner, retirer ou remplacer l'invité de cette place ;
+- une page dédiée en lecture seule (`/events/{event}/seating/overview`, « Vue d'ensemble de la salle ») affiche toutes les tables et leurs places sans aucune interaction, pensée pour être affichée telle quelle le jour de l'événement.
 
 ---
 

@@ -140,6 +140,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/badges/{guestType}/{guestId}', [BadgeController::class, 'single'])->name('events.badges.single');
 
         Route::get('events/{event}/seating', [SeatingController::class, 'index'])->name('events.seating.index');
+        Route::get('events/{event}/seating/overview', [SeatingController::class, 'overview'])->name('events.seating.overview');
         Route::post('events/{event}/seating/tables', [SeatingController::class, 'storeTable'])->name('events.seating.tables.store');
         Route::patch('events/{event}/seating/tables/{table}', [SeatingController::class, 'updateTable'])->name('events.seating.tables.update');
         Route::delete('events/{event}/seating/tables/{table}', [SeatingController::class, 'destroyTable'])->name('events.seating.tables.destroy');

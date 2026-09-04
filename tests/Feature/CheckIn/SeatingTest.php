@@ -140,6 +140,27 @@ it('refuse le plan de table à un membre d\'une autre organisation (404)', funct
     $response->assertNotFound();
 });
 
+it('affiche la vue d\'ensemble en lecture seule de la salle pour un membre habilité', function (): void {
+    ['organization' => $organization, 'event' => $event, 'doorStaff' => $owner] = makeCheckInEvent(MembershipRole::Owner);
+    app(CurrentOrganization::class)->set($organization);
+    SeatingTable::factory()->for($organization)->create(['event_id' => $event->id]);
+    app(CurrentOrganization::class)->clear();
+
+    $response = $this->actingAs($owner)->get("/events/{$event->id}/seating/overview");
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page->component('Seating/Overview'));
+});
+
+it('refuse la vue d\'ensemble de la salle à un membre d\'une autre organisation (404)', function (): void {
+    ['event' => $event] = makeCheckInEvent(MembershipRole::Owner);
+    ['doorStaff' => $memberOfAnotherOrganization] = makeCheckInEvent(MembershipRole::Owner);
+
+    $response = $this->actingAs($memberOfAnotherOrganization)->get("/events/{$event->id}/seating/overview");
+
+    $response->assertNotFound();
+});
+
 it('exporte le plan de salle et les listes par table en PDF', function (): void {
     ['organization' => $organization, 'event' => $event, 'doorStaff' => $owner] = makeCheckInEvent(MembershipRole::Owner);
     app(CurrentOrganization::class)->set($organization);
