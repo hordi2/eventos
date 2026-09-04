@@ -16,6 +16,7 @@ use App\Http\Controllers\Organizer\Auth\NewPasswordController;
 use App\Http\Controllers\Organizer\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Organizer\Auth\RegisteredUserController;
 use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
+use App\Http\Controllers\Organizer\BadgeController;
 use App\Http\Controllers\Organizer\CheckInController;
 use App\Http\Controllers\Organizer\ContactController;
 use App\Http\Controllers\Organizer\ContactImportController;
@@ -125,6 +126,13 @@ Route::middleware('auth')->group(function (): void {
         Route::post('events/{event}/check-in/scan', [CheckInController::class, 'scan'])->name('events.check-in.scan');
         Route::post('events/{event}/check-in/record', [CheckInController::class, 'record'])->name('events.check-in.record');
         Route::post('events/{event}/check-in/walk-in', [CheckInController::class, 'walkIn'])->name('events.check-in.walk-in');
+
+        Route::get('events/{event}/badges', [BadgeController::class, 'index'])->name('events.badges.index');
+        Route::post('events/{event}/badges/logo', [BadgeController::class, 'uploadLogo'])->name('events.badges.logo');
+        Route::get('events/{event}/badges/batches/{batch}/download', [BadgeController::class, 'downloadBatch'])->name('events.badges.batches.download');
+        Route::get('events/{event}/badges/batches/{batch}', [BadgeController::class, 'batchStatus'])->name('events.badges.batches.show');
+        Route::post('events/{event}/badges/batches', [BadgeController::class, 'startBatch'])->name('events.badges.batches.store');
+        Route::get('events/{event}/badges/{guestType}/{guestId}', [BadgeController::class, 'single'])->name('events.badges.single');
 
         Route::get('email-templates', [EmailTemplateController::class, 'index'])->name('email-templates.index');
         Route::get('email-templates/create', [EmailTemplateController::class, 'create'])->name('email-templates.create');

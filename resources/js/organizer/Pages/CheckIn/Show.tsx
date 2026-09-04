@@ -216,6 +216,9 @@ export default function Show({ event, guests: initialGuests, ticketTypes }: Prop
                     </p>
                 </div>
                 <div className="flex gap-3">
+                    <a href={`/events/${event.id}/badges`} className="inline-flex min-h-11 items-center text-sm text-accent underline underline-offset-2">
+                        Badges
+                    </a>
                     <Button variant="secondary" className="w-auto" onClick={webcamActive ? stopWebcam : startWebcam}>
                         {webcamActive ? 'Arrêter la caméra' : 'Scanner avec la caméra'}
                     </Button>

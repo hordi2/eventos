@@ -625,10 +625,10 @@ Inscription rapide au comptoir avec formulaire minimal et encaissement éventuel
 planches Avery et impression à la demande.
 
 **Critères d'acceptation**
-- [ ] Génération d'un badge en < 2 s
-- [ ] Génération en masse de 500 badges en queue
-- [ ] Code couleur automatique par tag (VIP, presse, staff, intervenant)
-- [ ] Repères de découpe corrects sur planche Avery
+- [x] Génération d'un badge en < 2 s
+- [x] Génération en masse de 500 badges en queue
+- [x] Code couleur automatique par tag — invités RSVP uniquement (via leur Contact) ; un billet payé n'a aujourd'hui aucun lien vers un Contact, badge neutre
+- [x] Repères de découpe corrects sur planche Avery (8 badges/A4)
 
 ---
 
