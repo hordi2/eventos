@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Guest\RegistrationController;
+use App\Http\Controllers\Guest\TicketOrderController;
+use App\Http\Controllers\Guest\TicketOrderPaymentController;
 use App\Http\Controllers\Guest\UnsubscribeController;
 use App\Http\Controllers\Organizer\AttendeeController;
 use App\Http\Controllers\Organizer\AuditLogController;
@@ -181,6 +183,26 @@ Route::middleware('resolve-guest-event')
         Route::middleware('signed')->group(function (): void {
             Route::match(['GET', 'POST'], 'inscriptions/{registration}/modifier', [RegistrationController::class, 'edit'])->name('edit');
             Route::match(['GET', 'POST'], 'inscriptions/{registration}/annuler', [RegistrationController::class, 'cancel'])->name('cancel');
+        });
+    });
+
+// Panier et paiement des billets (T-058/T-059, M5.4/M5.3) : même principe
+// que la page RSVP ci-dessus (resolve-guest-event, jamais d'authentification).
+Route::middleware('resolve-guest-event')
+    ->prefix('billets/{organization}/{event}')
+    ->name('guest.ticketing.')
+    ->group(function (): void {
+        Route::get('/', [TicketOrderController::class, 'show'])->name('show');
+        Route::post('/', [TicketOrderController::class, 'store'])->name('store');
+
+        Route::prefix('{order}')->name('payment.')->group(function (): void {
+            Route::get('paiement', [TicketOrderPaymentController::class, 'show'])->name('show');
+            Route::post('paiement/carte', [TicketOrderPaymentController::class, 'stripe'])->name('stripe');
+            Route::post('paiement/mobile-money', [TicketOrderPaymentController::class, 'mobileMoney'])->name('mobile-money');
+            Route::post('paiement/arrivee', [TicketOrderPaymentController::class, 'onSite'])->name('on-site');
+            Route::get('statut', [TicketOrderPaymentController::class, 'status'])->name('status');
+            Route::get('confirmation', [TicketOrderPaymentController::class, 'confirmation'])->name('confirmation');
+            Route::get('billet/{ticket}', [TicketOrderPaymentController::class, 'downloadTicket'])->name('ticket');
         });
     });
 
