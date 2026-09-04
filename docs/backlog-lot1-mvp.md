@@ -690,11 +690,25 @@ planches Avery et impression à la demande.
 
 Blocs inscriptions, financier, communication, jour J. Mise à jour en direct.
 
+Seuls les blocs « inscriptions » (courbe cumulée) et « jour J » (présents, taux
+de présence, courbe d'arrivée) sont couverts, conformément aux critères
+d'acceptation ci-dessous — les blocs financier, communication et logistique de
+M8.1 ne sont pas dans le périmètre de ce ticket, signalés pour un ticket
+séparé plutôt que construits ici.
+
 **Critères d'acceptation**
-- [ ] Mise à jour sans rechargement (WebSocket ou SSE)
-- [ ] Courbe cumulée des inscriptions dans le temps
-- [ ] Le jour J : présents, taux de présence, courbe d'arrivée par tranche horaire
-- [ ] Chargement en < 1 s sur un événement de 5 000 inscrits
+- [x] Mise à jour sans rechargement (WebSocket ou SSE) — SSE choisi, vérifié en direct dans le navigateur (compteur passé de 3 à 4 sans rechargement après un check-in ajouté en base)
+- [x] Courbe cumulée des inscriptions dans le temps
+- [x] Le jour J : présents, taux de présence, courbe d'arrivée par tranche horaire
+- [x] Chargement en < 1 s sur un événement de 5 000 inscrits — mesuré à ~24 ms
+
+**⚠️ Point d'attention production** : une connexion SSE ouverte immobilise un
+worker PHP-FPM pour toute sa durée (30 s ici, avant reconnexion automatique du
+navigateur) — contrairement à une requête HTTP classique. Avec beaucoup
+d'organisateurs gardant le tableau de bord ouvert simultanément, un pool de
+workers trop petit pourrait s'épuiser. Au-delà d'un certain volume, ce
+compromis justifierait de passer à Octane ou à un vrai serveur WebSocket
+(Reverb), qui ne consomment pas un worker de requête par connexion ouverte.
 
 ---
 

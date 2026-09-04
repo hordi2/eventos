@@ -23,6 +23,7 @@ use App\Http\Controllers\Organizer\ContactImportController;
 use App\Http\Controllers\Organizer\DashboardController;
 use App\Http\Controllers\Organizer\EmailTemplateController;
 use App\Http\Controllers\Organizer\EventController;
+use App\Http\Controllers\Organizer\EventDashboardController;
 use App\Http\Controllers\Organizer\EventSegmentController;
 use App\Http\Controllers\Organizer\FormController;
 use App\Http\Controllers\Organizer\MessageAutomationController;
@@ -115,6 +116,9 @@ Route::middleware('auth')->group(function (): void {
         Route::post('tags', [TagController::class, 'store'])->name('tags.store');
         Route::patch('tags/{tag}', [TagController::class, 'update'])->name('tags.update');
         Route::delete('tags/{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
+
+        Route::get('events/{event}/dashboard', [EventDashboardController::class, 'index'])->name('events.dashboard.index');
+        Route::get('events/{event}/dashboard/stream', [EventDashboardController::class, 'stream'])->name('events.dashboard.stream');
 
         Route::get('events/{event}/segments', [EventSegmentController::class, 'index'])->name('events.segments.index');
         Route::get('events/{event}/segments/{segment}', [EventSegmentController::class, 'show'])->name('events.segments.show');
