@@ -618,11 +618,16 @@ Scan de QR code par caméra, écriture du check-in en local uniquement (aucun
 appel réseau synchrone) — la synchronisation proprement dite est T-061c.
 
 **Critères d'acceptation**
-- [ ] Scan en < 1 s
-- [ ] Écran lisible en pénombre, utilisable à une main
-- [ ] Mode avion complet : 500 check-ins enregistrés en local sans connexion, **zéro perte**
-- [ ] Alerte immédiate (locale) si l'invité scanné est déjà marqué présent dans la base locale
-- [ ] Mode « liste » sans scan (recherche + bouton, comme le check-in web T-062)
+- [ ] Scan en < 1 s — implémenté (expo-camera + décodage QR local), non chronométré sur appareil réel
+- [ ] Écran lisible en pénombre, utilisable à une main — implémenté (fond sombre, retour en grand texte, un seul bouton)
+- [ ] Mode avion complet : 500 check-ins enregistrés en local sans connexion, **zéro perte** — implémenté (écriture 100 % locale, aucun appel réseau dans le chemin d'écriture), jamais chargé à 500 sur appareil réel
+- [ ] Alerte immédiate (locale) si l'invité scanné est déjà marqué présent dans la base locale — implémenté et couvert par la logique (`recordLocalCheckIn`)
+- [ ] Mode « liste » sans scan (recherche + bouton, comme le check-in web T-062) — implémenté
+
+**⚠️ Aucune de ces cases n'a été vérifiée sur simulateur/appareil réel** (pas
+d'Xcode/Android Studio dans l'environnement de développement à l'écriture,
+voir mobile/README.md) : vérifié uniquement par `tsc`, un export Metro complet
+et des tests Jest sur la logique pure. À valider avant de cocher.
 
 ---
 

@@ -3,13 +3,16 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpac
 import { ApiError } from '../api/ApiError';
 import { useAuth } from '../auth/AuthContext';
 import ConnectivityBadge from '../components/ConnectivityBadge';
-import { downloadEventGuests } from '../db/sync/downloadGuests';
 import GuestModel from '../db/models/Guest';
+import { recordLocalCheckIn } from '../db/recordLocalCheckIn';
 import { searchLocalGuests } from '../db/searchGuests';
+import { downloadEventGuests } from '../db/sync/downloadGuests';
 import { loadEventId, saveEventId } from '../storage/localSettings';
+import ScanScreen from './ScanScreen';
 
 export default function GuestListScreen() {
   const { token, logout } = useAuth();
+  const [mode, setMode] = useState<'list' | 'scan'>('list');
   const [eventId, setEventId] = useState<number | null>(null);
   const [eventIdInput, setEventIdInput] = useState('');
   const [guests, setGuests] = useState<GuestModel[]>([]);
@@ -27,12 +30,9 @@ export default function GuestListScreen() {
     });
   }, []);
 
-  const refreshLocalGuests = useCallback(
-    (currentEventId: number, term: string) => {
-      searchLocalGuests(currentEventId, term).then(setGuests);
-    },
-    [],
-  );
+  const refreshLocalGuests = useCallback((currentEventId: number, term: string) => {
+    searchLocalGuests(currentEventId, term).then(setGuests);
+  }, []);
 
   useEffect(() => {
     if (eventId !== null) {
@@ -65,6 +65,19 @@ export default function GuestListScreen() {
     }
   }
 
+  async function handleCheckIn(guest: GuestModel) {
+    if (eventId === null) {
+      return;
+    }
+
+    await recordLocalCheckIn(eventId, guest.guestType, guest.remoteId);
+    refreshLocalGuests(eventId, search);
+  }
+
+  if (mode === 'scan' && eventId !== null) {
+    return <ScanScreen eventId={eventId} onSwitchToList={() => setMode('list')} />;
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -91,12 +104,17 @@ export default function GuestListScreen() {
       {lastDownloadCount !== null && <Text style={styles.info}>{lastDownloadCount} invités téléchargés.</Text>}
 
       {eventId !== null && (
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Rechercher (nom, e-mail, téléphone)"
-          value={search}
-          onChangeText={setSearch}
-        />
+        <View style={styles.searchRow}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Rechercher (nom, e-mail, téléphone)"
+            value={search}
+            onChangeText={setSearch}
+          />
+          <TouchableOpacity style={styles.scanButton} onPress={() => setMode('scan')}>
+            <Text style={styles.scanLabel}>Scanner</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       <FlatList
@@ -108,14 +126,18 @@ export default function GuestListScreen() {
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.contact}>{item.email ?? item.phone ?? '—'}</Text>
             </View>
-            <Text style={item.checkedIn ? styles.statusIn : styles.statusOut}>
-              {item.checkedIn ? 'Enregistré' : 'En attente'}
-            </Text>
+            {item.checkedIn ? (
+              <Text style={styles.statusIn}>Enregistré</Text>
+            ) : (
+              <TouchableOpacity style={styles.checkInButton} onPress={() => void handleCheckIn(item)}>
+                <Text style={styles.checkInLabel}>Check-in</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
         ListEmptyComponent={
           <Text style={styles.empty}>
-            {eventId === null ? 'Saisissez un identifiant d\'événement puis téléchargez la liste.' : 'Aucun invité.'}
+            {eventId === null ? "Saisissez un identifiant d'événement puis téléchargez la liste." : 'Aucun invité.'}
           </Text>
         }
       />
@@ -170,12 +192,27 @@ const styles = StyleSheet.create({
     color: '#1e7e34',
     marginBottom: 8,
   },
+  searchRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
   searchInput: {
+    flex: 1,
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
     padding: 10,
-    marginBottom: 12,
+  },
+  scanButton: {
+    backgroundColor: '#111',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+  },
+  scanLabel: {
+    color: '#fff',
+    fontWeight: '600',
   },
   row: {
     flexDirection: 'row',
@@ -198,9 +235,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  statusOut: {
-    color: '#888',
+  checkInButton: {
+    backgroundColor: '#111',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  checkInLabel: {
+    color: '#fff',
     fontSize: 13,
+    fontWeight: '600',
   },
   empty: {
     textAlign: 'center',

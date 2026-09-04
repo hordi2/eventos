@@ -4,6 +4,7 @@
     "strict": true,
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
-    "strictPropertyInitialization": false
+    "strictPropertyInitialization": false,
+    "types": ["jest", "node"]
   }
 }
