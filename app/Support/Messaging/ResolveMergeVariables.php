@@ -6,17 +6,19 @@ namespace App\Support\Messaging;
 
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Event\Models\Event;
+use App\Support\CheckIn\GetContactTableName;
 
 /**
  * Traverse Contact (Domain/Contact) et Event (Domain/Event) : ne peut pas
  * vivre dans Domain/Messaging (section 3 du CLAUDE.md), même raisonnement
  * que SendEmailToContact.
  *
- * QR et table ne figurent volontairement pas dans la liste (accord
- * explicite) : aucune des deux fonctionnalités n'existe encore dans l'app
- * (T-055 pour les QR, pas de plan de table). Ajouter une entrée ici et un
- * repli dans self::FALLBACKS suffira le jour où elles existeront — aucune
- * réécriture du moteur.
+ * QR ne figure volontairement pas dans la liste (accord explicite) :
+ * T-055 n'a construit de QR que pour les billets payés, pas pour les
+ * invités RSVP — rien à résoudre ici tant que ça n'existe pas. `table` a
+ * rejoint la liste avec T-065 (plan de table), qui en avait explicitement
+ * laissé la place : un contact sans affectation de table garde le repli
+ * vide plutôt qu'une valeur inventée.
  */
 final class ResolveMergeVariables
 {
@@ -30,7 +32,12 @@ final class ResolveMergeVariables
         'rsvp_link' => '#',
         'event_date' => 'date à confirmer',
         'event_location' => 'lieu à confirmer',
+        'table' => '',
     ];
+
+    public function __construct(
+        private readonly GetContactTableName $getContactTableName,
+    ) {}
 
     public function resolve(string $text, Contact $contact, ?Event $event): string
     {
@@ -69,6 +76,9 @@ final class ResolveMergeVariables
             'rsvp_link' => $event !== null ? $this->rsvpLink($event) : null,
             'event_date' => $event !== null ? $this->eventDate($event) : null,
             'event_location' => $event !== null ? $this->eventLocation($event) : null,
+            'table' => $event !== null
+                ? $this->getContactTableName->forContact($contact->organization_id, $event->id, $contact->id)
+                : null,
         ];
 
         foreach ((array) ($contact->custom_fields ?? []) as $key => $value) {

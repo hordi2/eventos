@@ -681,6 +681,34 @@ planches Avery et impression à la demande.
 
 ---
 
+### T-065 · Plan de table et placement · L
+**Réf** : M7.4 · **Dépend de** T-030, T-051, T-064
+
+Ticket ajouté après coup (signalé par l'utilisateur en relisant le tableau de
+bord événement, T-070 : M7.4 existe dans le cahier des charges mais n'avait
+jamais eu de ticket dans ce backlog).
+
+Éditeur visuel du plan de salle : tables de formes différentes (ronde,
+rectangulaire, en U, cocktail, rangées), capacité par table, numérotation
+automatique. Affectation des invités par glisser-déposer ou placement
+automatique assisté (équilibrage du remplissage, contraintes « doit être
+avec » / « ne doit pas être avec »). Export PDF du plan et des listes par
+table. Le numéro de table assigné doit apparaître sur le badge (T-064) et
+dans l'e-mail de rappel (M4), et rester consultable par l'équipe d'accueil
+au check-in (T-062) sans dépendre du plan visuel lui-même.
+
+**Critères d'acceptation**
+- [ ] Éditeur visuel : créer, positionner et redimensionner des tables (formes ronde, rectangulaire, en U, cocktail, rangées), capacité définie par table
+- [ ] Numérotation automatique des tables
+- [ ] Affectation d'un invité à une table par glisser-déposer ; un invité n'est jamais affecté à deux tables à la fois
+- [ ] Placement automatique assisté : remplit les tables en respectant leur capacité et en équilibrant le remplissage
+- [ ] Contraintes manuelles « doit être avec » / « ne doit pas être avec » respectées par le placement automatique, et signalées si violées après une affectation manuelle
+- [ ] Export PDF du plan de salle et des listes d'invités par table
+- [ ] Le numéro de table assigné apparaît sur le badge (T-064) et dans l'e-mail de rappel
+- [ ] Vue « qui est à quelle table » consultable par l'équipe d'accueil, indépendamment de l'éditeur visuel
+
+---
+
 # SPRINT 8 — PILOTAGE, FACTURATION ET STABILISATION
 
 ---
@@ -819,9 +847,9 @@ présente sur place, relevé de tous les incidents.
 | 4 | Inscription et parcours invité | T-030 → T-033 | ~19 j |
 | 5 | Contacts et communication | T-040 → T-045 | ~28 j |
 | 6 | Billetterie et paiements | T-050 → T-059 | ~42 j |
-| 7 | Jour J | T-060 → T-064 (T-061 en 061a/b/c) | ~24 j |
+| 7 | Jour J | T-060 → T-065 (T-061 en 061a/b/c) | ~32 j |
 | 8 | Pilotage et stabilisation | T-070 → T-078 | ~32 j |
-| | | **53 tickets** | **~209 j** |
+| | | **54 tickets** | **~217 j** |
 
 *Charge en jours de développement, hors design, QA dédiée, gestion de projet et
 provision pour imprévus. Rapprocher de l'estimation §16.2 du CDC (560 j/h tous

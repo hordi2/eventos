@@ -47,6 +47,12 @@
             margin-bottom: 4mm;
         }
 
+        .badge-table {
+            font-size: 13px;
+            color: #333333;
+            margin-bottom: 4mm;
+        }
+
         .badge-qr {
             width: 20mm;
             height: 20mm;

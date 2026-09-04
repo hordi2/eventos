@@ -19,5 +19,6 @@ final class BadgeContext
         public readonly ?string $logoDataUri,
         public readonly ?string $accentColor,
         public readonly ?string $qrDataUri,
+        public readonly ?string $tableName,
     ) {}
 }

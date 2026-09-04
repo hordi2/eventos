@@ -8,6 +8,10 @@
     <div class="badge-event">{{ $context->eventTitle }}</div>
     <div class="badge-name">{{ $context->guestName }}</div>
 
+    @if ($context->tableName !== null)
+        <div class="badge-table">{{ $context->tableName }}</div>
+    @endif
+
     @if ($context->qrDataUri !== null)
         <img src="{{ $context->qrDataUri }}" class="badge-qr" alt="">
     @endif

@@ -31,6 +31,7 @@ final class BuildBadgeContexts
     public function __construct(
         private readonly GetGuestBadgeColor $getGuestBadgeColor,
         private readonly GenerateTicketQrToken $generateTicketQrToken,
+        private readonly GetGuestTableName $getGuestTableName,
     ) {}
 
     /**
@@ -51,6 +52,7 @@ final class BuildBadgeContexts
                     ? $this->getGuestBadgeColor->forAttendee($event->organization_id, $guest->id)
                     : null,
                 qrDataUri: $guest->guestType === 'ticket' ? $this->buildTicketQrDataUri($guest->id) : null,
+                tableName: $this->getGuestTableName->forGuest($event->organization_id, $event->id, $guest->guestType, $guest->id),
             ),
             $guests,
         );

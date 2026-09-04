@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Domain\CheckIn\Models\SeatAssignment;
+use App\Domain\CheckIn\Models\SeatingTable;
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\Venue;
+use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Organization\Models\Organization;
 use App\Support\Messaging\ResolveMergeVariables;
 use App\Support\MultiTenancy\CurrentOrganization;
@@ -60,4 +63,35 @@ it('indique "En ligne" comme lieu pour un événement en ligne', function (): vo
     $resolved = app(ResolveMergeVariables::class)->resolve('{{event_location}}', $contact, $event);
 
     expect($resolved)->toBe('En ligne');
+});
+
+it('résout le nom de la table assignée à l\'invité principal du contact', function (): void {
+    $organization = Organization::factory()->create();
+    app(CurrentOrganization::class)->set($organization);
+    $event = Event::factory()->for($organization)->create();
+    $contact = Contact::factory()->for($organization)->create();
+    $registration = registerContactForEvent($organization, $event, $contact, RegistrationStatus::Confirmed);
+    $table = SeatingTable::factory()->for($organization)->create(['event_id' => $event->id, 'name' => 'Table 3']);
+    SeatAssignment::factory()->for($organization)->create([
+        'event_id' => $event->id,
+        'seating_table_id' => $table->id,
+        'guest_type' => 'attendee',
+        'guest_id' => $registration->attendees()->first()->id,
+    ]);
+
+    $resolved = app(ResolveMergeVariables::class)->resolve('Vous êtes à la {{table}}', $contact, $event);
+
+    expect($resolved)->toBe('Vous êtes à la Table 3');
+});
+
+it('affiche un repli vide pour {{table}} quand le contact n\'a pas encore d\'affectation', function (): void {
+    $organization = Organization::factory()->create();
+    app(CurrentOrganization::class)->set($organization);
+    $event = Event::factory()->for($organization)->create();
+    $contact = Contact::factory()->for($organization)->create();
+    registerContactForEvent($organization, $event, $contact, RegistrationStatus::Confirmed);
+
+    $resolved = app(ResolveMergeVariables::class)->resolve('Table : {{table}}', $contact, $event);
+
+    expect($resolved)->toBe('Table : ');
 });

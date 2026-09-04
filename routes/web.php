@@ -27,6 +27,7 @@ use App\Http\Controllers\Organizer\EventDashboardController;
 use App\Http\Controllers\Organizer\EventSegmentController;
 use App\Http\Controllers\Organizer\FormController;
 use App\Http\Controllers\Organizer\MessageAutomationController;
+use App\Http\Controllers\Organizer\SeatingController;
 use App\Http\Controllers\Organizer\TagController;
 use App\Http\Controllers\Organizer\TicketTypeController;
 use App\Http\Controllers\Organizer\WhatsappTemplateController;
@@ -137,6 +138,18 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/badges/batches/{batch}', [BadgeController::class, 'batchStatus'])->name('events.badges.batches.show');
         Route::post('events/{event}/badges/batches', [BadgeController::class, 'startBatch'])->name('events.badges.batches.store');
         Route::get('events/{event}/badges/{guestType}/{guestId}', [BadgeController::class, 'single'])->name('events.badges.single');
+
+        Route::get('events/{event}/seating', [SeatingController::class, 'index'])->name('events.seating.index');
+        Route::post('events/{event}/seating/tables', [SeatingController::class, 'storeTable'])->name('events.seating.tables.store');
+        Route::patch('events/{event}/seating/tables/{table}', [SeatingController::class, 'updateTable'])->name('events.seating.tables.update');
+        Route::delete('events/{event}/seating/tables/{table}', [SeatingController::class, 'destroyTable'])->name('events.seating.tables.destroy');
+        Route::post('events/{event}/seating/tables/{table}/assign', [SeatingController::class, 'assign'])->name('events.seating.tables.assign');
+        Route::post('events/{event}/seating/unassign', [SeatingController::class, 'unassign'])->name('events.seating.unassign');
+        Route::post('events/{event}/seating/auto-place', [SeatingController::class, 'autoPlace'])->name('events.seating.auto-place');
+        Route::post('events/{event}/seating/constraints', [SeatingController::class, 'storeConstraint'])->name('events.seating.constraints.store');
+        Route::delete('events/{event}/seating/constraints/{constraint}', [SeatingController::class, 'destroyConstraint'])->name('events.seating.constraints.destroy');
+        Route::get('events/{event}/seating/export/plan', [SeatingController::class, 'exportPlan'])->name('events.seating.export.plan');
+        Route::get('events/{event}/seating/export/lists', [SeatingController::class, 'exportLists'])->name('events.seating.export.lists');
 
         Route::get('email-templates', [EmailTemplateController::class, 'index'])->name('email-templates.index');
         Route::get('email-templates/create', [EmailTemplateController::class, 'create'])->name('email-templates.create');
