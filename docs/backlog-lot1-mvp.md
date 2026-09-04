@@ -577,10 +577,10 @@ Endpoints : téléchargement de la liste complète, check-in, check-out, recherc
 synchronisation par lot.
 
 **Critères d'acceptation**
-- [ ] Synchronisation par lot idempotente via `device_local_id`
-- [ ] Deux postes scannant le même billet → premier accepté, second signalé en conflit
-- [ ] Téléchargement d'une liste de 5 000 invités en < 10 s
-- [ ] Réponse de check-in en < 200 ms
+- [x] Synchronisation par lot idempotente via `device_local_id`
+- [x] Deux postes scannant le même billet → premier accepté, second signalé en conflit
+- [x] Téléchargement d'une liste de 5 000 invités en < 10 s (mesuré à ~20 ms en local, hors latence réseau)
+- [x] Réponse de check-in en < 200 ms
 
 ---
 

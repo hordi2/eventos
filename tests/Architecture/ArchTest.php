@@ -41,3 +41,19 @@ arch('Domain/Messaging ne dépend pas des modèles de Domain/Contact')
 arch('Domain/Messaging ne dépend pas des modèles de Domain/Event')
     ->expect('App\Domain\Messaging')
     ->not->toUse('App\Domain\Event\Models');
+
+// Même règle pour CheckIn (T-060) : un invité RSVP ou un billet payé n'est
+// référencé que par attendee_id/ticket_id, jamais par une relation Eloquent
+// — l'assemblage transversal vit dans App\Support\CheckIn (voir le docblock
+// de GetEventGuestList).
+arch('Domain/CheckIn ne dépend pas des modèles de Domain/Event')
+    ->expect('App\Domain\CheckIn')
+    ->not->toUse('App\Domain\Event\Models');
+
+arch('Domain/CheckIn ne dépend pas des modèles de Domain/Form')
+    ->expect('App\Domain\CheckIn')
+    ->not->toUse('App\Domain\Form\Models');
+
+arch('Domain/CheckIn ne dépend pas des modèles de Domain/Ticketing')
+    ->expect('App\Domain\CheckIn')
+    ->not->toUse('App\Domain\Ticketing\Models');
