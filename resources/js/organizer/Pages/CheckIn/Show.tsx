@@ -1,9 +1,12 @@
 import { Head } from '@inertiajs/react';
 import QrScanner from 'qr-scanner';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import Badge from '../../Components/Badge';
 import Button from '../../Components/Button';
+import InputError from '../../Components/InputError';
 import InputLabel from '../../Components/InputLabel';
+import Modal from '../../Components/Modal';
+import Select from '../../Components/Select';
 import Table from '../../Components/Table';
 import TextInput from '../../Components/TextInput';
 import OrganizerLayout from '../../Layouts/OrganizerLayout';
@@ -18,9 +21,17 @@ interface Guest {
     checked_in_at: string | null;
 }
 
+interface TicketTypeOption {
+    id: number;
+    name: string;
+    is_free: boolean;
+    price: string | null;
+}
+
 interface Props {
     event: { id: number; title: string };
     guests: Guest[];
+    ticketTypes: TicketTypeOption[];
 }
 
 interface ScanResponse {
@@ -33,12 +44,18 @@ interface ScanResponse {
 // texte tapée à la main, sans matériel ni bibliothèque spécifique.
 const QR_TOKEN_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 
-export default function Show({ event, guests: initialGuests }: Props) {
+const emptyWalkIn = { ticketTypeId: '', name: '', email: '', phone: '' };
+
+export default function Show({ event, guests: initialGuests, ticketTypes }: Props) {
     const [guests, setGuests] = useState<Guest[]>(initialGuests);
     const [search, setSearch] = useState('');
     const [feedback, setFeedback] = useState<{ type: 'success' | 'conflict' | 'error'; message: string } | null>(null);
     const [webcamActive, setWebcamActive] = useState(false);
     const [webcamError, setWebcamError] = useState<string | null>(null);
+    const [walkInOpen, setWalkInOpen] = useState(false);
+    const [walkIn, setWalkIn] = useState(emptyWalkIn);
+    const [walkInError, setWalkInError] = useState<string | null>(null);
+    const [walkInSubmitting, setWalkInSubmitting] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const scannerRef = useRef<QrScanner | null>(null);
     const processingRef = useRef(false);
@@ -62,9 +79,13 @@ export default function Show({ event, guests: initialGuests }: Props) {
             return;
         }
 
-        setGuests((current) => current.map((existing) =>
-            existing.guest_type === guest.guest_type && existing.id === guest.id ? guest : existing,
-        ));
+        setGuests((current) => {
+            const exists = current.some((existing) => existing.guest_type === guest.guest_type && existing.id === guest.id);
+
+            return exists
+                ? current.map((existing) => (existing.guest_type === guest.guest_type && existing.id === guest.id ? guest : existing))
+                : [...current, guest];
+        });
     }
 
     async function submitScan(token: string) {
@@ -108,6 +129,33 @@ export default function Show({ event, guests: initialGuests }: Props) {
             );
         } catch {
             setFeedback({ type: 'error', message: "Impossible d'enregistrer ce check-in." });
+        }
+    }
+
+    async function submitWalkIn(formEvent: FormEvent) {
+        formEvent.preventDefault();
+        setWalkInError(null);
+        setWalkInSubmitting(true);
+
+        try {
+            const response = await window.axios.post<ScanResponse>(`/events/${event.id}/check-in/walk-in`, {
+                ticket_type_id: Number(walkIn.ticketTypeId),
+                name: walkIn.name,
+                email: walkIn.email,
+                phone: walkIn.phone || null,
+            });
+            applyGuestUpdate(response.data.guest);
+            setFeedback({ type: 'success', message: `${response.data.guest?.name ?? 'Invité'} — inscrit et entrée acceptée.` });
+            setWalkIn(emptyWalkIn);
+            setWalkInOpen(false);
+        } catch (error) {
+            const message =
+                (error as { response?: { data?: { error?: string; message?: string } } }).response?.data?.error ??
+                (error as { response?: { data?: { message?: string } } }).response?.data?.message ??
+                "Impossible d'inscrire cet invité.";
+            setWalkInError(message);
+        } finally {
+            setWalkInSubmitting(false);
         }
     }
 
@@ -167,9 +215,16 @@ export default function Show({ event, guests: initialGuests }: Props) {
                         {checkedInCount} / {guests.length} invités enregistrés
                     </p>
                 </div>
-                <Button variant="secondary" className="w-auto" onClick={webcamActive ? stopWebcam : startWebcam}>
-                    {webcamActive ? 'Arrêter la caméra' : 'Scanner avec la caméra'}
-                </Button>
+                <div className="flex gap-3">
+                    <Button variant="secondary" className="w-auto" onClick={webcamActive ? stopWebcam : startWebcam}>
+                        {webcamActive ? 'Arrêter la caméra' : 'Scanner avec la caméra'}
+                    </Button>
+                    {ticketTypes.length > 0 && (
+                        <Button className="w-auto" onClick={() => setWalkInOpen(true)}>
+                            Invité sur place
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {webcamActive && (
@@ -240,6 +295,70 @@ export default function Show({ event, guests: initialGuests }: Props) {
                 rowKey={(guest) => `${guest.guest_type}-${guest.id}`}
                 emptyMessage="Aucun invité ne correspond à cette recherche."
             />
+
+            <Modal open={walkInOpen} onClose={() => setWalkInOpen(false)} title="Invité sur place">
+                <form onSubmit={submitWalkIn} className="space-y-5">
+                    <div>
+                        <InputLabel htmlFor="walk-in-ticket-type">Type de billet</InputLabel>
+                        <Select
+                            id="walk-in-ticket-type"
+                            required
+                            value={walkIn.ticketTypeId}
+                            onChange={(event) => setWalkIn((current) => ({ ...current, ticketTypeId: event.target.value }))}
+                        >
+                            <option value="" disabled>
+                                Choisir un type de billet
+                            </option>
+                            {ticketTypes.map((ticketType) => (
+                                <option key={ticketType.id} value={ticketType.id}>
+                                    {ticketType.name} — {ticketType.is_free ? 'Gratuit' : ticketType.price}
+                                </option>
+                            ))}
+                        </Select>
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="walk-in-name">Nom</InputLabel>
+                        <TextInput
+                            id="walk-in-name"
+                            required
+                            value={walkIn.name}
+                            onChange={(event) => setWalkIn((current) => ({ ...current, name: event.target.value }))}
+                        />
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="walk-in-email">E-mail</InputLabel>
+                        <TextInput
+                            id="walk-in-email"
+                            type="email"
+                            required
+                            value={walkIn.email}
+                            onChange={(event) => setWalkIn((current) => ({ ...current, email: event.target.value }))}
+                        />
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="walk-in-phone">Téléphone (optionnel)</InputLabel>
+                        <TextInput
+                            id="walk-in-phone"
+                            value={walkIn.phone}
+                            onChange={(event) => setWalkIn((current) => ({ ...current, phone: event.target.value }))}
+                        />
+                    </div>
+
+                    <InputError message={walkInError ?? undefined} />
+
+                    <div className="flex justify-end gap-3">
+                        <Button type="button" variant="secondary" className="w-auto" onClick={() => setWalkInOpen(false)}>
+                            Annuler
+                        </Button>
+                        <Button type="submit" className="w-auto" disabled={walkInSubmitting}>
+                            {walkInSubmitting ? 'Inscription…' : 'Inscrire et enregistrer'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
         </OrganizerLayout>
     );
 }

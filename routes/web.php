@@ -124,6 +124,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/check-in', [CheckInController::class, 'index'])->name('events.check-in.index');
         Route::post('events/{event}/check-in/scan', [CheckInController::class, 'scan'])->name('events.check-in.scan');
         Route::post('events/{event}/check-in/record', [CheckInController::class, 'record'])->name('events.check-in.record');
+        Route::post('events/{event}/check-in/walk-in', [CheckInController::class, 'walkIn'])->name('events.check-in.walk-in');
 
         Route::get('email-templates', [EmailTemplateController::class, 'index'])->name('email-templates.index');
         Route::get('email-templates/create', [EmailTemplateController::class, 'create'])->name('email-templates.create');
