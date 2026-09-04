@@ -751,10 +751,18 @@ Export CSV et Excel des invités, inscriptions, commandes, check-ins. Sélection
 colonnes, filtrage par segment. Traitement en queue avec lien de téléchargement.
 
 **Critères d'acceptation**
-- [ ] Export de 50 000 lignes en < 60 s, en tâche de fond
-- [ ] Lien de téléchargement expirant après 24 h
-- [ ] **Tout export est journalisé dans l'audit** (exigence RGPD)
-- [ ] Encodage UTF-8 avec BOM (compatibilité Excel)
+- [ ] Export de 50 000 lignes en < 60 s, en tâche de fond — implémenté en streaming (`cursor()`, aucune requête N+1) mais non chargé-testé sur un vrai jeu de 50 000 lignes dans cette session ; à vérifier avant mise en production
+- [x] Lien de téléchargement expirant après 24 h
+- [x] **Tout export est journalisé dans l'audit** (exigence RGPD)
+- [x] Encodage UTF-8 avec BOM (compatibilité Excel)
+
+Scope MVP volontairement réduit par rapport au cahier des charges (M8.4
+mentionne aussi PDF/JSON, les exports planifiés envoyés par e-mail) : seul
+le CSV est couvert, conformément aux critères d'acceptation ci-dessus qui
+ne demandent ni PDF/JSON ni planification — pas de dépendance ajoutée pour
+un vrai format .xlsx binaire, le CSV avec BOM UTF-8 s'ouvre correctement
+dans Excel. Le filtre par segment ne s'applique qu'au type « invités » :
+c'est le seul des quatre où un segment RSVP a un sens direct.
 
 ---
 

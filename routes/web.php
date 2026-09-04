@@ -25,6 +25,7 @@ use App\Http\Controllers\Organizer\EmailTemplateController;
 use App\Http\Controllers\Organizer\EventController;
 use App\Http\Controllers\Organizer\EventDashboardController;
 use App\Http\Controllers\Organizer\EventSegmentController;
+use App\Http\Controllers\Organizer\ExportController;
 use App\Http\Controllers\Organizer\FormController;
 use App\Http\Controllers\Organizer\MessageAutomationController;
 use App\Http\Controllers\Organizer\SeatingController;
@@ -151,6 +152,11 @@ Route::middleware('auth')->group(function (): void {
         Route::delete('events/{event}/seating/constraints/{constraint}', [SeatingController::class, 'destroyConstraint'])->name('events.seating.constraints.destroy');
         Route::get('events/{event}/seating/export/plan', [SeatingController::class, 'exportPlan'])->name('events.seating.export.plan');
         Route::get('events/{event}/seating/export/lists', [SeatingController::class, 'exportLists'])->name('events.seating.export.lists');
+
+        Route::get('events/{event}/exports', [ExportController::class, 'index'])->name('events.exports.index');
+        Route::post('events/{event}/exports', [ExportController::class, 'store'])->name('events.exports.store');
+        Route::get('events/{event}/exports/{export}', [ExportController::class, 'status'])->name('events.exports.status');
+        Route::get('events/{event}/exports/{export}/download', [ExportController::class, 'download'])->name('events.exports.download');
 
         Route::get('email-templates', [EmailTemplateController::class, 'index'])->name('email-templates.index');
         Route::get('email-templates/create', [EmailTemplateController::class, 'create'])->name('email-templates.create');
