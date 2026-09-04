@@ -3,84 +3,14 @@
 declare(strict_types=1);
 
 use App\Domain\CheckIn\Models\CheckIn;
-use App\Domain\Event\Models\Event;
-use App\Domain\Form\Models\Attendee;
-use App\Domain\Form\Models\Form;
-use App\Domain\Form\Models\FormVersion;
-use App\Domain\Form\Models\Registration;
 use App\Domain\Organization\Models\Membership;
 use App\Domain\Organization\Models\MembershipRole;
-use App\Domain\Organization\Models\Organization;
-use App\Domain\Ticketing\Models\Order;
-use App\Domain\Ticketing\Models\OrderItem;
-use App\Domain\Ticketing\Models\OrderStatus;
-use App\Domain\Ticketing\Models\PriceTier;
-use App\Domain\Ticketing\Models\Ticket;
-use App\Domain\Ticketing\Models\TicketStatus;
-use App\Domain\Ticketing\Models\TicketType;
 use App\Models\User;
-use App\Support\Money;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Support\Str;
 
-/**
- * @return array{organization: Organization, event: Event, doorStaff: User}
- */
-function makeCheckInEvent(MembershipRole $role = MembershipRole::DoorStaff): array
-{
-    $organization = Organization::factory()->create();
-    app(CurrentOrganization::class)->set($organization);
-    $event = Event::factory()->for($organization)->published()->create();
-    $doorStaff = User::factory()->create();
-    Membership::factory()->for($organization)->for($doorStaff)->create(['role' => $role]);
-    app(CurrentOrganization::class)->clear();
-
-    return ['organization' => $organization, 'event' => $event, 'doorStaff' => $doorStaff];
-}
-
-/**
- * Chaîne Form -> FormVersion -> Registration entièrement explicite : les
- * factories imbriquées de FormVersionFactory/FormFactory génèrent chacune
- * leur propre organisation et leur propre événement par défaut, ce qui
- * viole la RLS si on ne les fournit pas nous-mêmes (piège déjà documenté
- * dans tests/Pest.php pour makeConfirmedAttendee/organizationWithContactRole).
- */
-function makeCheckedInAttendee(Organization $organization, Event $event): Attendee
-{
-    app(CurrentOrganization::class)->set($organization);
-    $form = Form::factory()->create([
-        'organization_id' => $organization->id,
-        'event_id' => $event->id,
-        'created_by' => User::factory()->create()->id,
-    ]);
-    $version = FormVersion::factory()->create(['organization_id' => $organization->id, 'form_id' => $form->id]);
-    $registration = Registration::factory()->create([
-        'organization_id' => $organization->id,
-        'event_id' => $event->id,
-        'form_version_id' => $version->id,
-    ]);
-    $attendee = Attendee::factory()->create([
-        'organization_id' => $organization->id,
-        'registration_id' => $registration->id,
-        'is_primary' => true,
-    ]);
-    app(CurrentOrganization::class)->clear();
-
-    return $attendee;
-}
-
-function makePaidTicket(Organization $organization, Event $event): Ticket
-{
-    app(CurrentOrganization::class)->set($organization);
-    $ticketType = TicketType::factory()->for($organization)->create(['event_id' => $event->id]);
-    $tier = PriceTier::factory()->for($ticketType)->for($organization)->create(['amount' => Money::fromMinorUnits(1000, 'EUR')]);
-    $order = Order::factory()->for($organization)->create(['event_id' => $event->id, 'status' => OrderStatus::Paid]);
-    $item = OrderItem::factory()->for($organization)->for($order)->create(['ticket_type_id' => $ticketType->id, 'price_tier_id' => $tier->id, 'quantity' => 1]);
-    $ticket = Ticket::factory()->for($organization)->create(['order_item_id' => $item->id, 'ticket_type_id' => $ticketType->id, 'status' => TicketStatus::Valid]);
-    app(CurrentOrganization::class)->clear();
-
-    return $ticket;
-}
+// makeCheckInEvent/makeCheckedInAttendee/makePaidTicket : voir tests/Pest.php
+// (partagées avec le check-in web de secours, T-062).
 
 it('authentifie un poste de check-in et renvoie un jeton', function (): void {
     ['doorStaff' => $doorStaff] = makeCheckInEvent();

@@ -37,9 +37,23 @@ final class GetEventGuestList
     }
 
     /**
+     * Relit un seul invité après un scan/enregistrement, pour renvoyer son
+     * état à jour (nom, déjà enregistré ou non) sans reconstruire toute la
+     * liste.
+     */
+    public function findOne(Event $event, string $guestType, int $id): ?GuestData
+    {
+        $matches = $guestType === 'attendee'
+            ? $this->attendees($event, null, $id)
+            : $this->ticketHolders($event, null, $id);
+
+        return $matches[0] ?? null;
+    }
+
+    /**
      * @return list<GuestData>
      */
-    private function attendees(Event $event, ?string $search): array
+    private function attendees(Event $event, ?string $search, ?int $onlyId = null): array
     {
         $query = DB::table('attendees')
             ->join('registrations', 'registrations.id', '=', 'attendees.registration_id')
@@ -54,6 +68,10 @@ final class GetEventGuestList
             ->where('attendees.is_primary', true)
             ->whereNull('attendees.deleted_at')
             ->whereNull('registrations.deleted_at');
+
+        if ($onlyId !== null) {
+            $query->where('attendees.id', $onlyId);
+        }
 
         if ($search !== null && $search !== '') {
             $query->where(function ($query) use ($search): void {
@@ -88,7 +106,7 @@ final class GetEventGuestList
     /**
      * @return list<GuestData>
      */
-    private function ticketHolders(Event $event, ?string $search): array
+    private function ticketHolders(Event $event, ?string $search, ?int $onlyId = null): array
     {
         $query = DB::table('tickets')
             ->join('order_items', 'order_items.id', '=', 'tickets.order_item_id')
@@ -104,6 +122,10 @@ final class GetEventGuestList
             ->where('tickets.status', TicketStatus::Valid->value)
             ->whereNull('tickets.deleted_at')
             ->whereNull('orders.deleted_at');
+
+        if ($onlyId !== null) {
+            $query->where('tickets.id', $onlyId);
+        }
 
         if ($search !== null && $search !== '') {
             $query->where(function ($query) use ($search): void {

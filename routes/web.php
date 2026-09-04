@@ -16,6 +16,7 @@ use App\Http\Controllers\Organizer\Auth\NewPasswordController;
 use App\Http\Controllers\Organizer\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Organizer\Auth\RegisteredUserController;
 use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
+use App\Http\Controllers\Organizer\CheckInController;
 use App\Http\Controllers\Organizer\ContactController;
 use App\Http\Controllers\Organizer\ContactImportController;
 use App\Http\Controllers\Organizer\DashboardController;
@@ -119,6 +120,10 @@ Route::middleware('auth')->group(function (): void {
         Route::post('events/{event}/segments/{segment}/tag', [EventSegmentController::class, 'applyTag'])->name('events.segments.apply-tag');
 
         Route::post('attendees/{attendee}/toggle-check-in', [AttendeeController::class, 'toggleCheckIn'])->name('attendees.toggle-check-in');
+
+        Route::get('events/{event}/check-in', [CheckInController::class, 'index'])->name('events.check-in.index');
+        Route::post('events/{event}/check-in/scan', [CheckInController::class, 'scan'])->name('events.check-in.scan');
+        Route::post('events/{event}/check-in/record', [CheckInController::class, 'record'])->name('events.check-in.record');
 
         Route::get('email-templates', [EmailTemplateController::class, 'index'])->name('email-templates.index');
         Route::get('email-templates/create', [EmailTemplateController::class, 'create'])->name('email-templates.create');
