@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Domain\CheckIn\Models\CheckIn;
+use App\Domain\Contact\Models\Contact;
+use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Ticketing\Models\Order;
 use App\Domain\Ticketing\Models\OrderItem;
@@ -77,6 +79,31 @@ it('la courbe cumulée grandit de façon monotone au fil des jours', function ()
 
     $cumulativeValues = array_column($stats->registrationCurve, 'cumulative');
     expect($cumulativeValues)->toBe([1, 2, 3]);
+});
+
+it('répartit les réponses RSVP : confirmés, déclinés, sans réponse, liste d\'attente', function (): void {
+    ['organization' => $organization, 'event' => $event] = makeCheckInEvent(MembershipRole::Owner);
+    app(CurrentOrganization::class)->set($organization);
+
+    $confirmedContact = Contact::factory()->for($organization)->create();
+    registerContactForEvent($organization, $event, $confirmedContact, RegistrationStatus::Confirmed);
+
+    $declinedContact = Contact::factory()->for($organization)->create();
+    registerContactForEvent($organization, $event, $declinedContact, RegistrationStatus::Cancelled);
+
+    $waitlistedContact = Contact::factory()->for($organization)->create();
+    registerContactForEvent($organization, $event, $waitlistedContact, RegistrationStatus::Waitlisted);
+
+    // Un contact sans la moindre inscription : sans réponse.
+    Contact::factory()->for($organization)->create();
+
+    $stats = app(GetEventDashboardStats::class)->handle($event->fresh());
+    app(CurrentOrganization::class)->clear();
+
+    expect($stats->rsvpConfirmedCount)->toBe(1);
+    expect($stats->rsvpDeclinedCount)->toBe(1);
+    expect($stats->rsvpWaitlistedCount)->toBe(1);
+    expect($stats->rsvpNoResponseCount)->toBe(1);
 });
 
 it('affiche le tableau de bord d\'un événement pour un membre habilité', function (): void {

@@ -113,6 +113,10 @@ final class EventDashboardController extends Controller
             'presence_rate' => $stats->presenceRate,
             'registration_curve' => $stats->registrationCurve,
             'arrival_curve' => $stats->arrivalCurve,
+            'rsvp_confirmed_count' => $stats->rsvpConfirmedCount,
+            'rsvp_declined_count' => $stats->rsvpDeclinedCount,
+            'rsvp_no_response_count' => $stats->rsvpNoResponseCount,
+            'rsvp_waitlisted_count' => $stats->rsvpWaitlistedCount,
         ];
     }
 

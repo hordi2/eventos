@@ -20,6 +20,10 @@ interface Stats {
     presence_rate: number;
     registration_curve: RegistrationPoint[];
     arrival_curve: ArrivalPoint[];
+    rsvp_confirmed_count: number;
+    rsvp_declined_count: number;
+    rsvp_no_response_count: number;
+    rsvp_waitlisted_count: number;
 }
 
 interface Props {
@@ -59,6 +63,20 @@ export default function Show({ event, stats: initialStats }: Props) {
                 <StatCard label="Invités confirmés" value={stats.confirmed_count} />
                 <StatCard label="Présents" value={stats.present_count} />
                 <StatCard label="Taux de présence" value={`${Math.round(stats.presence_rate * 100)} %`} />
+            </div>
+
+            <div className="mb-8 rounded-card bg-bg p-6 ring-1 ring-line">
+                <h2 className="mb-4 font-serif text-lg italic">Réponses RSVP</h2>
+                <p className="mb-4 text-sm text-ink-soft">
+                    Ne concerne que le parcours d'inscription — un billet payé n'a pas de statut « décliné » ou « sans
+                    réponse ».
+                </p>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    <StatCard label="Confirmés" value={stats.rsvp_confirmed_count} />
+                    <StatCard label="Déclinés" value={stats.rsvp_declined_count} />
+                    <StatCard label="Sans réponse" value={stats.rsvp_no_response_count} />
+                    <StatCard label="Liste d'attente" value={stats.rsvp_waitlisted_count} />
+                </div>
             </div>
 
             <div className="mb-8 rounded-card bg-bg p-6 ring-1 ring-line">

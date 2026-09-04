@@ -7,17 +7,26 @@ namespace App\Support\Dashboard;
 use App\Domain\Event\Models\Event;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Ticketing\Models\OrderStatus;
+use App\Support\Segments\ComputeEventSegmentContacts;
+use App\Support\Segments\EventSegment;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Traverse Domain/Form, Domain/Ticketing et Domain/CheckIn : vit hors de ces
  * modules pour la même raison que GetEventGuestList (voir son docblock).
  *
- * Seuls les blocs « inscriptions » (courbe cumulée) et « jour J » (présents,
- * taux de présence, courbe d'arrivée) de M8.1 sont couverts : les critères
- * d'acceptation de T-070 ne demandent que ceux-là — les blocs financier,
- * communication et logistique du cahier des charges (§M8.1) ne sont pas
- * dans le périmètre de ce ticket.
+ * Seuls les blocs « inscriptions » (répartition des réponses, courbe
+ * cumulée) et « jour J » (présents, taux de présence, courbe d'arrivée) de
+ * M8.1 sont couverts : les blocs financier, communication et logistique du
+ * cahier des charges (§M8.1) restent hors périmètre.
+ *
+ * La répartition confirmé/décliné/sans réponse/liste d'attente ne concerne
+ * que le parcours RSVP (Domain/Form) : un billet payé n'a pas de notion de
+ * « décliné » ou « sans réponse », on l'a acheté ou pas. « Invitations
+ * envoyées » n'est délibérément pas repris ici : aucune donnée fiable ne
+ * relie un envoi (Domain/Messaging, EmailMessage/WhatsappMessage) à un
+ * événement précis aujourd'hui — signalé plutôt que reconstruit à la volée
+ * avec un nombre qui ne serait pas fiable.
  *
  * Uniquement des requêtes d'agrégation (COUNT/GROUP BY), jamais de
  * récupération ligne à ligne : condition du critère d'acceptation
@@ -25,6 +34,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class GetEventDashboardStats
 {
+    public function __construct(
+        private readonly ComputeEventSegmentContacts $computeEventSegmentContacts,
+    ) {}
+
     public function handle(Event $event): DashboardStatsData
     {
         $confirmedCount = $this->confirmedGuestCount($event);
@@ -36,7 +49,21 @@ final class GetEventDashboardStats
             presenceRate: $confirmedCount > 0 ? $presentCount / $confirmedCount : 0.0,
             registrationCurve: $this->registrationCurve($event),
             arrivalCurve: $this->arrivalCurve($event),
+            rsvpConfirmedCount: $this->computeEventSegmentContacts->query($event, EventSegment::Confirmes)->count(),
+            rsvpDeclinedCount: $this->computeEventSegmentContacts->query($event, EventSegment::Declines)->count(),
+            rsvpNoResponseCount: $this->computeEventSegmentContacts->query($event, EventSegment::SansReponse)->count(),
+            rsvpWaitlistedCount: $this->waitlistedCount($event),
         );
+    }
+
+    private function waitlistedCount(Event $event): int
+    {
+        return DB::table('registrations')
+            ->where('organization_id', $event->organization_id)
+            ->where('event_id', $event->id)
+            ->where('status', RegistrationStatus::Waitlisted->value)
+            ->whereNull('deleted_at')
+            ->count();
     }
 
     private function confirmedGuestCount(Event $event): int

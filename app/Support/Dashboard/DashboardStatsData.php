@@ -16,5 +16,9 @@ final class DashboardStatsData
         public readonly float $presenceRate,
         public readonly array $registrationCurve,
         public readonly array $arrivalCurve,
+        public readonly int $rsvpConfirmedCount,
+        public readonly int $rsvpDeclinedCount,
+        public readonly int $rsvpNoResponseCount,
+        public readonly int $rsvpWaitlistedCount,
     ) {}
 }
