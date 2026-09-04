@@ -639,10 +639,16 @@ File d'attente de synchronisation locale, envoi par lot à l'API de check-in
 intervention de l'utilisateur.
 
 **Critères d'acceptation**
-- [ ] Reconnexion → synchronisation automatique de la file d'attente, sans action manuelle
-- [ ] Résolution de conflit correcte quand un autre poste a déjà enregistré le même invité entre-temps
-- [ ] Indicateur visible : en ligne / hors ligne / en cours de synchro / N en attente
-- [ ] Batterie : 4 h d'utilisation continue sur un téléphone d'entrée de gamme (scan + sync périodique)
+- [ ] Reconnexion → synchronisation automatique de la file d'attente, sans action manuelle — implémenté (`useSyncEngine`, détection NetInfo + minuteur de rattrapage)
+- [ ] Résolution de conflit correcte quand un autre poste a déjà enregistré le même invité entre-temps — implémenté (un « conflict » serveur marque la ligne comme envoyée, jamais rejouée)
+- [ ] Indicateur visible : en ligne / hors ligne / en cours de synchro / N en attente — implémenté (`SyncStatusBadge`)
+- [ ] Batterie : 4 h d'utilisation continue sur un téléphone d'entrée de gamme (scan + sync périodique) — minuteur à 30 s choisi pour rester léger, jamais mesuré sur un vrai appareil
+
+**⚠️ Aucune de ces cases n'a été vérifiée sur simulateur/appareil réel** (pas
+d'Xcode/Android Studio dans l'environnement de développement à l'écriture,
+voir mobile/README.md) : vérifié uniquement par `tsc`, un export Metro complet
+et des tests Jest sur la logique pure. À valider avant de cocher — ce qui clôt
+alors T-061 dans son ensemble (T-061a + T-061b + T-061c).
 
 ---
 

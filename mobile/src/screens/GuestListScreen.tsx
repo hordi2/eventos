@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { ApiError } from '../api/ApiError';
 import { useAuth } from '../auth/AuthContext';
-import ConnectivityBadge from '../components/ConnectivityBadge';
+import SyncStatusBadge from '../components/SyncStatusBadge';
 import GuestModel from '../db/models/Guest';
 import { recordLocalCheckIn } from '../db/recordLocalCheckIn';
 import { searchLocalGuests } from '../db/searchGuests';
 import { downloadEventGuests } from '../db/sync/downloadGuests';
 import { loadEventId, saveEventId } from '../storage/localSettings';
+import { useSyncEngine } from '../sync/useSyncEngine';
 import ScanScreen from './ScanScreen';
 
 export default function GuestListScreen() {
@@ -20,6 +21,7 @@ export default function GuestListScreen() {
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastDownloadCount, setLastDownloadCount] = useState<number | null>(null);
+  const sync = useSyncEngine(eventId);
 
   useEffect(() => {
     loadEventId().then((stored) => {
@@ -72,16 +74,27 @@ export default function GuestListScreen() {
 
     await recordLocalCheckIn(eventId, guest.guestType, guest.remoteId);
     refreshLocalGuests(eventId, search);
+    sync.refreshPendingCount();
+    sync.triggerSync();
   }
 
   if (mode === 'scan' && eventId !== null) {
-    return <ScanScreen eventId={eventId} onSwitchToList={() => setMode('list')} />;
+    return (
+      <ScanScreen
+        eventId={eventId}
+        onSwitchToList={() => setMode('list')}
+        onCheckInRecorded={() => {
+          sync.refreshPendingCount();
+          sync.triggerSync();
+        }}
+      />
+    );
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <ConnectivityBadge />
+        <SyncStatusBadge online={sync.online} syncing={sync.syncing} pendingCount={sync.pendingCount} />
         <TouchableOpacity onPress={() => void logout()}>
           <Text style={styles.logout}>Se déconnecter</Text>
         </TouchableOpacity>

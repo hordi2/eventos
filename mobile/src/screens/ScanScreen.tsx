@@ -7,6 +7,7 @@ import { recordLocalCheckIn, type LocalCheckInResult } from '../db/recordLocalCh
 interface Props {
   eventId: number;
   onSwitchToList: () => void;
+  onCheckInRecorded: () => void;
 }
 
 type Feedback = { type: 'accepted' | 'conflict' | 'error'; message: string };
@@ -22,7 +23,7 @@ const COOLDOWN_MS = 1500;
  * sombre, retour visuel en grand texte à haut contraste, un seul bouton
  * pour basculer en mode liste — pas de geste complexe.
  */
-export default function ScanScreen({ eventId, onSwitchToList }: Props) {
+export default function ScanScreen({ eventId, onSwitchToList, onCheckInRecorded }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const processingRef = useRef(false);
@@ -45,6 +46,11 @@ export default function ScanScreen({ eventId, onSwitchToList }: Props) {
 
     const result = await recordLocalCheckIn(eventId, 'ticket', ticketId);
     setFeedback(describeResult(result));
+
+    if (result.status === 'accepted') {
+      onCheckInRecorded();
+    }
+
     releaseAfterCooldown();
   }
 
