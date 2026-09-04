@@ -1,0 +1,210 @@
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ApiError } from '../api/ApiError';
+import { useAuth } from '../auth/AuthContext';
+import ConnectivityBadge from '../components/ConnectivityBadge';
+import { downloadEventGuests } from '../db/sync/downloadGuests';
+import GuestModel from '../db/models/Guest';
+import { searchLocalGuests } from '../db/searchGuests';
+import { loadEventId, saveEventId } from '../storage/localSettings';
+
+export default function GuestListScreen() {
+  const { token, logout } = useAuth();
+  const [eventId, setEventId] = useState<number | null>(null);
+  const [eventIdInput, setEventIdInput] = useState('');
+  const [guests, setGuests] = useState<GuestModel[]>([]);
+  const [search, setSearch] = useState('');
+  const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastDownloadCount, setLastDownloadCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    loadEventId().then((stored) => {
+      if (stored !== null) {
+        setEventId(stored);
+        setEventIdInput(String(stored));
+      }
+    });
+  }, []);
+
+  const refreshLocalGuests = useCallback(
+    (currentEventId: number, term: string) => {
+      searchLocalGuests(currentEventId, term).then(setGuests);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (eventId !== null) {
+      refreshLocalGuests(eventId, search);
+    }
+  }, [eventId, search, refreshLocalGuests]);
+
+  async function handleDownload() {
+    const parsedEventId = Number(eventIdInput.trim());
+
+    if (!Number.isInteger(parsedEventId) || parsedEventId <= 0 || token === null) {
+      setError("Identifiant d'événement invalide.");
+
+      return;
+    }
+
+    setError(null);
+    setDownloading(true);
+
+    try {
+      const count = await downloadEventGuests(parsedEventId, token);
+      await saveEventId(parsedEventId);
+      setEventId(parsedEventId);
+      setLastDownloadCount(count);
+      refreshLocalGuests(parsedEventId, search);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Téléchargement impossible.');
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <ConnectivityBadge />
+        <TouchableOpacity onPress={() => void logout()}>
+          <Text style={styles.logout}>Se déconnecter</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.downloadRow}>
+        <TextInput
+          style={styles.eventInput}
+          placeholder="ID événement"
+          keyboardType="number-pad"
+          value={eventIdInput}
+          onChangeText={setEventIdInput}
+        />
+        <TouchableOpacity style={styles.downloadButton} onPress={() => void handleDownload()} disabled={downloading}>
+          {downloading ? <ActivityIndicator color="#fff" /> : <Text style={styles.downloadLabel}>Télécharger la liste</Text>}
+        </TouchableOpacity>
+      </View>
+
+      {error !== null && <Text style={styles.error}>{error}</Text>}
+      {lastDownloadCount !== null && <Text style={styles.info}>{lastDownloadCount} invités téléchargés.</Text>}
+
+      {eventId !== null && (
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Rechercher (nom, e-mail, téléphone)"
+          value={search}
+          onChangeText={setSearch}
+        />
+      )}
+
+      <FlatList
+        data={guests}
+        keyExtractor={(guest) => `${guest.guestType}-${guest.remoteId}`}
+        renderItem={({ item }) => (
+          <View style={styles.row}>
+            <View>
+              <Text style={styles.name}>{item.name}</Text>
+              <Text style={styles.contact}>{item.email ?? item.phone ?? '—'}</Text>
+            </View>
+            <Text style={item.checkedIn ? styles.statusIn : styles.statusOut}>
+              {item.checkedIn ? 'Enregistré' : 'En attente'}
+            </Text>
+          </View>
+        )}
+        ListEmptyComponent={
+          <Text style={styles.empty}>
+            {eventId === null ? 'Saisissez un identifiant d\'événement puis téléchargez la liste.' : 'Aucun invité.'}
+          </Text>
+        }
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingTop: 56,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  logout: {
+    color: '#c5221f',
+    fontSize: 13,
+  },
+  downloadRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  eventInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 10,
+  },
+  downloadButton: {
+    backgroundColor: '#111',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+  },
+  downloadLabel: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  error: {
+    color: '#c5221f',
+    marginBottom: 8,
+  },
+  info: {
+    color: '#1e7e34',
+    marginBottom: 8,
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  contact: {
+    fontSize: 13,
+    color: '#666',
+  },
+  statusIn: {
+    color: '#1e7e34',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  statusOut: {
+    color: '#888',
+    fontSize: 13,
+  },
+  empty: {
+    textAlign: 'center',
+    color: '#888',
+    marginTop: 32,
+  },
+});

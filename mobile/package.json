@@ -1,0 +1,29 @@
+{
+  "name": "itaza-checkin-mobile",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@nozbe/watermelondb": "^0.28.0",
+    "@react-native-community/netinfo": "12.0.1",
+    "expo": "~57.0.20",
+    "expo-dev-client": "~57.0.18",
+    "expo-secure-store": "~57.0.3",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3"
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-decorators": "^7.29.7",
+    "@types/react": "~19.2.2",
+    "babel-preset-expo": "^57.0.10",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit"
+  },
+  "private": true
+}

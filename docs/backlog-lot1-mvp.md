@@ -586,20 +586,58 @@ synchronisation par lot.
 
 ### T-061 · Application de check-in — mode hors ligne · XL
 **Réf** : M7.1, D2 · **Dépend de** T-060
-**⚠️ À redécouper en 3 tickets au moment du sprint planning**
-
-React Native + base locale (WatermelonDB). Téléchargement préalable, fonctionnement
-100 % hors ligne, synchronisation à la reconnexion.
-
-**Critères d'acceptation**
-- [ ] Mode avion complet : 500 check-ins sans connexion, **zéro perte**
-- [ ] Reconnexion → synchronisation automatique avec résolution de conflits
-- [ ] Indicateur visible de l'état : en ligne / hors ligne / en cours de synchro / N en attente
-- [ ] Scan en < 1 s, écran lisible en pénombre, utilisable à une main
-- [ ] Recherche locale instantanée sur 5 000 invités
-- [ ] Batterie : 4 h d'utilisation continue sur un téléphone d'entrée de gamme
 
 > Ticket structurant du différenciateur D2. Ne pas rogner dessus.
+
+Redécoupé en 3 sous-tickets au moment du sprint planning (Sprint 7), comme prévu
+ci-dessous. React Native + base locale (WatermelonDB), nouveau projet dans
+`mobile/` à la racine du dépôt.
+
+---
+
+### T-061a · Socle appli mobile + liste hors ligne · M
+**Réf** : M7.1, D2 · **Dépend de** T-060
+
+Projet React Native + WatermelonDB. Authentification via l'API de check-in
+(T-060, jeton Sanctum par appareil), téléchargement préalable de la liste
+complète des invités d'un événement dans la base locale, recherche instantanée
+hors ligne par nom/e-mail/téléphone/n° de billet.
+
+**Critères d'acceptation**
+- [ ] Connexion au poste (e-mail/mot de passe) et obtention d'un jeton d'appareil, stocké de façon persistante
+- [ ] Téléchargement d'une liste de 5 000 invités dans la base locale, consultable immédiatement après
+- [ ] Recherche locale instantanée sur 5 000 invités, sans connexion réseau
+- [ ] Indicateur visible de l'état de connectivité (en ligne / hors ligne)
+
+---
+
+### T-061b · Scan et check-in local · S
+**Réf** : M7.1, D2 · **Dépend de** T-061a
+
+Scan de QR code par caméra, écriture du check-in en local uniquement (aucun
+appel réseau synchrone) — la synchronisation proprement dite est T-061c.
+
+**Critères d'acceptation**
+- [ ] Scan en < 1 s
+- [ ] Écran lisible en pénombre, utilisable à une main
+- [ ] Mode avion complet : 500 check-ins enregistrés en local sans connexion, **zéro perte**
+- [ ] Alerte immédiate (locale) si l'invité scanné est déjà marqué présent dans la base locale
+- [ ] Mode « liste » sans scan (recherche + bouton, comme le check-in web T-062)
+
+---
+
+### T-061c · Synchronisation et résolution de conflits · S
+**Réf** : M7.1, D2 · **Dépend de** T-061b
+
+File d'attente de synchronisation locale, envoi par lot à l'API de check-in
+(T-060, idempotente via `device_local_id`) dès que la connexion revient, sans
+intervention de l'utilisateur.
+
+**Critères d'acceptation**
+- [ ] Reconnexion → synchronisation automatique de la file d'attente, sans action manuelle
+- [ ] Résolution de conflit correcte quand un autre poste a déjà enregistré le même invité entre-temps
+- [ ] Indicateur visible : en ligne / hors ligne / en cours de synchro / N en attente
+- [ ] Batterie : 4 h d'utilisation continue sur un téléphone d'entrée de gamme (scan + sync périodique)
 
 ---
 
@@ -756,9 +794,9 @@ présente sur place, relevé de tous les incidents.
 | 4 | Inscription et parcours invité | T-030 → T-033 | ~19 j |
 | 5 | Contacts et communication | T-040 → T-045 | ~28 j |
 | 6 | Billetterie et paiements | T-050 → T-059 | ~42 j |
-| 7 | Jour J | T-060 → T-064 | ~24 j |
+| 7 | Jour J | T-060 → T-064 (T-061 en 061a/b/c) | ~24 j |
 | 8 | Pilotage et stabilisation | T-070 → T-078 | ~32 j |
-| | | **51 tickets** | **~209 j** |
+| | | **53 tickets** | **~209 j** |
 
 *Charge en jours de développement, hors design, QA dédiée, gestion de projet et
 provision pour imprévus. Rapprocher de l'estimation §16.2 du CDC (560 j/h tous
@@ -773,7 +811,7 @@ profils confondus pour le Lot 1).*
 | T-002 | Faille de cloisonnement multi-tenant | Double relecture + tests d'intrusion dédiés |
 | T-022 | Moteur conditionnel sous-estimé | Prototype jetable avant intégration |
 | T-053 | Fiabilité de l'agrégateur Mobile Money | Mode dégradé + réconciliation automatique |
-| T-061 | Complexité du hors ligne | À redécouper en 3 tickets, prototype dès le sprint 5 |
+| T-061a/b/c | Complexité du hors ligne | Redécoupé en 3 tickets (Sprint 7), livrer T-061a en premier pour valider tôt la synchronisation |
 | T-074 | Compteurs d'usage faux = revenus faux | Tests de charge sur les compteurs |
 
 ---
