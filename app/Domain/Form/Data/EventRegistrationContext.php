@@ -24,5 +24,10 @@ final class EventRegistrationContext
         public readonly ?CarbonImmutable $registrationClosesAt,
         public readonly string $timezone,
         public readonly ?string $registrationClosedMessage,
+        // Quota mensuel d'inscriptions du plan de l'organisation (T-074) —
+        // jamais un modèle Organization, même raisonnement que le reste de
+        // ce contexte (section 3 du CLAUDE.md) : l'appelant le résout via
+        // GetOrganizationUsage avant de construire ce contexte.
+        public readonly ?int $organizationMonthlyRegistrationQuota = null,
     ) {}
 }

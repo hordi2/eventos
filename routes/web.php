@@ -17,6 +17,7 @@ use App\Http\Controllers\Organizer\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Organizer\Auth\RegisteredUserController;
 use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
 use App\Http\Controllers\Organizer\BadgeController;
+use App\Http\Controllers\Organizer\BillingController;
 use App\Http\Controllers\Organizer\CheckInController;
 use App\Http\Controllers\Organizer\ContactController;
 use App\Http\Controllers\Organizer\ContactImportController;
@@ -36,6 +37,7 @@ use App\Http\Controllers\Organizer\TicketTypeController;
 use App\Http\Controllers\Organizer\WhatsappTemplateController;
 use App\Http\Controllers\Webhooks\FlutterwaveWebhookController;
 use App\Http\Controllers\Webhooks\PostmarkWebhookController;
+use App\Http\Controllers\Webhooks\StripeBillingWebhookController;
 use App\Http\Controllers\Webhooks\StripeWebhookController;
 use App\Http\Controllers\Webhooks\TwilioWhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -89,6 +91,13 @@ Route::middleware('auth')->group(function (): void {
         Route::get('organization/branding', [OrganizationBrandingController::class, 'edit'])->name('organization.branding.edit');
         Route::patch('organization/branding', [OrganizationBrandingController::class, 'update'])->name('organization.branding.update');
         Route::post('organization/branding/logo', [OrganizationBrandingController::class, 'uploadLogo'])->name('organization.branding.logo');
+    });
+
+    Route::middleware(['verified', 'resolve-organization', 'can-organization:manageBilling'])->group(function (): void {
+        Route::get('billing', [BillingController::class, 'index'])->name('billing.index');
+        Route::post('billing/checkout/{plan}', [BillingController::class, 'checkout'])->name('billing.checkout');
+        Route::post('billing/change/{plan}', [BillingController::class, 'change'])->name('billing.change');
+        Route::post('billing/portal', [BillingController::class, 'portal'])->name('billing.portal');
     });
 
     Route::middleware(['verified', 'resolve-organization'])->group(function (): void {
@@ -284,6 +293,13 @@ Route::post('webhooks/twilio-whatsapp', TwilioWhatsappWebhookController::class)
 Route::post('webhooks/stripe', StripeWebhookController::class)
     ->middleware('throttle:300,1')
     ->name('webhooks.stripe');
+
+// Webhook Stripe dédié aux abonnements (T-074) : endpoint distinct, secret
+// de signature distinct (voir RecordStripeBillingWebhookEvent), même
+// exclusion CSRF (webhooks/* dans bootstrap/app.php).
+Route::post('webhooks/stripe/billing', StripeBillingWebhookController::class)
+    ->middleware('throttle:300,1')
+    ->name('webhooks.stripe.billing');
 
 // Webhook Flutterwave (confirmation/échec Mobile Money, T-053) : public,
 // protégé par la signature flutterwave-signature (voir

@@ -61,6 +61,9 @@ return [
         // Distinct de la clé secrète : signe les événements de webhook,
         // jamais utilisé pour appeler l'API Stripe (T-052).
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        // Endpoint webhook séparé pour les événements d'abonnement (T-074) :
+        // Stripe signe chaque endpoint avec son propre secret.
+        'billing_webhook_secret' => env('STRIPE_BILLING_WEBHOOK_SECRET'),
     ],
 
     'flutterwave' => [

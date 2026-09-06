@@ -14,3 +14,8 @@ Artisan::command('inspire', function () {
 // quotidienne automatique avec le fournisseur ») — filet de sécurité pour
 // les confirmations Mobile Money dont le webhook ne serait jamais arrivé.
 Schedule::command('payments:reconcile-flutterwave')->daily();
+
+// T-074 : alertes de quota (AC « 80 % et 100 % ») et relances d'échec de
+// paiement (AC « J+1, J+3, J+7, puis restriction »).
+Schedule::command('quota:check-alerts')->daily();
+Schedule::command('billing:process-dunning')->daily();

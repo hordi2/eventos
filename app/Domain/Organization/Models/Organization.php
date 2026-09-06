@@ -27,6 +27,13 @@ final class Organization extends Model
         'allow_editor_financial_access',
         'logo_path',
         'primary_color',
+        'plan',
+        'stripe_customer_id',
+        'stripe_subscription_id',
+        'subscription_status',
+        'subscription_current_period_end',
+        'payment_failed_at',
+        'dunning_stage',
     ];
 
     /**
@@ -36,6 +43,10 @@ final class Organization extends Model
     {
         return [
             'allow_editor_financial_access' => 'boolean',
+            'plan' => PlanTier::class,
+            'subscription_current_period_end' => 'immutable_datetime',
+            'payment_failed_at' => 'immutable_datetime',
+            'dunning_stage' => 'integer',
         ];
     }
 

@@ -96,13 +96,15 @@ final class SubmitRegistration
                 throw EventFullException::forEvent($context->eventId);
             }
 
+            $status = $outcome->outcome === ReservationOutcome::Accepted && ! $this->organizationOverMonthlyQuota($context)
+                ? RegistrationStatus::Confirmed
+                : RegistrationStatus::Waitlisted;
+
             $registration = Registration::query()->create([
                 'organization_id' => $context->organizationId,
                 'event_id' => $context->eventId,
                 'form_version_id' => $formVersion->id,
-                'status' => $outcome->outcome === ReservationOutcome::Accepted
-                    ? RegistrationStatus::Confirmed
-                    : RegistrationStatus::Waitlisted,
+                'status' => $status,
                 'reservation_key' => $idempotencyKey,
                 'email' => $email,
                 'first_name' => $identity->firstName,
@@ -134,6 +136,27 @@ final class SubmitRegistration
         RegistrationCreated::dispatch($registration);
 
         return SubmitRegistrationResult::created($registration);
+    }
+
+    /**
+     * Dépassement de quota mensuel du plan (T-074, AC : « les nouvelles
+     * inscriptions passent en attente ») : jamais un rejet, seulement une
+     * bascule en liste d'attente — l'inscription est toujours créée, aucune
+     * donnée n'est perdue, elle sera confirmable manuellement ou dès le
+     * mois suivant.
+     */
+    private function organizationOverMonthlyQuota(EventRegistrationContext $context): bool
+    {
+        if ($context->organizationMonthlyRegistrationQuota === null) {
+            return false;
+        }
+
+        $count = Registration::query()
+            ->where('organization_id', $context->organizationId)
+            ->where('created_at', '>=', CarbonImmutable::now()->startOfMonth())
+            ->count();
+
+        return $count >= $context->organizationMonthlyRegistrationQuota;
     }
 
     private function assertRegistrationWindowOpen(EventRegistrationContext $context): void

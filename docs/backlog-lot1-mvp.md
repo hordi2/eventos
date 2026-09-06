@@ -819,13 +819,23 @@ et un CSS personnalisé pour les plans avancés, hors périmètre ici :
 Trois plans (gratuit + 2 payants), feature flags, compteurs d'usage, abonnement
 Stripe, factures PDF.
 
+Comme pour T-052/T-053, aucun compte Stripe réel n'était configuré au moment
+de construire ce ticket (décision prise avec l'utilisateur) : les Price ID
+des deux plans payants sont des variables d'environnement à renseigner
+(`STRIPE_PRICE_PRO`, `STRIPE_PRICE_BUSINESS`, voir .env.example), et toute
+action de paiement échoue proprement avec un message clair tant qu'ils sont
+vides, plutôt que de planter. Le prix affiché (29 $/99 $ par mois) est un
+espace réservé arbitraire, aucune tarification n'a été définie par le
+produit. Les factures PDF ne sont pas reconstruites : le portail Stripe
+(lien « Gérer mon abonnement ») expose déjà les factures hostées par
+Stripe, ce que le ticket ne demande pas de dupliquer.
+
 **Critères d'acceptation**
-- [ ] Compteurs fiables : inscriptions/mois, e-mails/mois, événements actifs
-- [ ] Alerte à 80 % et 100 % de quota
-- [ ] **Dépassement = blocage non destructif** : les données restent, les nouvelles
-      inscriptions passent en attente avec notification à l'organisateur
-- [ ] Changement de plan avec prorata correct
-- [ ] Échec de prélèvement → relances J+1, J+3, J+7, puis restriction
+- [x] Compteurs fiables : inscriptions/mois, e-mails/mois, événements actifs — recalculés à la demande (jamais de compteur dénormalisé sujet à dérive)
+- [x] Alerte à 80 % et 100 % de quota — e-mail au propriétaire/administrateur, une seule fois par mois et par seuil (tâche planifiée quotidienne)
+- [x] **Dépassement = blocage non destructif** : les nouvelles inscriptions passent en liste d'attente (jamais rejetées) une fois le quota mensuel atteint, avec notification à l'organisateur
+- [x] Changement de plan avec prorata correct — délégué à l'API Stripe Subscriptions (`proration_behavior: create_prorations`), jamais recalculé côté application ; non vérifié avec un vrai compte Stripe faute de Price ID configurés
+- [x] Échec de prélèvement → relances J+1, J+3, J+7, puis restriction — la restriction ne modifie jamais le plan enregistré, seulement son application aux quotas tant que le paiement n'est pas régularisé
 
 ---
 

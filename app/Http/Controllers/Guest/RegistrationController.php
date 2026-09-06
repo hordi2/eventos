@@ -23,6 +23,8 @@ use App\Domain\Form\OptionFullException;
 use App\Domain\Form\RegistrationClosedException;
 use App\Domain\Form\Support\EvaluateFormVisibility;
 use App\Domain\Form\Support\IsRegistrationWindowOpen;
+use App\Domain\Organization\Actions\GetEffectivePlan;
+use App\Domain\Organization\Actions\GetPlanQuotas;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Guest\SaveAnswersRequest;
 use App\Http\Requests\Guest\SaveIdentityRequest;
@@ -362,6 +364,10 @@ final class RegistrationController extends Controller
 
     private function contextFor(Event $event): EventRegistrationContext
     {
+        $event->loadMissing('organization');
+        $plan = app(GetEffectivePlan::class)->handle($event->organization);
+        $quotas = app(GetPlanQuotas::class)->handle($plan);
+
         return new EventRegistrationContext(
             eventId: $event->id,
             organizationId: $event->organization_id,
@@ -371,6 +377,7 @@ final class RegistrationController extends Controller
             registrationClosesAt: $event->registration_closes_at,
             timezone: $event->timezone,
             registrationClosedMessage: $event->registration_closed_message,
+            organizationMonthlyRegistrationQuota: $quotas->registrationsPerMonth,
         );
     }
 }
