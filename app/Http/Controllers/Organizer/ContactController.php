@@ -12,7 +12,10 @@ use App\Domain\Form\Models\Registration;
 use App\Domain\Organization\Models\Organization;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\Contact\SaveContactRequest;
+use App\Support\Gdpr\AnonymizeContact;
+use App\Support\Gdpr\ExportContactData;
 use App\Support\MultiTenancy\CurrentOrganization;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -118,6 +121,27 @@ final class ContactController extends Controller
         $updated = $action->handle($this->findContact($contact), $request->user(), $request->validated());
 
         return redirect()->route('contacts.edit', $updated);
+    }
+
+    public function export(int $contact, ExportContactData $action): JsonResponse
+    {
+        $contactModel = $this->findContact($contact);
+        Gate::authorize('view', $contactModel);
+
+        $filename = "contact-{$contactModel->id}-donnees.json";
+
+        return response()->json($action->handle($contactModel))
+            ->header('Content-Disposition', "attachment; filename=\"{$filename}\"");
+    }
+
+    public function anonymize(int $contact, Request $request, AnonymizeContact $action): RedirectResponse
+    {
+        $contactModel = $this->findContact($contact);
+        Gate::authorize('delete', $contactModel);
+
+        $action->handle($contactModel, $request->user());
+
+        return redirect()->route('contacts.index');
     }
 
     private function findContact(int $id): Contact

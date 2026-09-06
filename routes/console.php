@@ -19,3 +19,8 @@ Schedule::command('payments:reconcile-flutterwave')->daily();
 // paiement (AC « J+1, J+3, J+7, puis restriction »).
 Schedule::command('quota:check-alerts')->daily();
 Schedule::command('billing:process-dunning')->daily();
+
+// T-075 : purge RGPD des contacts inactifs au-delà de la durée de
+// conservation configurée (config/gdpr.php, AC « suppression automatique
+// après la durée définie »).
+Schedule::command('gdpr:purge-expired-contacts')->daily();

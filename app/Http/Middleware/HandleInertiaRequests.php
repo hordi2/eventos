@@ -103,6 +103,7 @@ class HandleInertiaRequests extends Middleware
                     $gate->allows('manageBranding', $organization) ? ['label' => 'Charte graphique', 'href' => route('organization.branding.edit')] : null,
                     $gate->allows('manageBilling', $organization) ? ['label' => 'Facturation', 'href' => route('billing.index')] : null,
                     $gate->allows('viewAuditLog', $organization) ? ['label' => "Journal d'audit", 'href' => route('audit-log.index')] : null,
+                    $gate->allows('viewAuditLog', $organization) ? ['label' => 'Registre des traitements', 'href' => route('compliance.register')] : null,
                 ])),
             ] : null,
         ]));

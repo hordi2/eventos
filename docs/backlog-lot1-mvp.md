@@ -845,11 +845,30 @@ Stripe, ce que le ticket ne demande pas de dupliquer.
 Export des données d'une personne, effacement par anonymisation, gestion des
 consentements, durées de conservation, bannière cookies.
 
+Périmètre arbitré avec l'utilisateur avant construction : la bannière
+cookies (P-14) et l'effacement des comptes organisateurs (`User`, sans
+SoftDeletes) sont mentionnés au cahier des charges mais absents des 4 AC
+ci-dessous — restent hors de ce ticket, à traiter séparément si besoin.
+La gestion des consentements (P-02) existait déjà (T-040).
+
+**Découverte en construisant, corrigée dans ce ticket** : le journal
+d'audit est immuable au niveau base (déclencheur PostgreSQL, T-005) et
+enregistrait les valeurs brutes des champs modifiés — e-mail, nom,
+téléphone — dans `audit_logs.metadata`, à chaque modification d'un
+Contact/Registration/Order. Anonymiser un contact ne pouvait donc rien
+changer aux entrées déjà écrites. Corrigé pour l'avenir seulement (décision
+prise avec l'utilisateur) : ces champs sont désormais remplacés par
+`[redacted]` avant journalisation. **Les entrées antérieures à ce correctif
+contiennent toujours des données en clair** — techniquement impossible à
+corriger rétroactivement tant que le déclencheur d'immuabilité reste en
+place ; à traiter par un administrateur base de données si nécessaire,
+hors du périmètre logiciel de ce ticket.
+
 **Critères d'acceptation**
-- [ ] Export complet d'une personne en JSON, en un clic
-- [ ] Effacement : données identifiantes supprimées, agrégats et lignes comptables conservés
-- [ ] Job planifié de purge selon les durées configurées
-- [ ] Registre des traitements généré
+- [x] Export complet d'une personne en JSON, en un clic — contact, consentements, tags, foyer, inscriptions et réponses de formulaire, participants ; n'inclut pas les commandes de billetterie (aucune colonne ne relie une commande à un Contact, Domain/Ticketing n'a pas de contact_id — limite connue, signalée)
+- [x] Effacement : données identifiantes supprimées, agrégats et lignes comptables conservés — anonymise le Contact et ses Registrations/Attendees liés (statut, date, événement conservés) ; n'anonymise pas les commandes de billetterie (même limite que l'export, ci-dessus) ni les réponses de formulaire libres (aucune façon fiable d'y détecter une identité sans risquer d'effacer une réponse métier légitime)
+- [x] Job planifié de purge selon les durées configurées — `config/gdpr.php` (durée par défaut : 36 mois depuis la dernière inscription, ou la création si aucune), tâche quotidienne
+- [x] Registre des traitements généré — page + export PDF, durée de conservation injectée depuis la configuration en vigueur
 
 ---
 

@@ -19,6 +19,7 @@ use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
 use App\Http\Controllers\Organizer\BadgeController;
 use App\Http\Controllers\Organizer\BillingController;
 use App\Http\Controllers\Organizer\CheckInController;
+use App\Http\Controllers\Organizer\ComplianceController;
 use App\Http\Controllers\Organizer\ContactController;
 use App\Http\Controllers\Organizer\ContactImportController;
 use App\Http\Controllers\Organizer\DashboardController;
@@ -85,6 +86,8 @@ Route::middleware('auth')->group(function (): void {
     Route::middleware(['verified', 'resolve-organization', 'can-organization:viewAuditLog'])->group(function (): void {
         Route::get('audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
         Route::get('audit-log/export', [AuditLogController::class, 'export'])->name('audit-log.export');
+        Route::get('compliance/register', [ComplianceController::class, 'register'])->name('compliance.register');
+        Route::get('compliance/register/pdf', [ComplianceController::class, 'exportRegisterPdf'])->name('compliance.register.pdf');
     });
 
     Route::middleware(['verified', 'resolve-organization', 'can-organization:manageBranding'])->group(function (): void {
@@ -124,6 +127,8 @@ Route::middleware('auth')->group(function (): void {
         Route::post('contacts', [ContactController::class, 'store'])->name('contacts.store');
         Route::get('contacts/{contact}/edit', [ContactController::class, 'edit'])->name('contacts.edit');
         Route::patch('contacts/{contact}', [ContactController::class, 'update'])->name('contacts.update');
+        Route::get('contacts/{contact}/export', [ContactController::class, 'export'])->name('contacts.export');
+        Route::post('contacts/{contact}/anonymize', [ContactController::class, 'anonymize'])->name('contacts.anonymize');
 
         Route::get('contact-imports/create', [ContactImportController::class, 'create'])->name('contact-imports.create');
         Route::post('contact-imports', [ContactImportController::class, 'store'])->name('contact-imports.store');

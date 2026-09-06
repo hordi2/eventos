@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 import Badge from '../../Components/Badge';
 import Button from '../../Components/Button';
@@ -118,6 +118,20 @@ export default function ContactForm({
 
     function toggleTag(tagId: number) {
         setData('tag_ids', data.tag_ids.includes(tagId) ? data.tag_ids.filter((id) => id !== tagId) : [...data.tag_ids, tagId]);
+    }
+
+    function anonymize() {
+        if (!contact) {
+            return;
+        }
+
+        if (
+            confirm(
+                "Anonymiser ce contact ? Son nom, son e-mail et son téléphone seront définitivement effacés, ainsi que ceux de ses inscriptions. Ses inscriptions restent (statut, date), mais deviennent anonymes. Cette action est irréversible.",
+            )
+        ) {
+            router.post(`/contacts/${contact.id}/anonymize`);
+        }
     }
 
     return (
@@ -265,6 +279,23 @@ export default function ContactForm({
                         ) : (
                             <p className="text-sm text-ink-soft">Aucune inscription pour l'instant.</p>
                         )}
+
+                        <h2 className="mt-10 mb-4 font-label text-xs tracking-[0.14em] text-ink-soft uppercase">Confidentialité (RGPD)</h2>
+                        <div className="flex flex-wrap gap-3">
+                            <a
+                                href={`/contacts/${contact.id}/export`}
+                                className="rounded-pill border border-line px-4 py-2 text-sm text-ink hover:border-ink"
+                            >
+                                Exporter les données (JSON)
+                            </a>
+                            <button
+                                type="button"
+                                onClick={anonymize}
+                                className="rounded-pill border border-danger px-4 py-2 text-sm text-danger hover:bg-danger/10"
+                            >
+                                Anonymiser ce contact
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
