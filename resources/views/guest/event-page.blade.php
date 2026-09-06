@@ -57,6 +57,10 @@
 
 @section('content')
     <div class="mx-auto max-w-2xl px-4 py-10">
+        @if ($page->organizationLogoUrl !== null)
+            <img src="{{ $page->organizationLogoUrl }}" alt="" class="mb-4 h-10 w-auto object-contain">
+        @endif
+
         @if ($page->bannerUrl !== null)
             <img src="{{ $page->bannerUrl }}" alt="{{ $page->title }}" class="mb-6 aspect-[2/1] w-full rounded-card object-cover">
         @endif
@@ -75,7 +79,11 @@
             @endif
         </p>
 
-        <a href="{{ $beginUrl }}" class="mb-10 inline-block min-h-11 rounded-pill bg-ink px-8 py-3 font-medium text-bg">
+        <a
+            href="{{ $beginUrl }}"
+            class="mb-10 inline-block min-h-11 rounded-pill px-8 py-3 font-medium text-bg {{ $page->organizationPrimaryColor === null ? 'bg-ink' : '' }}"
+            @if ($page->organizationPrimaryColor !== null) style="background-color: {{ $page->organizationPrimaryColor }}" @endif
+        >
             S'inscrire
         </a>
 
@@ -140,7 +148,11 @@
             </section>
         @endif
 
-        <a href="{{ $beginUrl }}" class="inline-block min-h-11 rounded-pill bg-ink px-8 py-3 font-medium text-bg">
+        <a
+            href="{{ $beginUrl }}"
+            class="inline-block min-h-11 rounded-pill px-8 py-3 font-medium text-bg {{ $page->organizationPrimaryColor === null ? 'bg-ink' : '' }}"
+            @if ($page->organizationPrimaryColor !== null) style="background-color: {{ $page->organizationPrimaryColor }}" @endif
+        >
             S'inscrire
         </a>
     </div>

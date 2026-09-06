@@ -97,11 +97,12 @@ class HandleInertiaRequests extends Middleware
                     ['label' => 'Modèles WhatsApp', 'href' => route('whatsapp-templates.index')],
                 ],
             ] : null,
-            $gate->allows('viewAuditLog', $organization) ? [
+            $gate->allows('viewAuditLog', $organization) || $gate->allows('manageBranding', $organization) ? [
                 'label' => 'Organisation',
-                'items' => [
-                    ['label' => "Journal d'audit", 'href' => route('audit-log.index')],
-                ],
+                'items' => array_values(array_filter([
+                    $gate->allows('manageBranding', $organization) ? ['label' => 'Charte graphique', 'href' => route('organization.branding.edit')] : null,
+                    $gate->allows('viewAuditLog', $organization) ? ['label' => "Journal d'audit", 'href' => route('audit-log.index')] : null,
+                ])),
             ] : null,
         ]));
     }

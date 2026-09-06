@@ -26,6 +26,8 @@ final class GenericMail extends Mailable
         public readonly string $bodyHtml,
         public readonly ?string $unsubscribeUrl,
         public readonly ?string $icsAttachment = null,
+        public readonly ?string $organizationLogoUrl = null,
+        public readonly ?string $organizationPrimaryColor = null,
     ) {}
 
     public function envelope(): Envelope
@@ -37,7 +39,12 @@ final class GenericMail extends Mailable
     {
         return new Content(
             view: 'emails.generic',
-            with: ['bodyHtml' => $this->bodyHtml, 'unsubscribeUrl' => $this->unsubscribeUrl],
+            with: [
+                'bodyHtml' => $this->bodyHtml,
+                'unsubscribeUrl' => $this->unsubscribeUrl,
+                'organizationLogoUrl' => $this->organizationLogoUrl,
+                'organizationPrimaryColor' => $this->organizationPrimaryColor,
+            ],
         );
     }
 

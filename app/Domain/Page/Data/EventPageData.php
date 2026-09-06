@@ -23,5 +23,7 @@ final class EventPageData
         public readonly bool $isOnline,
         public readonly array $programItems,
         public readonly array $faqItems,
+        public readonly ?string $organizationLogoUrl,
+        public readonly ?string $organizationPrimaryColor,
     ) {}
 }

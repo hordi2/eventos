@@ -11,17 +11,19 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
- * Traverse Event (Domain/Event) et Page (Domain/Page) : ne peut pas vivre
- * dans l'un ou l'autre (section 3 du CLAUDE.md), même raisonnement que
- * GetSeatingPlan. Un événement sans ligne Page (jamais personnalisé par
- * l'organisateur) reçoit tout de même une page complète, avec des blocs
- * programme/FAQ vides et une méta-description dérivée de la description.
+ * Traverse Event (Domain/Event), Page (Domain/Page) et Organization
+ * (Domain/Organization, pour le logo/la couleur de la charte graphique,
+ * T-073) : ne peut vivre dans aucun des trois (section 3 du CLAUDE.md),
+ * même raisonnement que GetSeatingPlan. Un événement sans ligne Page
+ * (jamais personnalisé par l'organisateur) reçoit tout de même une page
+ * complète, avec des blocs programme/FAQ vides et une méta-description
+ * dérivée de la description.
  */
 final class GetEventPage
 {
     public function handle(Event $event): EventPageData
     {
-        $event->loadMissing('venue');
+        $event->loadMissing(['venue', 'organization']);
         $page = Page::query()->where('event_id', $event->id)->first();
 
         return new EventPageData(
@@ -42,6 +44,10 @@ final class GetEventPage
             isOnline: $event->is_online,
             programItems: $page !== null ? $page->program_items : [],
             faqItems: $page !== null ? $page->faq_items : [],
+            organizationLogoUrl: $event->organization->logo_path !== null
+                ? Storage::disk('public')->url($event->organization->logo_path)
+                : null,
+            organizationPrimaryColor: $event->organization->primary_color,
         );
     }
 }

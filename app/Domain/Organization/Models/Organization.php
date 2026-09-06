@@ -25,6 +25,8 @@ final class Organization extends Model
         'name',
         'slug',
         'allow_editor_financial_access',
+        'logo_path',
+        'primary_color',
     ];
 
     /**

@@ -795,6 +795,22 @@ déclenche ce qui se faisait auparavant à la simple visite de l'URL.
 
 Logo, palette, typographies, appliqués en un clic à toutes les pages et e-mails.
 
+Ticket sans critère d'acceptation dans le backlog d'origine ; scope MVP
+arbitré avec l'utilisateur avant construction, faute d'AC pour trancher —
+le cahier des charges (M6.2) prévoit une palette à 5 couleurs, un choix de
+typographies (avec upload de polices propriétaires), des rayons d'arrondi
+et un CSS personnalisé pour les plans avancés, hors périmètre ici :
+- logo + une seule couleur principale (pas de palette à 5 couleurs, pas de
+  typographie personnalisée, pas de CSS libre) ;
+- nouvelle page de réglages `/organization/branding` (première page de
+  réglages d'organisation du produit — jusqu'ici seul le journal d'audit
+  existait sous « Organisation ») ;
+- appliqués à la page événement publique (T-072 : logo au-dessus du titre,
+  couleur du bouton « S'inscrire ») et à l'en-tête des e-mails (logo,
+  bordure supérieure de la couleur principale) — pas aux pages de
+  l'organisateur lui-même (interface produit d'Itaza, pas de la marque de
+  l'organisateur, conformément à la section 2 du CLAUDE.md).
+
 ---
 
 ### T-074 · Plans, quotas et facturation · L

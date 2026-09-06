@@ -28,6 +28,7 @@ use App\Http\Controllers\Organizer\EventSegmentController;
 use App\Http\Controllers\Organizer\ExportController;
 use App\Http\Controllers\Organizer\FormController;
 use App\Http\Controllers\Organizer\MessageAutomationController;
+use App\Http\Controllers\Organizer\OrganizationBrandingController;
 use App\Http\Controllers\Organizer\PageController;
 use App\Http\Controllers\Organizer\SeatingController;
 use App\Http\Controllers\Organizer\TagController;
@@ -82,6 +83,12 @@ Route::middleware('auth')->group(function (): void {
     Route::middleware(['verified', 'resolve-organization', 'can-organization:viewAuditLog'])->group(function (): void {
         Route::get('audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
         Route::get('audit-log/export', [AuditLogController::class, 'export'])->name('audit-log.export');
+    });
+
+    Route::middleware(['verified', 'resolve-organization', 'can-organization:manageBranding'])->group(function (): void {
+        Route::get('organization/branding', [OrganizationBrandingController::class, 'edit'])->name('organization.branding.edit');
+        Route::patch('organization/branding', [OrganizationBrandingController::class, 'update'])->name('organization.branding.update');
+        Route::post('organization/branding/logo', [OrganizationBrandingController::class, 'uploadLogo'])->name('organization.branding.logo');
     });
 
     Route::middleware(['verified', 'resolve-organization'])->group(function (): void {

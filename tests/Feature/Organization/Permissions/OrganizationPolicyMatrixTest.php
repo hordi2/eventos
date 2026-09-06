@@ -21,6 +21,13 @@ dataset('matrice_m03', [
         MembershipRole::DoorStaff->value => false,
         MembershipRole::Viewer->value => false,
     ]],
+    'gérer la charte graphique' => ['manageBranding', [
+        MembershipRole::Owner->value => true,
+        MembershipRole::Admin->value => true,
+        MembershipRole::Editor->value => false,
+        MembershipRole::DoorStaff->value => false,
+        MembershipRole::Viewer->value => false,
+    ]],
     'inviter des membres' => ['inviteMembers', [
         MembershipRole::Owner->value => true,
         MembershipRole::Admin->value => true,
@@ -143,6 +150,7 @@ it('viewer ne peut effectuer aucune écriture', function (): void {
     $viewer->memberships()->create(['organization_id' => $organization->id, 'role' => MembershipRole::Viewer]);
 
     $writeAbilities = [
+        'manageBranding',
         'inviteMembers',
         'createEvents',
         'deleteEvents',

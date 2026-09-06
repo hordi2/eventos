@@ -22,6 +22,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -103,6 +104,7 @@ final class EmailTemplateController extends Controller
 
         $contact = Contact::query()->findOrFail($request->validated('contact_id'));
         $event = $request->validated('event_id') !== null ? Event::query()->find($request->validated('event_id')) : null;
+        $organization = $this->currentOrganization();
 
         return response()->json([
             'subject' => $action->renderSubject($template, $contact, $event),
@@ -111,7 +113,12 @@ final class EmailTemplateController extends Controller
             // une <iframe> sans habillage, le texte sombre sur fond
             // transparent devient quasi invisible sur cette interface en
             // thème sombre.
-            'html' => view('emails.generic', ['bodyHtml' => $action->render($template, $contact, $event), 'unsubscribeUrl' => null])->render(),
+            'html' => view('emails.generic', [
+                'bodyHtml' => $action->render($template, $contact, $event),
+                'unsubscribeUrl' => null,
+                'organizationLogoUrl' => $organization->logo_path !== null ? Storage::disk('public')->url($organization->logo_path) : null,
+                'organizationPrimaryColor' => $organization->primary_color,
+            ])->render(),
         ]);
     }
 

@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body style="margin:0; padding:24px; background:#f4f4f2; font-family:Arial, sans-serif; color:#1b1611;">
-    <div style="max-width:560px; margin:0 auto; background:#ffffff; padding:32px; border-radius:12px;">
+    <div style="max-width:560px; margin:0 auto; background:#ffffff; padding:32px; border-radius:12px; border-top:4px solid {{ $organizationPrimaryColor ?? '#1b1611' }};">
+        @if ($organizationLogoUrl ?? null)
+            <img src="{{ $organizationLogoUrl }}" alt="" style="max-height:40px; width:auto; margin-bottom:24px;">
+        @endif
+
         {!! $bodyHtml !!}
 
         @if ($unsubscribeUrl)

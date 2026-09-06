@@ -6,6 +6,7 @@ namespace App\Jobs;
 
 use App\Domain\Messaging\Models\EmailMessage;
 use App\Domain\Messaging\Models\EmailMessageStatus;
+use App\Domain\Organization\Models\Organization;
 use App\Mail\GenericMail;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Bus\Queueable;
@@ -15,6 +16,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\Middleware\RateLimited;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
@@ -55,6 +57,7 @@ final class SendEmailMessageJob implements ShouldQueue
         $currentOrganization->set($this->organizationId);
 
         $emailMessage = EmailMessage::query()->findOrFail($this->emailMessageId);
+        $organization = Organization::query()->find($this->organizationId);
 
         try {
             $sent = Mail::to($emailMessage->to_email)->send(new GenericMail(
@@ -62,6 +65,8 @@ final class SendEmailMessageJob implements ShouldQueue
                 $this->bodyHtml,
                 $this->unsubscribeUrl,
                 $this->icsAttachment,
+                organizationLogoUrl: $organization?->logo_path !== null ? Storage::disk('public')->url($organization->logo_path) : null,
+                organizationPrimaryColor: $organization?->primary_color,
             ));
 
             $emailMessage->update([
