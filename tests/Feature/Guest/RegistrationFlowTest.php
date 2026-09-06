@@ -15,7 +15,7 @@ it('parcourt les trois étapes et confirme une inscription', function (): void {
         ['key' => 'allergies', 'type' => 'short_text', 'label' => 'Allergies'],
     ], ['type' => EventType::Conference]);
 
-    $start = $this->get("/r/{$organization->slug}/{$event->slug}");
+    $start = $this->get("/r/{$organization->slug}/{$event->slug}/commencer");
     $start->assertRedirect();
     $token = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->firstOrFail()->resume_token;
 
@@ -49,13 +49,13 @@ it('redirige vers la page « déjà inscrit » en cas de doublon', function (): 
     // pour un type "personnel".
     ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent(eventOverrides: ['type' => EventType::Conference]);
 
-    $firstStart = $this->get("/r/{$organization->slug}/{$event->slug}");
+    $firstStart = $this->get("/r/{$organization->slug}/{$event->slug}/commencer");
     $firstToken = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->latest('id')->firstOrFail()->resume_token;
     $this->post("/r/{$organization->slug}/{$event->slug}/{$firstToken}/identite", ['email' => 'double@example.com']);
     $this->post("/r/{$organization->slug}/{$event->slug}/{$firstToken}/reponses", []);
     $this->post("/r/{$organization->slug}/{$event->slug}/{$firstToken}/recap");
 
-    $this->get("/r/{$organization->slug}/{$event->slug}");
+    $this->get("/r/{$organization->slug}/{$event->slug}/commencer");
     $secondToken = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->latest('id')->firstOrFail()->resume_token;
     $this->post("/r/{$organization->slug}/{$event->slug}/{$secondToken}/identite", ['email' => 'Double@Example.com']);
     $this->post("/r/{$organization->slug}/{$event->slug}/{$secondToken}/reponses", []);
@@ -71,7 +71,7 @@ it('redirige vers la page « déjà inscrit » en cas de doublon', function (): 
 it('affiche la page fermée quand l\'événement affiche complet sans liste d\'attente', function (): void {
     ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent([], ['capacity' => 1, 'allow_waitlist' => false, 'type' => EventType::Conference]);
 
-    $this->get("/r/{$organization->slug}/{$event->slug}");
+    $this->get("/r/{$organization->slug}/{$event->slug}/commencer");
     $token = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->firstOrFail()->resume_token;
     $this->post("/r/{$organization->slug}/{$event->slug}/{$token}/identite", ['email' => 'premier@example.com']);
     $this->post("/r/{$organization->slug}/{$event->slug}/{$token}/reponses", []);
@@ -97,8 +97,10 @@ it('bloque l\'accès à un événement protégé par mot de passe sans le bon mo
     $right = $this->post("/r/{$organization->slug}/{$event->slug}/mot-de-passe", ['password' => 'secret123']);
     $right->assertRedirect("/r/{$organization->slug}/{$event->slug}");
 
+    // Une fois déverrouillé, la racine affiche désormais la page événement
+    // publique (T-072) au lieu de rediriger directement vers le formulaire.
     $afterUnlock = $this->get("/r/{$organization->slug}/{$event->slug}");
-    $afterUnlock->assertRedirect();
+    $afterUnlock->assertOk();
 });
 
 it('retourne 404 pour un événement non publié', function (): void {

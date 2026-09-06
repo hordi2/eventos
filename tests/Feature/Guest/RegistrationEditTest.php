@@ -29,7 +29,7 @@ function registerGuestFor(TestCase $test, array $fields, array $eventOverrides, 
     // "personnel" — un appelant peut toujours l'écraser explicitement.
     ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent($fields, ['type' => EventType::Conference, ...$eventOverrides]);
 
-    $test->get("/r/{$organization->slug}/{$event->slug}");
+    $test->get("/r/{$organization->slug}/{$event->slug}/commencer");
     $token = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->latest('id')->firstOrFail()->resume_token;
     $test->post("/r/{$organization->slug}/{$event->slug}/{$token}/identite", ['email' => $email]);
     $test->post("/r/{$organization->slug}/{$event->slug}/{$token}/reponses", $answers);
@@ -93,7 +93,7 @@ it('libère la place et promeut la liste d\'attente lors d\'une annulation', fun
     );
 
     // Une deuxième personne passe en liste d'attente derrière la première.
-    $this->get("/r/{$organization->slug}/{$event->slug}");
+    $this->get("/r/{$organization->slug}/{$event->slug}/commencer");
     $secondToken = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->latest('id')->firstOrFail()->resume_token;
     $this->post("/r/{$organization->slug}/{$event->slug}/{$secondToken}/identite", ['email' => 'attente@gmail.com']);
     $this->post("/r/{$organization->slug}/{$event->slug}/{$secondToken}/reponses", []);

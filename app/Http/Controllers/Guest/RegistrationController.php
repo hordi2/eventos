@@ -29,6 +29,7 @@ use App\Http\Requests\Guest\SaveIdentityRequest;
 use App\Http\Requests\Guest\UpdateRegistrationRequest;
 use App\Http\Requests\Guest\VerifyEventPasswordRequest;
 use App\Support\Capacity\Actions\GetRemainingCapacity;
+use App\Support\Page\GetEventPage;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Http\RedirectResponse;
@@ -65,7 +66,34 @@ final class RegistrationController extends Controller
         return redirect()->route('guest.registration.start', [$organization, $event]);
     }
 
-    public function start(Request $request, string $organization, string $event): View|RedirectResponse
+    /**
+     * Page événement publique (T-072) : bannière, description, programme,
+     * lieu + carte, FAQ. Remplace l'ancien comportement de cette route, qui
+     * créait immédiatement un brouillon et redirigeait vers le formulaire
+     * — ce démarrage vit maintenant dans begin(), déclenché par le bouton
+     * « S'inscrire » de cette page plutôt qu'à la simple visite de l'URL.
+     */
+    public function start(Request $request, string $organization, string $event): View
+    {
+        $eventModel = $this->event($request);
+        $this->requirePublishedForm($eventModel);
+
+        if (! app(IsRegistrationWindowOpen::class)->handle($this->contextFor($eventModel))) {
+            return view('guest.registration.closed', ['event' => $eventModel, 'reason' => 'window']);
+        }
+
+        if ($this->isFull($eventModel)) {
+            return view('guest.registration.closed', ['event' => $eventModel, 'reason' => 'full']);
+        }
+
+        return view('guest.event-page', [
+            'event' => $eventModel,
+            'page' => app(GetEventPage::class)->handle($eventModel),
+            'beginUrl' => route('guest.registration.begin', [$organization, $event]),
+        ]);
+    }
+
+    public function begin(Request $request, string $organization, string $event): View|RedirectResponse
     {
         $eventModel = $this->event($request);
         $form = $this->requirePublishedForm($eventModel);

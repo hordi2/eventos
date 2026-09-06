@@ -9,7 +9,7 @@ use App\Domain\Form\Models\RegistrationDraft;
 it('exige le téléphone à l\'identité pour un événement personnel', function (): void {
     ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent(eventOverrides: ['type' => EventType::Wedding]);
 
-    $this->get("/r/{$organization->slug}/{$event->slug}");
+    $this->get("/r/{$organization->slug}/{$event->slug}/commencer");
     $token = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->firstOrFail()->resume_token;
 
     $withoutPhone = $this->post("/r/{$organization->slug}/{$event->slug}/{$token}/identite", ['email' => 'invite@example.com']);
@@ -25,7 +25,7 @@ it('exige le téléphone à l\'identité pour un événement personnel', functio
 it('laisse le téléphone optionnel à l\'identité pour un événement corporate', function (): void {
     ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent(eventOverrides: ['type' => EventType::Conference]);
 
-    $this->get("/r/{$organization->slug}/{$event->slug}");
+    $this->get("/r/{$organization->slug}/{$event->slug}/commencer");
     $token = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->firstOrFail()->resume_token;
 
     $this->post("/r/{$organization->slug}/{$event->slug}/{$token}/identite", ['email' => 'invite@example.com'])
@@ -35,7 +35,7 @@ it('laisse le téléphone optionnel à l\'identité pour un événement corporat
 it('exige aussi le téléphone lors de la modification d\'une inscription à un événement personnel', function (): void {
     ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent(eventOverrides: ['type' => EventType::Birthday, 'allow_guest_edit' => true]);
 
-    $this->get("/r/{$organization->slug}/{$event->slug}");
+    $this->get("/r/{$organization->slug}/{$event->slug}/commencer");
     $token = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->firstOrFail()->resume_token;
     $this->post("/r/{$organization->slug}/{$event->slug}/{$token}/identite", ['email' => 'invite@example.com', 'phone' => '+243812345678']);
     $this->post("/r/{$organization->slug}/{$event->slug}/{$token}/reponses", []);

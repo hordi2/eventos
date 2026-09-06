@@ -772,11 +772,21 @@ c'est le seul des quatre où un segment RSVP a un sens direct.
 Un modèle de page configurable : bannière, description, programme, lieu + carte,
 FAQ, formulaire intégré. Métadonnées SEO et données structurées `schema.org/Event`.
 
+Scope MVP volontairement réduit par rapport au cahier des charges (M6.1
+mentionne un éditeur par sections drag-and-drop, du multi-pages, une page de
+remerciement personnalisable) : un modèle de page fixe mais configurable
+(bannière, programme, FAQ en listes ordonnées), conformément aux critères
+d'acceptation ci-dessous qui ne demandent ni éditeur drag-and-drop ni
+multi-pages. La racine `/r/{organisation}/{événement}` affiche désormais
+cette page publique au lieu de créer immédiatement un brouillon
+d'inscription — un nouveau bouton « S'inscrire » (route `.../commencer`)
+déclenche ce qui se faisait auparavant à la simple visite de l'URL.
+
 **Critères d'acceptation**
-- [ ] Score Lighthouse mobile > 90
-- [ ] Balisage `schema.org/Event` validé par l'outil Google
-- [ ] Image de partage correcte sur WhatsApp, Facebook, LinkedIn
-- [ ] URL personnalisée par événement
+- [ ] Score Lighthouse mobile > 90 — non mesuré dans cette session (pas d'outil Lighthouse disponible) ; page construite en Blade + Alpine, sans bundle React, conformément à la contrainte < 500 Ko du CLAUDE.md
+- [ ] Balisage `schema.org/Event` validé par l'outil Google — non soumis à l'outil de test officiel de Google dans cette session ; le JSON-LD généré a été vérifié manuellement (champs `@context`, `@type`, `startDate`, `location`, `image`)
+- [ ] Image de partage correcte sur WhatsApp, Facebook, LinkedIn — balises Open Graph et Twitter Card en place (`og:image`, `og:title`, `og:description`) ; non testé sur un vrai partage WhatsApp/Facebook/LinkedIn dans cette session
+- [x] URL personnalisée par événement — le slug de l'événement (existant, modifiable par l'organisateur) sert d'URL
 
 ---
 

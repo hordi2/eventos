@@ -28,6 +28,7 @@ use App\Http\Controllers\Organizer\EventSegmentController;
 use App\Http\Controllers\Organizer\ExportController;
 use App\Http\Controllers\Organizer\FormController;
 use App\Http\Controllers\Organizer\MessageAutomationController;
+use App\Http\Controllers\Organizer\PageController;
 use App\Http\Controllers\Organizer\SeatingController;
 use App\Http\Controllers\Organizer\TagController;
 use App\Http\Controllers\Organizer\TicketTypeController;
@@ -153,6 +154,10 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/seating/export/plan', [SeatingController::class, 'exportPlan'])->name('events.seating.export.plan');
         Route::get('events/{event}/seating/export/lists', [SeatingController::class, 'exportLists'])->name('events.seating.export.lists');
 
+        Route::get('events/{event}/page', [PageController::class, 'edit'])->name('events.page.edit');
+        Route::patch('events/{event}/page', [PageController::class, 'update'])->name('events.page.update');
+        Route::post('events/{event}/page/banner', [PageController::class, 'uploadBanner'])->name('events.page.banner');
+
         Route::get('events/{event}/exports', [ExportController::class, 'index'])->name('events.exports.index');
         Route::post('events/{event}/exports', [ExportController::class, 'store'])->name('events.exports.store');
         Route::get('events/{event}/exports/{export}', [ExportController::class, 'status'])->name('events.exports.status');
@@ -203,6 +208,7 @@ Route::middleware('resolve-guest-event')
         Route::post('mot-de-passe', [RegistrationController::class, 'passwordVerify'])->name('password.verify');
 
         Route::get('/', [RegistrationController::class, 'start'])->name('start');
+        Route::get('commencer', [RegistrationController::class, 'begin'])->name('begin');
 
         Route::get('{token}/identite', [RegistrationController::class, 'identityShow'])->name('identity.show');
         Route::post('{token}/identite', [RegistrationController::class, 'identityStore'])->name('identity.store');
