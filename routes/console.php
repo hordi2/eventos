@@ -24,3 +24,7 @@ Schedule::command('billing:process-dunning')->daily();
 // conservation configurée (config/gdpr.php, AC « suppression automatique
 // après la durée définie »).
 Schedule::command('gdpr:purge-expired-contacts')->daily();
+
+// T-076 : historique de santé affiché sur /status et alerte en cas de
+// changement d'état (App\Support\Status\RecordSystemStatus).
+Schedule::command('status:check-health')->everyFiveMinutes();

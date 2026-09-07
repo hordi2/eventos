@@ -17,6 +17,7 @@ use App\Domain\Form\Policies\FormPolicy;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Organization\Policies\OrganizationPolicy;
 use App\Listeners\LinkRegistrationToContact;
+use App\Listeners\ReportHealthDiagnostics;
 use App\Listeners\SendConfirmationEmail;
 use App\Listeners\SendConfirmationWhatsapp;
 use App\Support\Capacity\Events\WaitlistEntryPromoted;
@@ -28,6 +29,7 @@ use App\Support\Payments\FlutterwaveMobileMoneyProvider;
 use App\Support\Payments\MobileMoneyProvider;
 use App\Support\Payments\StripeCheckoutProvider;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Foundation\Events\DiagnosingHealth;
 use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
@@ -63,6 +65,10 @@ class AppServiceProvider extends ServiceProvider
         EventFacade::listen(RegistrationCreated::class, LinkRegistrationToContact::class);
         EventFacade::listen(RegistrationCreated::class, SendConfirmationEmail::class);
         EventFacade::listen(RegistrationCreated::class, SendConfirmationWhatsapp::class);
+
+        // T-076 : fait échouer /up (bootstrap/app.php) quand la base ou
+        // Redis ne répond pas.
+        EventFacade::listen(DiagnosingHealth::class, ReportHealthDiagnostics::class);
 
         // Débit par défaut prudent (T-043) : Postmark autorise bien plus,
         // mais rien dans le CDC n'impose un chiffre précis — à ajuster

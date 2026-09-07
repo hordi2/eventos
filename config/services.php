@@ -76,6 +76,12 @@ return [
         'base_url' => env('FLUTTERWAVE_BASE_URL', 'https://developersandbox-api.flutterwave.com'),
     ],
 
+    'status' => [
+        // Destinataire des alertes de supervision (T-076) — vide = aucune
+        // alerte envoyée (voir App\Support\Status\RecordSystemStatus).
+        'alert_email' => env('STATUS_ALERT_EMAIL'),
+    ],
+
     'ticket_qr' => [
         // Secret dédié à la signature des JWT de billet (§4.6 CLAUDE.md),
         // distinct de APP_KEY pour pouvoir le faire tourner sans invalider

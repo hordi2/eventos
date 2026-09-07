@@ -877,6 +877,35 @@ hors du périmètre logiciel de ce ticket.
 
 Sentry, métriques, healthchecks, page de statut publique, alertes.
 
+Ticket sans critère d'acceptation dans le backlog d'origine, comme T-073 —
+scope arbitré avec l'utilisateur avant construction :
+- **Sentry** : dépendance ajoutée (décision prise avec l'utilisateur —
+  `sentry/sentry-laravel`), branchée sur `bootstrap/app.php` via
+  `Integration::handles()`. `SENTRY_LARAVEL_DSN` vide par défaut (voir
+  .env.example) : aucun envoi tant qu'il n'est pas renseigné, même principe
+  que Stripe/Postmark/Twilio/Flutterwave dans ce projet.
+- **Métriques** : le cahier des charges (tableau d'architecture) vise
+  Sentry + OpenTelemetry + Grafana à terme — déployer une stack
+  d'observabilité séparée (collecteur OpenTelemetry, Grafana hébergé) est
+  hors périmètre d'un ticket S et dépend de décisions d'infrastructure que
+  l'utilisateur n'a pas encore prises ; Sentry couvre déjà les erreurs et
+  offre ses propres métriques de performance basiques, jugé suffisant pour
+  le MVP.
+- **Healthchecks** : `App\Support\Status\CheckSystemHealth` vérifie base de
+  données et Redis ; un listener sur l'événement natif `DiagnosingHealth`
+  de Laravel fait échouer la route `/up` existante (`bootstrap/app.php`,
+  `health: '/up'`) en cas de panne d'un des deux.
+  `system_status_checks` (hors cloisonnement multi-tenant §4.1 — donnée
+  d'infrastructure, pas d'organisation) historise chaque vérification,
+  exécutée toutes les 5 minutes (`status:check-health`, routes/console.php).
+- **Page de statut publique** : `/status` (Blade, sans authentification),
+  affiche l'état courant par composant, la disponibilité sur 24 h et un
+  historique visuel des dernières vérifications.
+- **Alertes** : e-mail à `STATUS_ALERT_EMAIL` (vide = aucun envoi)
+  uniquement lors d'un changement d'état (passage sain → en échec ou
+  inverse), jamais à chaque vérification planifiée, pour ne pas noyer
+  l'équipe pendant un incident prolongé.
+
 ---
 
 ### T-077 · Documentation utilisateur · M

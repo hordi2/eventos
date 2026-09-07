@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Guest\RegistrationController;
+use App\Http\Controllers\Guest\StatusController;
 use App\Http\Controllers\Guest\TicketOrderController;
 use App\Http\Controllers\Guest\TicketOrderPaymentController;
 use App\Http\Controllers\Guest\UnsubscribeController;
@@ -46,6 +47,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect()->route(auth()->check() ? 'dashboard' : 'login');
 });
+
+Route::get('status', StatusController::class)->name('status.index');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('register', [RegisteredUserController::class, 'create'])->name('register');

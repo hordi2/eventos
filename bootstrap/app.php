@@ -10,6 +10,7 @@ use App\Http\Middleware\ResolveGuestEvent;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Sentry\Laravel\Integration;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -46,5 +47,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: ['webhooks/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // T-076 : n'envoie rien tant que SENTRY_LARAVEL_DSN est vide
+        // (config/sentry.php) — même choix que Stripe/Postmark/Twilio, un
+        // DSN absent ne doit jamais faire planter l'application.
+        Integration::handles($exceptions);
     })->create();
