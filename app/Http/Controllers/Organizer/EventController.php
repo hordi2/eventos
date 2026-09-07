@@ -8,6 +8,7 @@ use App\Domain\Event\Actions\CreateEvent;
 use App\Domain\Event\Actions\DuplicateEvent;
 use App\Domain\Event\Actions\UpdateEvent;
 use App\Domain\Event\Models\Event;
+use App\Domain\Event\Models\EventAudience;
 use App\Domain\Event\Models\EventType;
 use App\Domain\Event\Models\Venue;
 use App\Domain\Organization\Models\Organization;
@@ -29,6 +30,7 @@ final class EventController extends Controller
         return Inertia::render('Events/Create', [
             'event' => null,
             'eventTypes' => $this->eventTypeOptions(),
+            'eventAudiences' => $this->eventAudienceOptions(),
             'timezones' => $this->timezoneOptions(),
             'venues' => $this->venueOptions(),
         ]);
@@ -50,6 +52,7 @@ final class EventController extends Controller
         return Inertia::render('Events/Create', [
             'event' => $this->presentEvent($event),
             'eventTypes' => $this->eventTypeOptions(),
+            'eventAudiences' => $this->eventAudienceOptions(),
             'timezones' => $this->timezoneOptions(),
             'venues' => $this->venueOptions(),
         ]);
@@ -114,6 +117,17 @@ final class EventController extends Controller
     }
 
     /**
+     * @return list<array{value: string, label: string}>
+     */
+    private function eventAudienceOptions(): array
+    {
+        return array_map(
+            fn (EventAudience $audience): array => ['value' => $audience->value, 'label' => $audience->label()],
+            EventAudience::cases(),
+        );
+    }
+
+    /**
      * @return array<string, string>
      */
     private function timezoneOptions(): array
@@ -144,6 +158,7 @@ final class EventController extends Controller
             'subtitle' => $event->subtitle,
             'description' => $event->description,
             'type' => $event->type->value,
+            'audience' => $event->audience->value,
             'startAt' => $event->start_at->toIso8601String(),
             'endAt' => $event->end_at->toIso8601String(),
             'timezone' => $event->timezone,

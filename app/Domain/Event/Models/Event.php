@@ -31,6 +31,7 @@ final class Event extends Model
         'subtitle',
         'description',
         'type',
+        'audience',
         'status',
         'start_at',
         'end_at',
@@ -63,6 +64,7 @@ final class Event extends Model
     {
         return [
             'type' => EventType::class,
+            'audience' => EventAudience::class,
             'status' => EventStatus::class,
             'access_mode' => EventAccessMode::class,
             'start_at' => 'immutable_datetime',

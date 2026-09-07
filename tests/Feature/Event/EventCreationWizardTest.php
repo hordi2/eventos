@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\Event\Models\Event;
+use App\Domain\Event\Models\EventAudience;
 use App\Domain\Event\Models\EventStatus;
 use App\Domain\Event\Models\EventType;
 use App\Domain\Event\Models\Venue;
@@ -53,10 +54,27 @@ it('crée un événement brouillon avec seulement le titre, la date et le fuseau
     $response->assertRedirect(route('events.edit', $event));
     expect($event->title)->toBe('Assemblée générale 2026');
     expect($event->type)->toBe(EventType::Other);
+    expect($event->audience)->toBe(EventAudience::Professional);
     expect($event->status)->toBe(EventStatus::Draft);
     // 14h30 à Kinshasa (UTC+1, sans heure d'été) doit être stocké comme 13h30 UTC.
     expect($event->start_at->utc()->format('H:i'))->toBe('13:30');
     expect($event->start_at->diffInHours($event->end_at))->toBe(3.0);
+});
+
+it('enregistre le genre d\'événement choisi à la création', function (): void {
+    [$organization, $admin] = organizationWithRole(MembershipRole::Admin);
+
+    $response = $this->actingAs($admin)->post('/events', [
+        'title' => 'Mariage de Grace et Junior',
+        'start_at' => '2026-09-08T14:30',
+        'timezone' => 'Africa/Kinshasa',
+        'audience' => 'personal',
+    ]);
+
+    $event = Event::query()->where('organization_id', $organization->id)->firstOrFail();
+
+    $response->assertRedirect(route('events.edit', $event));
+    expect($event->audience)->toBe(EventAudience::Personal);
 });
 
 it('refuse la création sans titre', function (): void {

@@ -17,7 +17,7 @@ it('envoie les relances J+1, J+3 et J+7 puis restreint le plan effectif (T-074)'
 
     app(CurrentOrganization::class)->set($organization);
     $organization->update([
-        'plan' => PlanTier::Pro,
+        'plan' => PlanTier::PersonalEssential,
         'stripe_subscription_id' => 'sub_test',
         'subscription_status' => 'past_due',
         'payment_failed_at' => now()->subDays(1),
@@ -28,7 +28,7 @@ it('envoie les relances J+1, J+3 et J+7 puis restreint le plan effectif (T-074)'
 
     app(CurrentOrganization::class)->set($organization);
     expect($organization->fresh()->dunning_stage)->toBe(1);
-    expect(app(GetEffectivePlan::class)->handle($organization->fresh()))->toBe(PlanTier::Pro);
+    expect(app(GetEffectivePlan::class)->handle($organization->fresh()))->toBe(PlanTier::PersonalEssential);
     app(CurrentOrganization::class)->clear();
 
     Mail::assertSent(PaymentFailedMail::class, 1);

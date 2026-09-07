@@ -1243,6 +1243,99 @@ utilisateur déroulant.
   sur petit écran (`Dashboard.tsx`, chantier précédent) — non corrigé ici,
   à traiter dans un ticket dédié.
 
+### Genre d'événement et refonte de « Mise à niveau »
+
+Demandé par l'utilisateur à partir d'une nouvelle série de captures RSVPify
+(page de tarification avec onglets, comparatif, FAQ) : ajouter un genre
+d'événement choisi à la création, et adapter la page « Mise à niveau » en
+conséquence. Deux décisions ont été confirmées avec l'utilisateur avant
+de commencer (impact argent réel via Stripe) :
+
+- Le genre (Professionnel/Communautaire/Personnel) **s'ajoute** à l'étape
+  « Type » existante (bibliothèque de modèles à 16 entrées, M1.4) plutôt que
+  de la remplacer — les deux servent des besoins différents.
+- La page « Mise à niveau » est une **réorganisation visuelle** : toujours
+  les 3 plans Stripe existants (T-074), aucun nouveau produit Stripe créé.
+
+Mis en œuvre :
+
+- `App\Domain\Event\Models\EventAudience` (nouvel enum : `professional` /
+  `community` / `personal`), colonne `events.audience` (migration
+  `2026_09_21_100000_add_audience_to_events_table.php`, défaut
+  `professional` pour les événements existants). Champ nullable côté
+  validation (`CreateEventRequest`/`UpdateEventRequest`), mais requis dans
+  l'assistant de création (étape 1, à côté du choix de modèle) — même
+  convention que le champ `type` existant.
+- `config/plans.php` : les libellés de prix (placeholders documentés comme
+  « à remplacer avant production », T-074) passent de 29 $/99 $ à 8,9 $/14 $
+  par mois, chiffres donnés par l'utilisateur pour l'offre « Événements
+  personnels ».
+- `Billing/Show.tsx` refondu : 3 onglets (Événements personnels / Plans
+  professionnels / Événements sur billet). Le panneau « Consommation ce
+  mois-ci » et la gestion d'abonnement Stripe restent inchangés en haut de
+  page.
+  - **Événements personnels** (3 cartes) : les 3 plans réels tels quels
+    (Gratuit/8,9 $/14 $), argumentaire pour un usage individuel.
+  - **Plans professionnels** (4 cartes) : les 3 mêmes plans réels
+    **relabellisés** « Démarreur »/« En plus »/« Carrière professionnelle »
+    avec un argumentaire entreprise — même prix, même abonnement Stripe que
+    l'onglet personnel, seul le nom de la formule change — plus une 4ᵉ carte
+    « Entreprise / Sur mesure » sans prix, bouton « Nous contacter » vers
+    `/support` (pas de Price ID Stripe : comme chez la plupart des éditeurs,
+    ce palier se négocie, il ne s'achète pas en un clic).
+  - **Événements sur billet** : panneau d'explication, pas de carte — Itaza
+    ne prélève aucune commission propre sur les billets (contrairement à
+    RSVPify, vérifié dans le code : aucune logique de frais de plateforme
+    n'existe dans `Domain/Ticketing`), seuls les frais du prestataire de
+    paiement choisi s'appliquent. Choix délibéré de ne pas inventer un taux
+    de commission qui n'existe pas.
+  - Bloc « Inclus dans tous les plans » et FAQ (4 questions) écrits pour
+    refléter le comportement réel du système (alertes de quota à 80/100 %,
+    jamais de blocage dur ; restriction uniquement en cas d'échec de
+    paiement prolongé) plutôt que d'imiter le grand tableau comparatif
+    ligne par ligne de RSVPify — un tel tableau supposerait des
+    fonctionnalités réservées à certains plans, ce qui n'existe pas dans
+    Itaza aujourd'hui (seuls les volumes mensuels diffèrent).
+
+**Revu ensuite** à partir d'une nouvelle série de captures (chiffres et
+listes de caractéristiques détaillés par palier) : l'utilisateur a cette
+fois demandé de **vrais prix à facturer**, distincts entre l'onglet
+personnel et l'onglet professionnel — ce qui revient sur la décision
+« aucun nouveau produit Stripe » prise juste avant. Confirmé explicitement
+avant de coder (impact argent réel) :
+
+- `PlanTier` passe de 3 à **6 paliers réels**, chacun avec son propre Price
+  ID Stripe : `free` (inchangé), `personal_essential` (8,9 $/mois),
+  `personal_comfort` (15 $/mois), `professional_plus` (35 $/mois),
+  `professional_career` (99 $/mois), `professional_pro` (289 $/mois).
+  L'onglet personnel et l'onglet professionnel ne partagent donc plus les
+  mêmes paliers Stripe qu'avant. « Entreprise / Sur mesure » reste sans
+  Price ID (bouton « Nous contacter », comme la plupart des éditeurs SaaS
+  pour ce palier).
+- `config/plans.php` : 6 entrées, quotas dérivés des chiffres donnés
+  (inscriptions/mois pour le professionnel, nombre d'invités réinterprété
+  comme quota d'inscriptions mensuel pour le personnel faute de suivre un
+  quota "invités par événement" séparé aujourd'hui ; e-mails extrapolés à
+  5× les inscriptions, même ratio que les paliers d'origine).
+- **`.env.example`** : `STRIPE_PRICE_PRO`/`STRIPE_PRICE_BUSINESS` remplacés
+  par 5 variables (`STRIPE_PRICE_PERSONAL_ESSENTIAL`,
+  `STRIPE_PRICE_PERSONAL_COMFORT`, `STRIPE_PRICE_PROFESSIONAL_PLUS`,
+  `STRIPE_PRICE_PROFESSIONAL_CAREER`, `STRIPE_PRICE_PROFESSIONAL_PRO`).
+  **Action requise côté utilisateur, hors de portée du code** : créer les 5
+  produits/prix correspondants dans le tableau de bord Stripe, puis coller
+  chaque Price ID dans `.env` — tant que ce n'est pas fait, le clic sur
+  « Mise à niveau » échoue proprement avec un message clair
+  (`StripeNotConfiguredException`, mécanisme déjà en place depuis T-074),
+  jamais un plantage.
+- Bascule **Mensuel/Annuel** sur la page : décision utilisateur explicite
+  — **affichage seulement** pour l'instant. Les montants annuels (remise
+  échelonnée 39 % sur le palier d'entrée de chaque famille, 29 % sur le
+  palier intermédiaire, 19 % sur le palier le plus cher, à l'intérieur de
+  la fourchette 19–39 % demandée) sont des chiffres fixes écrits une fois
+  dans le composant, pas recalculés dynamiquement — aucun Price ID annuel
+  Stripe n'existe encore, le paiement reste sur l'abonnement mensuel quel
+  que soit l'état de la bascule.
+
 ### Navigation principale réduite à « Mes événements »
 
 Demandé par l'utilisateur juste après le chantier précédent : retirer les

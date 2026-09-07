@@ -7,6 +7,7 @@ namespace App\Domain\Event\Actions;
 use App\Domain\Event\InvalidSubEventException;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventAccessMode;
+use App\Domain\Event\Models\EventAudience;
 use App\Domain\Event\Models\EventStatus;
 use App\Domain\Event\Models\EventType;
 use App\Domain\Organization\Models\Organization;
@@ -46,6 +47,7 @@ final class CreateEvent
             'subtitle' => $data['subtitle'] ?? null,
             'description' => $data['description'] ?? null,
             'type' => $data['type'] ?? EventType::Other,
+            'audience' => $data['audience'] ?? EventAudience::Professional,
             'status' => EventStatus::Draft,
             'slug' => $this->resolveSlug($organization, $data['slug'] ?? $data['title']),
             'start_at' => $startAt,

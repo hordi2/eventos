@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Organizer\Event;
 
+use App\Domain\Event\Models\EventAudience;
 use App\Domain\Event\Models\EventType;
 use DateTimeZone;
 use Illuminate\Foundation\Http\FormRequest;
@@ -26,6 +27,7 @@ final class CreateEventRequest extends FormRequest
             'subtitle' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'type' => ['nullable', Rule::enum(EventType::class)],
+            'audience' => ['nullable', Rule::enum(EventAudience::class)],
             'start_at' => ['required', 'date'],
             'end_at' => ['nullable', 'date', 'after:start_at'],
             'timezone' => ['required', 'string', Rule::in(DateTimeZone::listIdentifiers())],

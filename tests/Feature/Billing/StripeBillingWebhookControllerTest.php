@@ -56,13 +56,13 @@ it('active le plan et enregistre l\'abonnement sur checkout.session.completed', 
         'customer' => 'cus_test_1',
         'subscription' => 'sub_test_1',
         'client_reference_id' => (string) $organization->id,
-        'metadata' => ['organization_id' => (string) $organization->id, 'plan' => 'pro'],
+        'metadata' => ['organization_id' => (string) $organization->id, 'plan' => 'personal_essential'],
     ]);
 
     postSignedStripeBillingWebhook($payload)->assertOk();
 
     $fresh = Organization::query()->withoutGlobalScopes()->findOrFail($organization->id);
-    expect($fresh->plan)->toBe(PlanTier::Pro);
+    expect($fresh->plan)->toBe(PlanTier::PersonalEssential);
     expect($fresh->stripe_customer_id)->toBe('cus_test_1');
     expect($fresh->stripe_subscription_id)->toBe('sub_test_1');
     expect($fresh->subscription_status)->toBe('active');
@@ -70,7 +70,7 @@ it('active le plan et enregistre l\'abonnement sur checkout.session.completed', 
 
 it('repasse l\'organisation au plan gratuit sur customer.subscription.deleted', function (): void {
     $organization = Organization::factory()->create([
-        'plan' => PlanTier::Pro,
+        'plan' => PlanTier::PersonalEssential,
         'stripe_customer_id' => 'cus_test_2',
         'stripe_subscription_id' => 'sub_test_2',
         'subscription_status' => 'active',
@@ -87,7 +87,7 @@ it('repasse l\'organisation au plan gratuit sur customer.subscription.deleted', 
 
 it('marque l\'abonnement en échec de paiement sur invoice.payment_failed, sans écraser la date du premier échec', function (): void {
     $organization = Organization::factory()->create([
-        'plan' => PlanTier::Pro,
+        'plan' => PlanTier::PersonalEssential,
         'stripe_customer_id' => 'cus_test_3',
         'stripe_subscription_id' => 'sub_test_3',
         'subscription_status' => 'active',
@@ -112,7 +112,7 @@ it('marque l\'abonnement en échec de paiement sur invoice.payment_failed, sans 
 
 it('régularise l\'abonnement sur invoice.payment_succeeded', function (): void {
     $organization = Organization::factory()->create([
-        'plan' => PlanTier::Pro,
+        'plan' => PlanTier::PersonalEssential,
         'stripe_customer_id' => 'cus_test_4',
         'stripe_subscription_id' => 'sub_test_4',
         'subscription_status' => 'past_due',
@@ -131,7 +131,7 @@ it('régularise l\'abonnement sur invoice.payment_succeeded', function (): void 
 
 it('traite un webhook rejoué 3 fois de façon idempotente : une seule ligne journalisée', function (): void {
     $organization = Organization::factory()->create([
-        'plan' => PlanTier::Pro,
+        'plan' => PlanTier::PersonalEssential,
         'stripe_customer_id' => 'cus_test_5',
         'subscription_status' => 'active',
     ]);

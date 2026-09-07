@@ -14,6 +14,11 @@ interface EventTypeOption {
     label: string;
 }
 
+interface EventAudienceOption {
+    value: string;
+    label: string;
+}
+
 interface VenueOption {
     id: number;
     name: string;
@@ -26,6 +31,7 @@ interface EventDraft {
     subtitle: string | null;
     description: string | null;
     type: string;
+    audience: string;
     startAt: string;
     endAt: string;
     timezone: string;
@@ -37,6 +43,7 @@ interface EventDraft {
 interface CreateEventPageProps {
     event: EventDraft | null;
     eventTypes: EventTypeOption[];
+    eventAudiences: EventAudienceOption[];
     timezones: Record<string, string>;
     venues: VenueOption[];
 }
@@ -77,7 +84,7 @@ function addHoursToLocalValue(value: string, hours: number): string {
     return `${shifted.getFullYear()}-${pad(shifted.getMonth() + 1)}-${pad(shifted.getDate())}T${pad(shifted.getHours())}:${pad(shifted.getMinutes())}`;
 }
 
-export default function CreateEvent({ event, eventTypes, timezones, venues }: CreateEventPageProps) {
+export default function CreateEvent({ event, eventTypes, eventAudiences, timezones, venues }: CreateEventPageProps) {
     const [step, setStep] = useState<1 | 2 | 3>(event ? 3 : 1);
     const [endTouched, setEndTouched] = useState(Boolean(event));
     const [venueMode, setVenueMode] = useState<'none' | 'existing' | 'new'>(event?.venueId ? 'existing' : 'none');
@@ -92,6 +99,7 @@ export default function CreateEvent({ event, eventTypes, timezones, venues }: Cr
 
     const { data, setData, post, patch, processing, errors } = useForm({
         type: event?.type ?? '',
+        audience: event?.audience ?? '',
         title: event?.title ?? '',
         subtitle: event?.subtitle ?? '',
         description: event?.description ?? '',
@@ -146,24 +154,50 @@ export default function CreateEvent({ event, eventTypes, timezones, venues }: Cr
 
             {step === 1 && (
                 <div className="space-y-8">
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        {eventTypes.map((option) => (
-                            <button
-                                key={option.value}
-                                type="button"
-                                onClick={() => setData('type', option.value)}
-                                className={`rounded-card border px-4 py-3 text-left font-sans text-sm transition-colors duration-300 ${
-                                    data.type === option.value
-                                        ? 'border-accent text-ink'
-                                        : 'border-line text-ink-soft hover:border-ink'
-                                }`}
-                            >
-                                {option.label}
-                            </button>
-                        ))}
+                    <div>
+                        <InputLabel>Quel genre d'événement organisez-vous ?</InputLabel>
+                        <p className="mb-3 text-sm text-ink-soft">
+                            Détermine les offres proposées plus tard sur la page « Mise à niveau ».
+                        </p>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                            {eventAudiences.map((option) => (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => setData('audience', option.value)}
+                                    className={`rounded-card border px-4 py-3 text-left font-sans text-sm transition-colors duration-300 ${
+                                        data.audience === option.value
+                                            ? 'border-accent text-ink'
+                                            : 'border-line text-ink-soft hover:border-ink'
+                                    }`}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
-                    <Button type="button" disabled={!data.type} onClick={() => setStep(2)}>
+                    <div>
+                        <InputLabel>Modèle</InputLabel>
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                            {eventTypes.map((option) => (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => setData('type', option.value)}
+                                    className={`rounded-card border px-4 py-3 text-left font-sans text-sm transition-colors duration-300 ${
+                                        data.type === option.value
+                                            ? 'border-accent text-ink'
+                                            : 'border-line text-ink-soft hover:border-ink'
+                                    }`}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <Button type="button" disabled={!data.audience || !data.type} onClick={() => setStep(2)}>
                         Suivant
                     </Button>
                 </div>
@@ -342,6 +376,10 @@ export default function CreateEvent({ event, eventTypes, timezones, venues }: Cr
                         <Row label="Titre" value={event.title} />
                         {event.subtitle && <Row label="Sous-titre" value={event.subtitle} />}
                         <Row label="Type" value={eventTypes.find((t) => t.value === data.type)?.label ?? data.type} />
+                        <Row
+                            label="Genre"
+                            value={eventAudiences.find((a) => a.value === data.audience)?.label ?? data.audience}
+                        />
                         <Row label="Début" value={formatInEventTimezone(event.startAt, event.timezone)} />
                         <Row label="Fin" value={formatInEventTimezone(event.endAt, event.timezone)} />
                         <Row label="Fuseau horaire" value={timezones[event.timezone] ?? event.timezone} />
