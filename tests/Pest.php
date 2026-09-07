@@ -62,6 +62,12 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Performance');
 
+// Même raison que Performance : test de charge du check-in à l'échelle
+// d'un événement pilote (T-078), hors des testsuites par défaut.
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
+    ->in('Pilot');
+
 // Le contexte "organisation courante" est aussi propagé au niveau de la
 // session PostgreSQL (set_config). La connexion étant réutilisée d'un test
 // à l'autre, on la réinitialise systématiquement pour éviter toute fuite.
@@ -69,7 +75,7 @@ afterEach(function (): void {
     if (app()->bound(CurrentOrganization::class)) {
         app(CurrentOrganization::class)->clear();
     }
-})->in('Feature', 'Performance');
+})->in('Feature', 'Performance', 'Pilot');
 
 /**
  * Construit un FormField en mémoire (jamais persisté) pour les tests Unit du

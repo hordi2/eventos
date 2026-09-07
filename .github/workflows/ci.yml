@@ -134,6 +134,21 @@ jobs:
           REDIS_HOST: 127.0.0.1
           QUEUE_CONNECTION: sync
 
+      # Même raison que tests/Performance : test de charge du check-in à
+      # l'échelle d'un événement pilote (T-078, AC « temps moyen de
+      # check-in < 8 s »), hors des testsuites par défaut.
+      - name: Pest (charge check-in événement pilote T-078)
+        run: ./vendor/bin/pest tests/Pilot
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: eventos_testing
+          DB_USERNAME: eventos_app
+          DB_PASSWORD: eventos_app
+          REDIS_HOST: 127.0.0.1
+          QUEUE_CONNECTION: sync
+
   static-analysis:
     runs-on: ubuntu-latest
     steps:

@@ -947,6 +947,26 @@ présente sur place, relevé de tous les incidents.
 > problèmes : le réseau qui tombe, l'imprimante qui bourre, le bénévole qui ne
 > comprend pas l'écran, les 40 personnes qui arrivent en même temps.
 
+**Non réalisable par ce logiciel seul, décision prise avec l'utilisateur** :
+ce ticket décrit un vrai événement physique de 200 à 500 personnes, avec une
+équipe sur place — aucun des quatre AC ci-dessus ne peut être coché par du
+code ou simulé sans fabriquer un faux résultat. Ce qui pouvait réellement
+être préparé a été livré à la place :
+- `tests/Pilot/CheckInLoadTest.php` (nouvelle testsuite CI dédiée, comme
+  `tests/Concurrency`/`tests/Performance`) : 300 check-ins un par un puis un
+  lot de 50 resynchronisés en une requête, avec 300 billets déjà en base,
+  pour prouver que le serveur seul ne peut pas être la cause d'un
+  dépassement du seuil de 8 s — la marge mesurée est très large (~65 ms par
+  check-in), le reste du budget de 8 s appartient au geste humain sur le
+  terrain, hors de portée d'un test automatisé.
+- `docs/evenement-pilote-checklist.md` : checklist opérationnelle de J-30 au
+  lendemain de l'événement.
+- `docs/evenement-pilote-compte-rendu-gabarit.md` : gabarit de compte rendu
+  avec les niveaux de sévérité S1-S4 du §18.2, à remplir sur le terrain.
+
+**Les quatre AC restent donc à cocher par l'organisation elle-même**, après
+un vrai événement pilote mené avec ces outils.
+
 ---
 
 # RÉCAPITULATIF
