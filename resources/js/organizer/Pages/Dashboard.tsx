@@ -1,203 +1,162 @@
-import { Head, Link, usePage } from '@inertiajs/react';
-import { type ReactNode } from 'react';
-import Badge from '../Components/Badge';
+import { Head, Link } from '@inertiajs/react';
+import { useMemo, useState } from 'react';
 import OrganizerLayout from '../Layouts/OrganizerLayout';
-import { type SharedProps } from '../types';
 
 interface EventSummary {
     id: number;
     title: string;
-    status: string;
+    banner_url: string | null;
+    lifecycle_status: 'draft' | 'published' | 'live' | 'ended' | 'archived';
     start_at_formatted: string;
+    is_past: boolean;
+    stats: { confirmed: number; waitlisted: number; cancelled: number };
 }
 
-interface ImportSummary {
-    id: number;
-    filename: string;
-    status: string;
+interface Props {
+    events: EventSummary[];
+    canCreateEvents: boolean;
 }
 
-interface Services {
-    contacts: { canView: boolean; canCreate: boolean; count: number };
-    events: { canView: boolean; canCreate: boolean; count: number; recent: EventSummary[] };
-    imports: { canView: boolean; count: number; recent: ImportSummary[] };
-    auditLog: { canView: boolean; count: number };
-}
-
-const EVENT_STATUS_LABELS: Record<string, string> = {
-    draft: 'Brouillon',
+const LIFECYCLE_LABELS: Record<EventSummary['lifecycle_status'], string> = {
+    draft: 'Inédit',
     published: 'Publié',
+    live: 'En cours',
+    ended: 'Terminé',
     archived: 'Archivé',
 };
 
-const IMPORT_STATUS_LABELS: Record<string, string> = {
-    mapping: 'Correspondance des colonnes',
-    queued: 'En attente',
-    processing: 'En cours',
-    completed: 'Terminé',
-    failed: 'Échec',
-};
+function EventCard({ event }: { event: EventSummary }) {
+    const { confirmed, waitlisted, cancelled } = event.stats;
+    const total = confirmed + waitlisted + cancelled;
+    const isDraft = event.lifecycle_status === 'draft';
 
-function ServiceCard({
-    title,
-    count,
-    countLabel,
-    actions,
-    children,
-}: {
-    title: string;
-    count: number;
-    countLabel: string;
-    actions: ReactNode;
-    children?: ReactNode;
-}) {
-    return (
-        <div className="rounded-card border border-line bg-bg p-6">
-            <div className="flex items-baseline justify-between gap-4">
-                <h2 className="font-serif text-xl font-medium text-ink italic">{title}</h2>
-                <p className="shrink-0 text-right">
-                    <span className="text-2xl text-ink">{count}</span>{' '}
-                    <span className="font-label text-xs tracking-[0.08em] text-ink-soft uppercase">{countLabel}</span>
-                </p>
-            </div>
-
-            {children && <div className="mt-5 space-y-3">{children}</div>}
-
-            <div className="mt-6 flex flex-wrap gap-4 border-t border-line pt-5">{actions}</div>
-        </div>
-    );
-}
-
-function CardAction({ href, primary = false, children }: { href: string; primary?: boolean; children: ReactNode }) {
     return (
         <Link
-            href={href}
-            className={
-                primary
-                    ? 'inline-flex min-h-9 items-center rounded-pill bg-ink px-4 py-2 font-sans text-sm font-medium text-bg'
-                    : 'font-label text-xs tracking-[0.1em] text-ink-soft uppercase hover:text-ink'
-            }
+            href={`/events/${event.id}/edit`}
+            className="block overflow-hidden rounded-card border border-line bg-bg transition hover:border-ink"
         >
-            {children}
+            <div className="relative flex h-40 items-center justify-center overflow-hidden bg-bg-deep">
+                {event.banner_url ? (
+                    <img src={event.banner_url} alt="" className="h-full w-full object-cover" />
+                ) : (
+                    <span className="font-serif text-5xl text-ink-soft italic">{event.title.charAt(0).toUpperCase()}</span>
+                )}
+            </div>
+
+            <div className="p-5">
+                <p className="mb-1 truncate font-medium text-ink">{event.title}</p>
+                <p className="mb-4 text-xs text-ink-soft">{event.start_at_formatted}</p>
+
+                {total > 0 && (
+                    <div className="mb-3 flex h-1.5 overflow-hidden rounded-pill bg-bg-deep">
+                        {confirmed > 0 && <span className="bg-success" style={{ width: `${(confirmed / total) * 100}%` }} />}
+                        {waitlisted > 0 && <span className="bg-danger/40" style={{ width: `${(waitlisted / total) * 100}%` }} />}
+                        {cancelled > 0 && <span className="bg-danger" style={{ width: `${(cancelled / total) * 100}%` }} />}
+                    </div>
+                )}
+
+                <div className="mb-3 flex justify-between text-center">
+                    <div>
+                        <p className="font-serif text-lg text-success italic">{confirmed}</p>
+                        <p className="font-label text-[10px] tracking-[0.08em] text-ink-soft uppercase">Confirmées</p>
+                    </div>
+                    <div>
+                        <p className="font-serif text-lg text-ink italic">{waitlisted}</p>
+                        <p className="font-label text-[10px] tracking-[0.08em] text-ink-soft uppercase">Liste d'attente</p>
+                    </div>
+                    <div>
+                        <p className="font-serif text-lg text-danger italic">{cancelled}</p>
+                        <p className="font-label text-[10px] tracking-[0.08em] text-ink-soft uppercase">Annulées</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 border-t border-line pt-3 text-sm">
+                    <span className={`h-2 w-2 rounded-full ${isDraft ? 'bg-ink-soft' : 'bg-success'}`} />
+                    <span className="text-ink-soft">{LIFECYCLE_LABELS[event.lifecycle_status]}</span>
+                </div>
+            </div>
         </Link>
     );
 }
 
-export default function Dashboard({ services }: { services: Services }) {
-    const { auth } = usePage<SharedProps>().props;
+export default function Dashboard({ events, canCreateEvents }: Props) {
+    const [tab, setTab] = useState<'current' | 'past'>('current');
+    const [search, setSearch] = useState('');
+
+    const filtered = useMemo(() => {
+        const byTab = events.filter((event) => (tab === 'current' ? !event.is_past : event.is_past));
+
+        if (!search.trim()) {
+            return byTab;
+        }
+
+        const needle = search.trim().toLowerCase();
+
+        return byTab.filter((event) => event.title.toLowerCase().includes(needle));
+    }, [events, tab, search]);
 
     return (
-        <OrganizerLayout title={`Bienvenue, ${auth.user?.name}`} eyebrow="Tableau de bord">
+        <OrganizerLayout title="Tableau de bord">
             <Head title="Tableau de bord" />
 
-            <p className="max-w-lg text-ink-soft">
-                Vue d'ensemble de ton organisation : les services déjà en place et où tu en es sur chacun.
-            </p>
-
-            <div className="mt-10 grid gap-6 sm:grid-cols-2">
-                {services.contacts.canView && (
-                    <ServiceCard
-                        title="Contacts"
-                        count={services.contacts.count}
-                        countLabel="contacts"
-                        actions={
-                            <>
-                                <CardAction href="/contacts" primary>
-                                    Voir tous les contacts
-                                </CardAction>
-                                {services.contacts.canCreate && <CardAction href="/contacts/create">Ajouter un contact</CardAction>}
-                                {services.contacts.canCreate && <CardAction href="/contact-imports/create">Importer des contacts</CardAction>}
-                            </>
-                        }
+            <div className="mb-8 flex flex-wrap items-center gap-4">
+                <div className="relative flex-1">
+                    <svg
+                        viewBox="0 0 24 24"
+                        className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 stroke-ink-soft fill-none"
+                        strokeWidth="2"
+                    >
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="m21 21-4.3-4.3" strokeLinecap="round" />
+                    </svg>
+                    <input
+                        type="search"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Trouve ton événement..."
+                        className="w-full rounded-pill border border-line bg-bg py-3 pr-4 pl-11 text-sm text-ink placeholder:text-ink-soft"
                     />
-                )}
+                </div>
 
-                {services.events.canView && (
-                    <ServiceCard
-                        title="Événements"
-                        count={services.events.count}
-                        countLabel="événements"
-                        actions={services.events.canCreate && <CardAction href="/events/create" primary>Créer un événement</CardAction>}
-                    >
-                        {services.events.recent.length === 0 ? (
-                            <p className="text-sm text-ink-soft">Aucun événement pour l'instant.</p>
-                        ) : (
-                            services.events.recent.map((event) => (
-                                <div key={event.id} className="flex items-center justify-between gap-3 text-sm">
-                                    <Link href={`/events/${event.id}/edit`} className="truncate text-ink hover:underline">
-                                        {event.title}
-                                    </Link>
-                                    <span className="flex shrink-0 items-center gap-3 text-ink-soft">
-                                        {event.start_at_formatted}
-                                        <Badge variant={event.status === 'published' ? 'success' : 'neutral'}>
-                                            {EVENT_STATUS_LABELS[event.status] ?? event.status}
-                                        </Badge>
-                                        <Link href={`/events/${event.id}/ticket-types`} className="font-label text-xs tracking-[0.08em] uppercase hover:text-ink">
-                                            Billets
-                                        </Link>
-                                        <Link href={`/events/${event.id}/segments`} className="font-label text-xs tracking-[0.08em] uppercase hover:text-ink">
-                                            Segments
-                                        </Link>
-                                    </span>
-                                </div>
-                            ))
-                        )}
-                    </ServiceCard>
-                )}
-
-                {services.imports.canView && (
-                    <ServiceCard
-                        title="Imports de contacts"
-                        count={services.imports.count}
-                        countLabel="imports"
-                        actions={
-                            <CardAction href="/contact-imports/create" primary>
-                                Importer un fichier
-                            </CardAction>
-                        }
-                    >
-                        {services.imports.recent.length === 0 ? (
-                            <p className="text-sm text-ink-soft">Aucun import pour l'instant.</p>
-                        ) : (
-                            services.imports.recent.map((contactImport) => (
-                                <Link
-                                    key={contactImport.id}
-                                    href={`/contact-imports/${contactImport.id}`}
-                                    className="flex items-center justify-between gap-3 text-sm hover:text-ink"
-                                >
-                                    <span className="truncate text-ink">{contactImport.filename}</span>
-                                    <Badge
-                                        variant={
-                                            contactImport.status === 'failed'
-                                                ? 'danger'
-                                                : contactImport.status === 'completed'
-                                                  ? 'success'
-                                                  : 'neutral'
-                                        }
-                                    >
-                                        {IMPORT_STATUS_LABELS[contactImport.status] ?? contactImport.status}
-                                    </Badge>
-                                </Link>
-                            ))
-                        )}
-                    </ServiceCard>
-                )}
-
-                {services.auditLog.canView && (
-                    <ServiceCard
-                        title="Journal d'audit"
-                        count={services.auditLog.count}
-                        countLabel="entrées"
-                        actions={
-                            <CardAction href="/audit-log" primary>
-                                Voir le journal
-                            </CardAction>
-                        }
-                    >
-                        <p className="text-sm text-ink-soft">Export, suppression, remboursement, changement de permission… tout est journalisé.</p>
-                    </ServiceCard>
+                {canCreateEvents && (
+                    <Link href="/events/create" className="shrink-0 rounded-pill bg-ink px-6 py-3 text-sm font-medium text-bg">
+                        + Nouvel événement
+                    </Link>
                 )}
             </div>
+
+            <nav className="mb-8 flex gap-6 border-b border-line">
+                <button
+                    type="button"
+                    onClick={() => setTab('current')}
+                    className={`border-b-2 pb-3 text-sm ${tab === 'current' ? 'border-ink text-ink' : 'border-transparent text-ink-soft'}`}
+                >
+                    Actuel
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setTab('past')}
+                    className={`border-b-2 pb-3 text-sm ${tab === 'past' ? 'border-ink text-ink' : 'border-transparent text-ink-soft'}`}
+                >
+                    Événements passés
+                </button>
+            </nav>
+
+            {filtered.length === 0 ? (
+                <p className="text-ink-soft">
+                    {events.length === 0
+                        ? "Aucun événement pour l'instant."
+                        : tab === 'current'
+                          ? 'Aucun événement en cours ou à venir.'
+                          : 'Aucun événement passé.'}
+                </p>
+            ) : (
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {filtered.map((event) => (
+                        <EventCard key={event.id} event={event} />
+                    ))}
+                </div>
+            )}
         </OrganizerLayout>
     );
 }

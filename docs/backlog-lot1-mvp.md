@@ -1174,6 +1174,28 @@ piloté explicitement par organisation, « Normal » (clair) par défaut :
   `data-theme` n'est posé qu'au chargement complet du document, une
   navigation Inertia classique ne le reverrait pas.
 
+### Tableau de bord refondu en galerie d'événements
+
+Demandé par l'utilisateur à partir d'une seconde capture RSVPify : la page
+d'accueil organisateur n'est plus une vue d'ensemble par service (cartes
+Contacts/Événements/Imports/Journal d'audit) mais une galerie de ses
+propres événements, recherche et onglets Actuel/Passés inclus — Contacts,
+imports et journal d'audit restent accessibles par leurs propres liens de
+navigation, rien n'est perdu, seulement retiré de la page d'accueil.
+
+- `GetOrganizationEventSummaries` (Support/Dashboard, même raison
+  d'existence que `GetEventDashboardStats`) : bannière (Domain/Page),
+  statut de cycle de vie (`Event::computedStatus()`) et répartition
+  confirmées/liste d'attente/annulées (agrégation `GROUP BY`, jamais
+  ligne à ligne) pour chaque événement de l'organisation.
+- Recherche et bascule Actuel/Passés en clientside (filtrage JS sur la
+  liste déjà chargée) — pas d'aller-retour serveur, le nombre
+  d'événements d'une organisation reste modeste pour ce MVP.
+- Vocabulaire aligné sur le reste de l'application (« Confirmées », «
+  Liste d'attente », « Annulées » — pas les termes anglicisés de
+  RSVPify) ; carte sans bannière : lettre initiale du titre plutôt qu'une
+  illustration générique, faute d'illustration propre à Itaza.
+
 ---
 
 *Backlog v1.0 — à réviser à chaque fin de sprint.*
