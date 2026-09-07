@@ -913,6 +913,22 @@ scope arbitré avec l'utilisateur avant construction :
 
 Guide de démarrage, tutoriels des parcours principaux, FAQ.
 
+Ticket sans critère d'acceptation dans le backlog d'origine. Format arbitré
+avec l'utilisateur avant construction : une page « Aide » dans
+l'organisateur (`/help`, accessible à tout membre authentifié quel que soit
+son rôle, lien de navigation ajouté en tête de menu) plutôt que des
+documents Markdown séparés — contenu rédigé en dur dans la page React
+(`resources/js/organizer/Pages/Help/Index.tsx`), pas de CMS ni de contenu
+piloté par la base pour ce périmètre MVP.
+
+Trois sections, reflétant les fonctionnalités réellement livrées jusqu'à
+T-076 (pas de fonctionnalité promise à tort) : un guide de démarrage en 6
+étapes, huit tutoriels dépliables sur les parcours principaux (créer un
+événement, formulaire, contacts, communications, billetterie, check-in,
+résultats, organisation/RGPD), et une FAQ de 8 questions couvrant en
+particulier les trois différenciateurs (§1 CLAUDE.md) : check-in hors
+ligne, Mobile Money, WhatsApp.
+
 ---
 
 ### T-078 · Événement pilote · L

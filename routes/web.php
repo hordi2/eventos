@@ -30,6 +30,7 @@ use App\Http\Controllers\Organizer\EventDashboardController;
 use App\Http\Controllers\Organizer\EventSegmentController;
 use App\Http\Controllers\Organizer\ExportController;
 use App\Http\Controllers\Organizer\FormController;
+use App\Http\Controllers\Organizer\HelpController;
 use App\Http\Controllers\Organizer\MessageAutomationController;
 use App\Http\Controllers\Organizer\OrganizationBrandingController;
 use App\Http\Controllers\Organizer\PageController;
@@ -85,6 +86,10 @@ Route::middleware('auth')->group(function (): void {
     Route::get('dashboard', DashboardController::class)
         ->middleware(['verified', 'resolve-organization'])
         ->name('dashboard');
+
+    Route::get('help', [HelpController::class, 'index'])
+        ->middleware(['verified', 'resolve-organization'])
+        ->name('help.index');
 
     Route::middleware(['verified', 'resolve-organization', 'can-organization:viewAuditLog'])->group(function (): void {
         Route::get('audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');
