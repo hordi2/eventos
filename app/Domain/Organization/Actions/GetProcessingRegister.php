@@ -52,7 +52,7 @@ final class GetProcessingRegister
             ],
             [
                 'finalite' => 'Journal d\'audit et sécurité',
-                'donnees' => 'Action effectuée, auteur, horodatage, adresse IP (les valeurs identifiantes des champs modifiés ne sont plus journalisées en clair depuis ce ticket)',
+                'donnees' => 'Action effectuée, auteur, horodatage, adresse IP (les valeurs identifiantes des champs modifiés ne sont pas journalisées en clair)',
                 'base_legale' => 'Intérêt légitime (sécurité, preuve)',
                 'destinataires' => 'Organisateur (rôles Owner/Admin)',
                 'conservation' => '24 mois minimum, journal techniquement immuable',

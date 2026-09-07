@@ -1068,6 +1068,34 @@ restent configurées côté serveur, invisibles à l'organisateur.
   souscrits d'un webhook déjà créé nécessite de le supprimer et d'en
   recréer un (pas d'écran d'édition dédié dans cette première version).
 
+### Pied de page organisateur et pages légales
+
+Demandé par l'utilisateur à partir d'une capture d'écran de référence
+(RSVPify) : un pied de page sur toutes les pages de l'organisateur, avec
+les mêmes rubriques (adaptées à Itaza).
+
+- `Footer.tsx`, ajouté à `OrganizerLayout` (donc sur toutes les pages
+  organisateur) : logo, liens, copyright, icônes réseaux sociaux —
+  désactivées (`aria-disabled`) tant qu'aucun compte réel n'existe, plutôt
+  que pointées vers des comptes qui n'existent pas.
+- Six nouvelles pages publiques (`Guest\StaticPageController`, sans
+  authentification, comme `/status`) : `/support`, `/community`,
+  `/feedback`, `/terms`, `/privacy`, `/affiliates`.
+- **Communauté** et **Programme d'affiliation** : décision prise avec
+  l'utilisateur — ce sont de vraies fonctionnalités chez RSVPify (forum,
+  suivi de parrainage), hors périmètre ici ; pages d'information simples
+  avec contact par e-mail à la place.
+- **Conditions d'utilisation** et **Politique de confidentialité** :
+  décision prise avec l'utilisateur — gabarit standard rédigé, marqué
+  « Brouillon, non validé par un juriste » en tête de page, avec les
+  champs à compléter (raison sociale, siège, juridiction) laissés entre
+  crochets. La page de confidentialité réutilise directement
+  `GetProcessingRegister` (même source que le registre des traitements
+  organisateur, T-075) pour son tableau des traitements — jamais de texte
+  dupliqué à la main, aucun risque de divergence entre les deux pages.
+  **Ne pas publier tel quel : relecture juridique requise avant mise en
+  production.**
+
 ---
 
 *Backlog v1.0 — à réviser à chaque fin de sprint.*

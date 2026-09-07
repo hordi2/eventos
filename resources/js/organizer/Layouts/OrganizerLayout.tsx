@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { type PropsWithChildren, useEffect, useRef, useState } from 'react';
+import Footer from '../Components/Footer';
 import Logo from '../Components/Logo';
 import { type NavItem, type SharedProps } from '../types';
 
@@ -93,7 +94,7 @@ export default function OrganizerLayout({ title, eyebrow, children }: PropsWithC
     const { nav } = usePage<SharedProps>().props;
 
     return (
-        <div className="min-h-screen bg-bg-alt">
+        <div className="flex min-h-screen flex-col bg-bg-alt">
             <header className="border-b border-line bg-bg">
                 <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
                     <Link href="/dashboard">
@@ -113,11 +114,13 @@ export default function OrganizerLayout({ title, eyebrow, children }: PropsWithC
                 </div>
             </header>
 
-            <main className="mx-auto max-w-5xl px-6 py-16">
+            <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-16">
                 {eyebrow && <p className="font-label text-xs tracking-[0.28em] text-accent uppercase">{eyebrow}</p>}
                 <h1 className="mt-4 font-serif text-3xl font-medium text-ink italic">{title}</h1>
                 <div className="mt-8">{children}</div>
             </main>
+
+            <Footer />
         </div>
     );
 }

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Guest\RegistrationController;
+use App\Http\Controllers\Guest\StaticPageController;
 use App\Http\Controllers\Guest\StatusController;
 use App\Http\Controllers\Guest\TicketOrderController;
 use App\Http\Controllers\Guest\TicketOrderPaymentController;
@@ -52,6 +53,15 @@ Route::get('/', function () {
 });
 
 Route::get('status', StatusController::class)->name('status.index');
+
+// Pages du pied de page (T-076/T-077 les précèdent : status et help existent
+// déjà) — publiques, jamais d'authentification, comme /status.
+Route::get('support', [StaticPageController::class, 'support'])->name('static.support');
+Route::get('community', [StaticPageController::class, 'community'])->name('static.community');
+Route::get('feedback', [StaticPageController::class, 'feedback'])->name('static.feedback');
+Route::get('terms', [StaticPageController::class, 'terms'])->name('static.terms');
+Route::get('privacy', [StaticPageController::class, 'privacy'])->name('static.privacy');
+Route::get('affiliates', [StaticPageController::class, 'affiliates'])->name('static.affiliates');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
