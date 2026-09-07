@@ -3,7 +3,7 @@ import { type PropsWithChildren } from 'react';
 import { type SharedProps } from '../types';
 import OrganizerLayout from './OrganizerLayout';
 
-export type SettingsSection = 'profile' | 'branding' | 'billing' | 'audit-log' | 'compliance';
+export type SettingsSection = 'profile' | 'branding' | 'billing' | 'audit-log' | 'compliance' | 'integrations';
 
 interface SettingsLayoutProps {
     title: string;
@@ -19,6 +19,7 @@ export default function SettingsLayout({ title, active, children }: PropsWithChi
         { key: 'billing', label: 'Facturation', href: '/billing', visible: settingsAccess.billing },
         { key: 'audit-log', label: "Journal d'audit", href: '/audit-log', visible: settingsAccess.auditLog },
         { key: 'compliance', label: 'Registre des traitements', href: '/compliance/register', visible: settingsAccess.auditLog },
+        { key: 'integrations', label: 'Intégrations & API', href: '/settings/api', visible: settingsAccess.integrations },
     ];
 
     return (

@@ -10,7 +10,9 @@ use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\Venue;
 use App\Domain\Event\Policies\EventPolicy;
 use App\Domain\Event\Policies\VenuePolicy;
+use App\Domain\Form\Events\RegistrationCancelled;
 use App\Domain\Form\Events\RegistrationCreated;
+use App\Domain\Form\Events\RegistrationUpdated;
 use App\Domain\Form\Listeners\ConfirmPromotedRegistration;
 use App\Domain\Form\Models\Form;
 use App\Domain\Form\Policies\FormPolicy;
@@ -20,6 +22,8 @@ use App\Listeners\LinkRegistrationToContact;
 use App\Listeners\ReportHealthDiagnostics;
 use App\Listeners\SendConfirmationEmail;
 use App\Listeners\SendConfirmationWhatsapp;
+use App\Listeners\Webhooks\DispatchRegistrationWebhooks;
+use App\Listeners\Webhooks\DispatchWaitlistWebhooks;
 use App\Support\Capacity\Events\WaitlistEntryPromoted;
 use App\Support\Messaging\TwilioWhatsappProvider;
 use App\Support\Messaging\WhatsappProvider;
@@ -65,6 +69,15 @@ class AppServiceProvider extends ServiceProvider
         EventFacade::listen(RegistrationCreated::class, LinkRegistrationToContact::class);
         EventFacade::listen(RegistrationCreated::class, SendConfirmationEmail::class);
         EventFacade::listen(RegistrationCreated::class, SendConfirmationWhatsapp::class);
+
+        // Paramètres → Intégrations & API : webhooks sortants souscrits par
+        // un organisateur (App\Support\Webhooks). Événements limités à ceux
+        // réellement émis aujourd'hui — ni paiement ni check-in n'émettent
+        // encore d'événement Laravel (limite connue, voir le backlog).
+        EventFacade::listen(RegistrationCreated::class, [DispatchRegistrationWebhooks::class, 'created']);
+        EventFacade::listen(RegistrationUpdated::class, [DispatchRegistrationWebhooks::class, 'updated']);
+        EventFacade::listen(RegistrationCancelled::class, [DispatchRegistrationWebhooks::class, 'cancelled']);
+        EventFacade::listen(WaitlistEntryPromoted::class, DispatchWaitlistWebhooks::class);
 
         // T-076 : fait échouer /up (bootstrap/app.php) quand la base ou
         // Redis ne répond pas.

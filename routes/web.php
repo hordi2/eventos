@@ -35,6 +35,7 @@ use App\Http\Controllers\Organizer\MessageAutomationController;
 use App\Http\Controllers\Organizer\OrganizationBrandingController;
 use App\Http\Controllers\Organizer\PageController;
 use App\Http\Controllers\Organizer\SeatingController;
+use App\Http\Controllers\Organizer\Settings\IntegrationController;
 use App\Http\Controllers\Organizer\Settings\ProfileController;
 use App\Http\Controllers\Organizer\TagController;
 use App\Http\Controllers\Organizer\TicketTypeController;
@@ -121,6 +122,18 @@ Route::middleware('auth')->group(function (): void {
         Route::post('billing/change/{plan}', [BillingController::class, 'change'])->name('billing.change');
         Route::post('billing/portal', [BillingController::class, 'portal'])->name('billing.portal');
     });
+
+    Route::middleware(['verified', 'resolve-organization', 'can-organization:manageIntegrations'])
+        ->prefix('settings/api')
+        ->name('settings.integrations.')
+        ->group(function (): void {
+            Route::get('/', [IntegrationController::class, 'index'])->name('index');
+            Route::post('tokens', [IntegrationController::class, 'storeToken'])->name('tokens.store');
+            Route::delete('tokens/{token}', [IntegrationController::class, 'destroyToken'])->name('tokens.destroy');
+            Route::post('webhooks', [IntegrationController::class, 'storeWebhook'])->name('webhooks.store');
+            Route::patch('webhooks/{webhook}', [IntegrationController::class, 'updateWebhook'])->name('webhooks.update');
+            Route::delete('webhooks/{webhook}', [IntegrationController::class, 'destroyWebhook'])->name('webhooks.destroy');
+        });
 
     Route::middleware(['verified', 'resolve-organization'])->group(function (): void {
         Route::middleware('can-organization:createEvents')->group(function (): void {

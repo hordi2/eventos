@@ -53,6 +53,8 @@ class HandleInertiaRequests extends Middleware
             'settingsAccess' => fn (): array => $this->buildSettingsAccess($request),
             'flash' => [
                 'status' => fn (): ?string => $request->session()->get('status'),
+                'plainToken' => fn (): ?string => $request->session()->get('plainToken'),
+                'plainSecret' => fn (): ?string => $request->session()->get('plainSecret'),
             ],
         ];
     }
@@ -121,7 +123,7 @@ class HandleInertiaRequests extends Middleware
         $organization = $organizationId !== null ? Organization::query()->find($organizationId) : null;
 
         if ($user === null || $organization === null) {
-            return ['branding' => false, 'billing' => false, 'auditLog' => false];
+            return ['branding' => false, 'billing' => false, 'auditLog' => false, 'integrations' => false];
         }
 
         $gate = Gate::forUser($user);
@@ -130,6 +132,7 @@ class HandleInertiaRequests extends Middleware
             'branding' => $gate->allows('manageBranding', $organization),
             'billing' => $gate->allows('manageBilling', $organization),
             'auditLog' => $gate->allows('viewAuditLog', $organization),
+            'integrations' => $gate->allows('manageIntegrations', $organization),
         ];
     }
 }

@@ -1033,10 +1033,40 @@ migrées vers ce même menu) et une nouvelle page **Compte** :
   `users` pour rester cohérent avec la règle 4.5 du CLAUDE.md (jamais de
   DELETE physique)
 
-Partie 2/2 (à venir, décision prise avec l'utilisateur) : section
-Intégrations & API — clés API personnelles et webhooks sortants pour les
-automatisations, distincts des intégrations Stripe/Twilio/Flutterwave qui
+### Page Paramètres · partie 2/2 — Intégrations & API
+
+Nouvelle section `/settings/api` (visible seulement avec la nouvelle
+capacité `manageIntegrations`, Owner/Admin — même niveau que la charte
+graphique). Distincte des intégrations Stripe/Twilio/Flutterwave qui
 restent configurées côté serveur, invisibles à l'organisateur.
+
+- **Clés API personnelles** : réutilise directement Sanctum
+  (`User::HasApiTokens`, déjà utilisé par l'application mobile de
+  check-in) — créer/lister/révoquer des jetons nommés, donnant accès aux
+  mêmes points d'entrée que l'app de check-in (`/api/v1/events/{event}/...`).
+  Le jeton en clair n'est affiché qu'une fois, à la création.
+- **Webhooks sortants** : nouvelle table `webhooks` (organisation, URL,
+  événements souscrits, secret HMAC — RLS activée comme sur toute table
+  métier). Un listener par domaine émetteur (`App\Listeners\Webhooks\*`,
+  enregistré explicitement dans `AppServiceProvider`, cohérent avec
+  `withEvents(discover: false)`) traduit un événement Laravel en appel à
+  `DispatchWebhooksForEvent`, qui met en file un `DeliverWebhookJob` par
+  webhook concerné — signature HMAC-SHA256 du corps (en-tête
+  `X-Itaza-Signature`, même principe que les webhooks entrants Stripe/
+  Twilio dans l'autre sens), `X-Itaza-Delivery-Id` stable sur les réessais
+  (règle 4.4 : rejouable sans dupliquer côté destinataire), 5 tentatives
+  avec délai croissant (30 s / 2 min / 10 min / 30 min).
+- **Événements disponibles limités à 4** (`registration.created`,
+  `registration.updated`, `registration.cancelled`, `waitlist.promoted`) :
+  ce sont les seuls événements Laravel réellement émis dans le code
+  aujourd'hui. Ni Ticketing (paiement reçu) ni CheckIn (arrivée
+  enregistrée) n'émettent encore d'événement Laravel — limite connue,
+  documentée dans l'interface plutôt que masquée ; à étendre si ces
+  domaines gagnent leurs propres événements plus tard.
+- Édition d'un webhook existant limitée pour l'instant au bascule
+  actif/inactif depuis la liste — modifier l'URL ou les événements
+  souscrits d'un webhook déjà créé nécessite de le supprimer et d'en
+  recréer un (pas d'écran d'édition dédié dans cette première version).
 
 ---
 

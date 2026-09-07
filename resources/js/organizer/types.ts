@@ -21,9 +21,12 @@ export interface SharedProps {
         branding: boolean;
         billing: boolean;
         auditLog: boolean;
+        integrations: boolean;
     };
     flash: {
         status: string | null;
+        plainToken: string | null;
+        plainSecret: string | null;
     };
     [key: string]: unknown;
 }
