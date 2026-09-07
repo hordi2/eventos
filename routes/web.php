@@ -58,6 +58,7 @@ Route::get('status', StatusController::class)->name('status.index');
 // Pages du pied de page (T-076/T-077 les précèdent : status et help existent
 // déjà) — publiques, jamais d'authentification, comme /status.
 Route::get('support', [StaticPageController::class, 'support'])->name('static.support');
+Route::get('partage-evenements', [StaticPageController::class, 'eventSharing'])->name('static.event-sharing');
 Route::get('feedback', [StaticPageController::class, 'feedback'])->name('static.feedback');
 Route::get('terms', [StaticPageController::class, 'terms'])->name('static.terms');
 Route::get('privacy', [StaticPageController::class, 'privacy'])->name('static.privacy');

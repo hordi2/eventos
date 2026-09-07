@@ -22,6 +22,11 @@ final class StaticPageController extends Controller
         return view('guest.static.support');
     }
 
+    public function eventSharing(): View
+    {
+        return view('guest.static.event-sharing');
+    }
+
     public function feedback(): View
     {
         return view('guest.static.feedback');

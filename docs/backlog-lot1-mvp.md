@@ -1196,6 +1196,77 @@ navigation, rien n'est perdu, seulement retiré de la page d'accueil.
   RSVPify) ; carte sans bannière : lettre initiale du titre plutôt qu'une
   illustration générique, faute d'illustration propre à Itaza.
 
+### En-tête organisateur : logo, mise à niveau, menu utilisateur
+
+Demandé par l'utilisateur à partir d'une troisième capture RSVPify (menu
+utilisateur déplié) : remettre le vrai logo au lieu d'un texte sur les
+pages statiques du pied de page, et réorganiser l'en-tête organisateur
+autour d'un bouton « Mise à niveau », d'une icône cadeau, et d'un menu
+utilisateur déroulant.
+
+- `guest.static-layout.blade.php` et `guest/partials/footer.blade.php` :
+  logo image (`/images/logo.png`) au lieu du nom de l'application en
+  texte, en-tête et pied de page.
+- Nouvelle page publique « Partage d'événements » (`/partage-evenements`,
+  `StaticPageController::eventSharing`) : les trois canaux de partage déjà
+  disponibles dans l'application (lien de la page événement, QR code du
+  billet, invitations e-mail/WhatsApp) — nécessaire comme destination du
+  nouveau lien « Partage d'événements » du menu utilisateur.
+- `OrganizerLayout.tsx` : le lien « Se déconnecter » isolé est remplacé
+  par un menu déroulant (avatar à initiale + nom, réutilise le motif
+  clic-en-dehors déjà utilisé par `NavGroup`) contenant Mon compte,
+  Partage d'événements, Obtenez du soutien (`/support`), Forum
+  communautaire (`/community`), Déconnexion. Le bouton « Mise à niveau »
+  (`/billing`) n'apparaît que si `settingsAccess.billing` est vrai (rôle
+  Propriétaire), pour ne pas exposer un lien qui renverrait un 403 aux
+  autres rôles.
+- Navigation principale simplifiée en conséquence
+  (`HandleInertiaRequests::buildNav`) : « Tableau de bord » renommé « Mes
+  événements » (cohérent avec le nouveau tableau de bord en galerie), «
+  Aide » et « Communauté » retirés du niveau supérieur puisqu'ils vivent
+  maintenant dans le menu utilisateur.
+- **Corrigé au passage** : les classes `dark:` de `Logo.tsx` suivaient
+  encore `prefers-color-scheme` du système au lieu du réglage explicite
+  `data-theme` de l'organisation (régression latente du chantier « mode
+  d'affichage » ci-dessus, jamais remarquée faute d'utiliser `dark:`
+  ailleurs dans le bundle organisateur) — `app.css` redéfinit maintenant
+  la variante `dark:` de Tailwind via `@custom-variant` pour suivre
+  `[data-theme='dark']`.
+- **Corrigé après vérification mobile** : le bouton « Mise à niveau », le
+  nom complet de l'utilisateur et l'icône cadeau ne tenaient pas sur un
+  viewport 375px et provoquaient un défilement horizontal de toute la
+  page. Le nom est masqué en dessous de `md`, le bouton « Mise à niveau »
+  en dessous de `sm` (l'avatar et l'icône cadeau restent toujours
+  visibles et cliquables).
+- **Hors périmètre, repéré en vérifiant le mobile** : le champ de
+  recherche du tableau de bord (« Trouve ton événement… ») est tronqué
+  sur petit écran (`Dashboard.tsx`, chantier précédent) — non corrigé ici,
+  à traiter dans un ticket dédié.
+
+### Navigation principale réduite à « Mes événements »
+
+Demandé par l'utilisateur juste après le chantier précédent : retirer les
+groupes Contacts, Événements, Communications et Paramètres du niveau
+supérieur de navigation, et transformer « Mes événements » en menu
+déroulant listant tous les événements de l'organisation.
+
+- `HandleInertiaRequests::buildNav()` ne renvoie plus qu'un seul groupe
+  (« Mes événements ») : « Tous les événements » (vers le tableau de
+  bord) puis chaque événement de l'organisation par titre (le plus
+  récent d'abord), chacun vers sa page d'édition
+  (`events/{event}/edit`) — même destination que les cartes du tableau
+  de bord.
+- **Conséquence signalée, non résolue ici** : Contacts (liste, ajout,
+  import, tags) et Communications (modèles e-mail/WhatsApp) n'ont plus
+  aucun point d'entrée dans l'interface — seulement accessibles par URL
+  directe. Paramètres reste atteignable via « Mon compte » dans le menu
+  utilisateur, donc pas concerné. Il n'existe pas non plus aujourd'hui de
+  tableau de bord par événement avec sa propre sous-navigation
+  (`EventDashboard/Show.tsx` n'affiche que des statistiques) qui
+  pourrait accueillir ces liens en contexte. À trancher avec
+  l'utilisateur : où faire vivre ces deux fonctionnalités (nouveau menu,
+  sous-navigation par événement, ou autre) ?
+
 ---
 
 *Backlog v1.0 — à réviser à chaque fin de sprint.*

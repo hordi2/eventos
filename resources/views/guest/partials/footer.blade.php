@@ -13,7 +13,7 @@
 
 <footer class="border-t border-line bg-bg-alt">
     <div class="mx-auto max-w-5xl px-4 py-12 text-center sm:px-6">
-        <p class="mb-6 font-serif text-lg text-ink italic">{{ config('app.name', 'Itaza Invitation') }}</p>
+        <img src="/images/logo.png" alt="{{ config('app.name', 'Itaza Invitation') }}" class="mx-auto mb-6 h-7 w-auto opacity-80">
 
         <nav class="mb-6 flex flex-wrap justify-center gap-x-6 gap-y-2">
             @foreach ($footerLinks as $link)

@@ -11,7 +11,9 @@
 <body class="flex min-h-screen flex-col bg-bg antialiased">
     <header class="border-b border-line">
         <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-5 sm:px-6">
-            <a href="/" class="font-serif text-xl italic text-ink">{{ config('app.name', 'Itaza Invitation') }}</a>
+            <a href="/">
+                <img src="/images/logo.png" alt="{{ config('app.name', 'Itaza Invitation') }}" class="h-8 w-auto">
+            </a>
             <nav class="flex items-center gap-5 font-label text-xs tracking-[0.14em] text-ink-soft uppercase">
                 @auth
                     <a href="{{ route('dashboard') }}" class="hover:text-ink">Tableau de bord</a>

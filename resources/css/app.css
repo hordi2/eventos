@@ -1,5 +1,14 @@
 @import 'tailwindcss';
 
+/*
+ * Redéfinit la variante dark: de Tailwind pour suivre `data-theme`
+ * (réglage explicite par organisation) plutôt que la préférence système
+ * par défaut — sans quoi Logo.tsx (seul utilisateur de dark: dans ce
+ * bundle) resterait piloté par prefers-color-scheme malgré le reste de la
+ * palette (voir la note sur [data-theme='dark'] plus bas).
+ */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Domain\Event\Models\Event;
 use App\Domain\Organization\Models\Organization;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Http\Request;
@@ -60,7 +61,7 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * @return list<array{label: string, href: string}|array{label: string, items: list<array{label: string, href: string}>}>|null
+     * @return list<array{label: string, items: list<array{label: string, href: string}>}>|null
      */
     private function buildNav(Request $request): ?array
     {
@@ -77,36 +78,23 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
-        $gate = Gate::forUser($user);
+        // Un seul groupe déroulant au niveau supérieur (demande utilisateur) :
+        // Contacts, Communications et Paramètres restent atteignables depuis
+        // le menu utilisateur et les pages Paramètres elles-mêmes, pas
+        // depuis ce niveau de navigation.
+        $events = Event::query()->orderByDesc('start_at')->get(['id', 'title'])
+            ->map(fn (Event $event): array => ['label' => $event->title, 'href' => route('events.edit', $event)])
+            ->all();
 
-        return array_values(array_filter([
-            ['label' => 'Tableau de bord', 'href' => route('dashboard')],
-            ['label' => 'Aide', 'href' => route('help.index')],
-            ['label' => 'Communauté', 'href' => route('community.index')],
-            $gate->allows('viewGuests', $organization) ? [
-                'label' => 'Contacts',
-                'items' => array_values(array_filter([
-                    ['label' => 'Tous les contacts', 'href' => route('contacts.index')],
-                    $gate->allows('updateGuests', $organization) ? ['label' => 'Ajouter un contact', 'href' => route('contacts.create')] : null,
-                    $gate->allows('updateGuests', $organization) ? ['label' => 'Importer des contacts', 'href' => route('contact-imports.create')] : null,
-                    $gate->allows('updateGuests', $organization) ? ['label' => 'Tags', 'href' => route('tags.index')] : null,
-                ])),
-            ] : null,
-            $gate->allows('createEvents', $organization) ? [
-                'label' => 'Événements',
+        return [
+            [
+                'label' => 'Mes événements',
                 'items' => [
-                    ['label' => 'Créer un événement', 'href' => route('events.create')],
+                    ['label' => 'Tous les événements', 'href' => route('dashboard')],
+                    ...$events,
                 ],
-            ] : null,
-            $gate->allows('sendCommunications', $organization) ? [
-                'label' => 'Communications',
-                'items' => [
-                    ['label' => "Modèles d'e-mails", 'href' => route('email-templates.index')],
-                    ['label' => 'Modèles WhatsApp', 'href' => route('whatsapp-templates.index')],
-                ],
-            ] : null,
-            ['label' => 'Paramètres', 'href' => route('settings.profile.edit')],
-        ]));
+            ],
+        ];
     }
 
     /**
