@@ -1012,4 +1012,32 @@ Si tu ne devais démarrer que trois tickets cette semaine, dans cet ordre :
 
 ---
 
+# HORS BACKLOG INITIAL — DEMANDÉ APRÈS LE RÉCAPITULATIF
+
+### Page Paramètres (compte) · partie 1/2
+
+Suite au récapitulatif produit (proposition n°1), demandé directement par
+l'utilisateur : une zone `/settings` unifiée avec menu latéral, regroupant
+les pages de réglages déjà existantes (Personnalisation = charte
+graphique, Facturation, Journal d'audit, Registre des traitements —
+migrées vers ce même menu) et une nouvelle page **Compte** :
+
+- Modifier nom/e-mail (l'e-mail redevient non vérifié et un nouveau lien de
+  vérification part automatiquement en cas de changement)
+- Changer le mot de passe (confirmation par le mot de passe actuel)
+- Se déconnecter
+- Supprimer le compte — anonymisation façon RGPD (même principe que
+  `AnonymizeContact`, T-075), **bloquée** tant que l'utilisateur est seul
+  membre au rôle Owner d'une organisation non supprimée (message clair
+  plutôt qu'une organisation orpheline) ; ajout d'un `softDeletes()` sur
+  `users` pour rester cohérent avec la règle 4.5 du CLAUDE.md (jamais de
+  DELETE physique)
+
+Partie 2/2 (à venir, décision prise avec l'utilisateur) : section
+Intégrations & API — clés API personnelles et webhooks sortants pour les
+automatisations, distincts des intégrations Stripe/Twilio/Flutterwave qui
+restent configurées côté serveur, invisibles à l'organisateur.
+
+---
+
 *Backlog v1.0 — à réviser à chaque fin de sprint.*

@@ -2,7 +2,7 @@ import { Head } from '@inertiajs/react';
 import { type ChangeEvent, useRef, useState } from 'react';
 import Button from '../../Components/Button';
 import InputLabel from '../../Components/InputLabel';
-import OrganizerLayout from '../../Layouts/OrganizerLayout';
+import SettingsLayout from '../../Layouts/SettingsLayout';
 
 interface Props {
     branding: {
@@ -50,7 +50,7 @@ export default function Branding({ branding }: Props) {
     }
 
     return (
-        <OrganizerLayout title="Charte graphique">
+        <SettingsLayout title="Personnalisation" active="branding">
             <Head title="Charte graphique" />
 
             <div className="mb-8">
@@ -92,6 +92,6 @@ export default function Branding({ branding }: Props) {
             <Button className="w-auto" onClick={() => void handleColorSave()} disabled={saving}>
                 {saving ? 'Enregistrement…' : 'Enregistrer'}
             </Button>
-        </OrganizerLayout>
+        </SettingsLayout>
     );
 }

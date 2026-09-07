@@ -1,7 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import Button from '../../Components/Button';
-import OrganizerLayout from '../../Layouts/OrganizerLayout';
+import SettingsLayout from '../../Layouts/SettingsLayout';
 
 interface UsageMetric {
     used: number;
@@ -88,7 +88,7 @@ export default function Show({ organization, usage, plans }: Props) {
     ];
 
     return (
-        <OrganizerLayout title="Facturation">
+        <SettingsLayout title="Facturation" active="billing">
             <Head title="Facturation" />
 
             <div className="mb-8">
@@ -176,6 +176,6 @@ export default function Show({ organization, usage, plans }: Props) {
                     Gérer mon abonnement et mes factures (Stripe)
                 </Button>
             )}
-        </OrganizerLayout>
+        </SettingsLayout>
     );
 }

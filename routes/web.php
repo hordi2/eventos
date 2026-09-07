@@ -35,6 +35,7 @@ use App\Http\Controllers\Organizer\MessageAutomationController;
 use App\Http\Controllers\Organizer\OrganizationBrandingController;
 use App\Http\Controllers\Organizer\PageController;
 use App\Http\Controllers\Organizer\SeatingController;
+use App\Http\Controllers\Organizer\Settings\ProfileController;
 use App\Http\Controllers\Organizer\TagController;
 use App\Http\Controllers\Organizer\TicketTypeController;
 use App\Http\Controllers\Organizer\WhatsappTemplateController;
@@ -90,6 +91,16 @@ Route::middleware('auth')->group(function (): void {
     Route::get('help', [HelpController::class, 'index'])
         ->middleware(['verified', 'resolve-organization'])
         ->name('help.index');
+
+    Route::middleware(['verified', 'resolve-organization'])
+        ->prefix('settings')
+        ->name('settings.')
+        ->group(function (): void {
+            Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
+            Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
+            Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+            Route::delete('profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+        });
 
     Route::middleware(['verified', 'resolve-organization', 'can-organization:viewAuditLog'])->group(function (): void {
         Route::get('audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');

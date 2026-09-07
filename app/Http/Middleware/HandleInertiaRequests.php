@@ -50,6 +50,10 @@ class HandleInertiaRequests extends Middleware
             // après HandleInertiaRequests dans le pipeline), jamais ici —
             // sans quoi CurrentOrganization ne serait pas encore positionné.
             'nav' => fn (): ?array => $this->buildNav($request),
+            'settingsAccess' => fn (): array => $this->buildSettingsAccess($request),
+            'flash' => [
+                'status' => fn (): ?string => $request->session()->get('status'),
+            ],
         ];
     }
 
@@ -98,15 +102,34 @@ class HandleInertiaRequests extends Middleware
                     ['label' => 'Modèles WhatsApp', 'href' => route('whatsapp-templates.index')],
                 ],
             ] : null,
-            $gate->allows('viewAuditLog', $organization) || $gate->allows('manageBranding', $organization) || $gate->allows('manageBilling', $organization) ? [
-                'label' => 'Organisation',
-                'items' => array_values(array_filter([
-                    $gate->allows('manageBranding', $organization) ? ['label' => 'Charte graphique', 'href' => route('organization.branding.edit')] : null,
-                    $gate->allows('manageBilling', $organization) ? ['label' => 'Facturation', 'href' => route('billing.index')] : null,
-                    $gate->allows('viewAuditLog', $organization) ? ['label' => "Journal d'audit", 'href' => route('audit-log.index')] : null,
-                    $gate->allows('viewAuditLog', $organization) ? ['label' => 'Registre des traitements', 'href' => route('compliance.register')] : null,
-                ])),
-            ] : null,
+            ['label' => 'Paramètres', 'href' => route('settings.profile.edit')],
         ]));
+    }
+
+    /**
+     * Sections de la page Paramètres visibles pour l'utilisateur courant
+     * (SettingsLayout.tsx) — même matrice de capacités que buildNav(),
+     * calculée une seule fois pour éviter d'exposer un lien vers une page
+     * que can-organization:xxx refuserait ensuite.
+     *
+     * @return array<string, bool>
+     */
+    private function buildSettingsAccess(Request $request): array
+    {
+        $user = $request->user();
+        $organizationId = app(CurrentOrganization::class)->id();
+        $organization = $organizationId !== null ? Organization::query()->find($organizationId) : null;
+
+        if ($user === null || $organization === null) {
+            return ['branding' => false, 'billing' => false, 'auditLog' => false];
+        }
+
+        $gate = Gate::forUser($user);
+
+        return [
+            'branding' => $gate->allows('manageBranding', $organization),
+            'billing' => $gate->allows('manageBilling', $organization),
+            'auditLog' => $gate->allows('viewAuditLog', $organization),
+        ];
     }
 }

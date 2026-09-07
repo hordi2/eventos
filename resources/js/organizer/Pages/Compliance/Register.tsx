@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import OrganizerLayout from '../../Layouts/OrganizerLayout';
+import SettingsLayout from '../../Layouts/SettingsLayout';
 
 interface Activity {
     finalite: string;
@@ -15,7 +15,7 @@ interface Props {
 
 export default function Register({ activities }: Props) {
     return (
-        <OrganizerLayout title="Registre des traitements" eyebrow="Organisation">
+        <SettingsLayout title="Registre des traitements" active="compliance">
             <Head title="Registre des traitements" />
 
             <div className="mb-8 flex items-center justify-between">
@@ -52,6 +52,6 @@ export default function Register({ activities }: Props) {
                     </tbody>
                 </table>
             </div>
-        </OrganizerLayout>
+        </SettingsLayout>
     );
 }

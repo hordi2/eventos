@@ -17,5 +17,13 @@ export interface SharedProps {
         user: User | null;
     };
     nav: NavItem[] | null;
+    settingsAccess: {
+        branding: boolean;
+        billing: boolean;
+        auditLog: boolean;
+    };
+    flash: {
+        status: string | null;
+    };
     [key: string]: unknown;
 }

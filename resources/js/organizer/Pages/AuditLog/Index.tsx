@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import OrganizerLayout from '../../Layouts/OrganizerLayout';
+import SettingsLayout from '../../Layouts/SettingsLayout';
 import Table from '../../Components/Table';
 
 interface AuditLogRow {
@@ -20,7 +20,7 @@ interface Paginated<T> {
 
 export default function Index({ logs }: { logs: Paginated<AuditLogRow> }) {
     return (
-        <OrganizerLayout title="Journal d'audit" eyebrow="Sécurité">
+        <SettingsLayout title="Journal d'audit" active="audit-log">
             <Head title="Journal d'audit" />
 
             <div className="mb-6 flex justify-end">
@@ -63,6 +63,6 @@ export default function Index({ logs }: { logs: Paginated<AuditLogRow> }) {
                     ))}
                 </nav>
             )}
-        </OrganizerLayout>
+        </SettingsLayout>
     );
 }
