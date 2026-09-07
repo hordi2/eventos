@@ -9,20 +9,17 @@ use App\Http\Controllers\Controller;
 use Illuminate\View\View;
 
 /**
- * Pages statiques du pied de page (support, communauté, retour
- * d'information, conditions d'utilisation, confidentialité, affiliation) —
- * publiques, jamais d'authentification, comme /status (T-076).
+ * Pages statiques du pied de page (support, retour d'information,
+ * conditions d'utilisation, confidentialité, affiliation) — publiques,
+ * jamais d'authentification, comme /status (T-076). « Communauté » n'en
+ * fait plus partie depuis que c'est un vrai forum (CommunityController,
+ * authentification requise).
  */
 final class StaticPageController extends Controller
 {
     public function support(): View
     {
         return view('guest.static.support');
-    }
-
-    public function community(): View
-    {
-        return view('guest.static.community');
     }
 
     public function feedback(): View

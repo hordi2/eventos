@@ -5,8 +5,7 @@ declare(strict_types=1);
 it('affiche chaque page statique du pied de page sans authentification', function (string $url, string $needle): void {
     $this->get($url)->assertOk()->assertSee($needle, false);
 })->with([
-    ['/support', "Besoin d'aide"],
-    ['/community', 'Communauté'],
+    ['/support', 'Comment pouvons-nous vous aider'],
     ['/feedback', 'Votre avis nous intéresse'],
     ['/terms', "Conditions d'utilisation"],
     ['/privacy', 'Politique de confidentialité'],

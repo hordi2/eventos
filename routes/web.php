@@ -21,6 +21,7 @@ use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
 use App\Http\Controllers\Organizer\BadgeController;
 use App\Http\Controllers\Organizer\BillingController;
 use App\Http\Controllers\Organizer\CheckInController;
+use App\Http\Controllers\Organizer\CommunityController;
 use App\Http\Controllers\Organizer\ComplianceController;
 use App\Http\Controllers\Organizer\ContactController;
 use App\Http\Controllers\Organizer\ContactImportController;
@@ -57,7 +58,6 @@ Route::get('status', StatusController::class)->name('status.index');
 // Pages du pied de page (T-076/T-077 les précèdent : status et help existent
 // déjà) — publiques, jamais d'authentification, comme /status.
 Route::get('support', [StaticPageController::class, 'support'])->name('static.support');
-Route::get('community', [StaticPageController::class, 'community'])->name('static.community');
 Route::get('feedback', [StaticPageController::class, 'feedback'])->name('static.feedback');
 Route::get('terms', [StaticPageController::class, 'terms'])->name('static.terms');
 Route::get('privacy', [StaticPageController::class, 'privacy'])->name('static.privacy');
@@ -102,6 +102,17 @@ Route::middleware('auth')->group(function (): void {
     Route::get('help', [HelpController::class, 'index'])
         ->middleware(['verified', 'resolve-organization'])
         ->name('help.index');
+
+    Route::middleware(['verified', 'resolve-organization'])
+        ->prefix('community')
+        ->name('community.')
+        ->group(function (): void {
+            Route::get('/', [CommunityController::class, 'index'])->name('index');
+            Route::get('nouveau-sujet', [CommunityController::class, 'create'])->name('create');
+            Route::post('/', [CommunityController::class, 'store'])->name('store');
+            Route::get('{topic}', [CommunityController::class, 'show'])->name('show');
+            Route::post('{topic}/reponses', [CommunityController::class, 'storePost'])->name('posts.store');
+        });
 
     Route::middleware(['verified', 'resolve-organization'])
         ->prefix('settings')

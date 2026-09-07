@@ -27,6 +27,7 @@ final class Organization extends Model
         'allow_editor_financial_access',
         'logo_path',
         'primary_color',
+        'theme_mode',
         'plan',
         'stripe_customer_id',
         'stripe_subscription_id',
@@ -43,6 +44,7 @@ final class Organization extends Model
     {
         return [
             'allow_editor_financial_access' => 'boolean',
+            'theme_mode' => ThemeMode::class,
             'plan' => PlanTier::class,
             'subscription_current_period_end' => 'immutable_datetime',
             'payment_failed_at' => 'immutable_datetime',

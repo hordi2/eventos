@@ -82,6 +82,7 @@ class HandleInertiaRequests extends Middleware
         return array_values(array_filter([
             ['label' => 'Tableau de bord', 'href' => route('dashboard')],
             ['label' => 'Aide', 'href' => route('help.index')],
+            ['label' => 'Communauté', 'href' => route('community.index')],
             $gate->allows('viewGuests', $organization) ? [
                 'label' => 'Contacts',
                 'items' => array_values(array_filter([

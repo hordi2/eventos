@@ -1096,6 +1096,84 @@ les mêmes rubriques (adaptées à Itaza).
   **Ne pas publier tel quel : relecture juridique requise avant mise en
   production.**
 
+**Enrichi ensuite** à partir des pages réelles équivalentes de RSVPify
+(liens fournis par l'utilisateur), lues directement dans le navigateur —
+jamais de texte copié (droits d'auteur), seulement la structure et les
+sujets couverts repris pour rédiger un contenu original :
+- Soutien : entrées organisées par thème (démarrage, formulaires,
+  billetterie, communications, check-in, compte) plutôt qu'un seul
+  paragraphe.
+- Retour d'information : trois catégories de retour (bug, idée de
+  fonctionnalité, retour général) pour aider à écrire un message utile.
+- Programme d'affiliation : les quatre étapes génériques d'un programme de
+  parrainage (rejoindre, partager, suivre, être rémunéré) — sans
+  fabriquer de taux de commission ni de chiffres, puisque le programme
+  n'existe pas encore.
+- Conditions d'utilisation et confidentialité : sommaire avec ancres
+  ajouté en tête de page (repris de la structure RSVPify), et quatre
+  sections supplémentaires pertinentes pour Itaza (éligibilité, services
+  tiers, indemnisation, délai de réclamation côté conditions ;
+  transferts internationaux de données et protection des mineurs côté
+  confidentialité) — toujours un gabarit à faire valider par un juriste.
+
+**Retour de l'utilisateur sur ce premier jet** : contenu jugé trop
+générique, pages trop pâles visuellement, et « Communauté » attendue comme
+un vrai espace d'échange plutôt qu'une page d'information — décision prise
+avec l'utilisateur (forum minimal, pas de votes ni de modération avancée
+pour cette version) :
+
+- **Nouveau module `Domain/Community`** : `CommunityTopic` et
+  `CommunityPost`, volontairement **hors cloisonnement multi-tenant**
+  (comme `system_status_checks`, T-076) — un espace partagé entre TOUTES
+  les organisations utilisant Itaza, pas une donnée d'une organisation en
+  particulier. Ni `BelongsToOrganization` ni RLS sur ces deux tables (elles
+  n'ont pas de colonne `organization_id`), conformément à
+  `DomainModelsRespectMultiTenancyTest` qui n'exige le trait que pour les
+  modèles possédant cette colonne.
+- 4 catégories fixes (Gestion d'événement, Construction de formulaire,
+  Dépannage, Suggestions). Tout compte organisateur authentifié peut créer
+  un sujet et y répondre, quel que soit son rôle ou son organisation —
+  `CommunityController`, routes `/community`, `/community/nouveau-sujet`,
+  `/community/{topic}`.
+- Remplace l'ancienne page d'information statique (`static.community`,
+  supprimée) ; le pied de page et le menu principal pointent maintenant
+  vers le vrai forum.
+- **Pied de page et en-tête sur les pages publiques** : nouveau
+  `guest.static-layout` (logo, lien connexion/tableau de bord, pied de page
+  complet) utilisé par les 6 pages du pied de page + `/status` — **jamais**
+  appliqué à `guest.layout` (RSVP, billetterie, désabonnement), qui reste
+  volontairement minimal pour respecter la contrainte de poids/vitesse en
+  3G (§2 CLAUDE.md).
+- **Habillage visuel** : bandeau d'en-tête teinté (`bg-accent/5`) avec
+  étiquette et grand titre en serif italique sur chaque page, icônes dans
+  des pastilles pour les cartes de contenu — mêmes jetons de couleur que
+  l'application organisateur (`--color-danger`/`--color-success` ajoutés à
+  `guest.css`, absents jusqu'ici de ce bundle CSS séparé et minimal).
+
+### Mode d'affichage choisi par l'organisation, plus par le système
+
+Demandé par l'utilisateur : le mode sombre de l'espace organisateur suivait
+jusqu'ici uniquement la préférence système (`prefers-color-scheme`, sans
+bouton — décision documentée à l'origine dans `app.css`). Désormais
+piloté explicitement par organisation, « Normal » (clair) par défaut :
+
+- Colonne `organizations.theme_mode` (`light`/`dark`, défaut `light`),
+  nouvel enum `ThemeMode`. Réglage ajouté au formulaire déjà existant de
+  Paramètres → Personnalisation (`UpdateOrganizationBranding`).
+- `resources/views/app.blade.php` pose `data-theme` sur `<html>` **avant**
+  tout rendu React (`App\Support\Theme\ResolveThemeMode` : lit
+  l'organisation courante si résolue, sinon `light` — jamais de flash du
+  mauvais thème, y compris sur les pages avant authentification comme
+  `/login`).
+- `app.css` : le bloc `@media (prefers-color-scheme: dark)` est remplacé
+  par un sélecteur `[data-theme='dark']` — la préférence système n'a plus
+  aucun effet, seul ce réglage compte. Les pages vues par les invités
+  (`guest.css`) ne sont pas concernées, elles n'ont jamais eu de mode
+  sombre.
+- Changer de mode recharge la page entière (`window.location.reload()`) :
+  `data-theme` n'est posé qu'au chargement complet du document, une
+  navigation Inertia classique ne le reverrait pas.
+
 ---
 
 *Backlog v1.0 — à réviser à chaque fin de sprint.*

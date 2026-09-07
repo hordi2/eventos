@@ -41,23 +41,24 @@
 
 /*
  * Mode sombre : les jetons de couleur s'inversent (mêmes noms, mêmes
- * usages dans les composants), pilotés par la préférence système. Pas de
- * bouton de bascule manuel pour l'instant — hors du périmètre de ce ticket.
+ * usages dans les composants), mais uniquement sur choix explicite de
+ * l'organisation (page Paramètres → Personnalisation, `data-theme` posé
+ * sur `<html>` par resources/views/app.blade.php) — plus jamais piloté par
+ * la préférence système, décision prise avec l'utilisateur. « Normal »
+ * reste le mode par défaut tant que rien n'a été choisi.
  */
-@media (prefers-color-scheme: dark) {
-    @theme {
-        --color-bg: #14110d;
-        --color-bg-alt: #1c1912;
-        --color-bg-deep: #262119;
-        --color-ink: #f5f3f0;
-        --color-ink-soft: #b7ac9d;
-        --color-line: #34302a;
-        --color-accent: #f5f3f0;
-        --color-danger: #ff6b57;
-        --color-danger-bg: #2a1613;
-        --color-success: #4ade80;
-        --color-success-bg: #0f2318;
-    }
+[data-theme='dark'] {
+    --color-bg: #14110d;
+    --color-bg-alt: #1c1912;
+    --color-bg-deep: #262119;
+    --color-ink: #f5f3f0;
+    --color-ink-soft: #b7ac9d;
+    --color-line: #34302a;
+    --color-accent: #f5f3f0;
+    --color-danger: #ff6b57;
+    --color-danger-bg: #2a1613;
+    --color-success: #4ade80;
+    --color-success-bg: #0f2318;
 }
 
 body {

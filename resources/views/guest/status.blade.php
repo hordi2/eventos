@@ -1,4 +1,4 @@
-@extends('guest.layout')
+@extends('guest.static-layout')
 
 @section('title', 'Statut — ' . config('app.name', 'Itaza Invitation'))
 
@@ -10,7 +10,14 @@
 @endphp
 
 @section('content')
-    <div class="mx-auto max-w-2xl px-4 py-16">
+    <div class="border-b border-line bg-accent/5">
+        <div class="mx-auto max-w-2xl px-4 py-16 sm:px-6">
+            <p class="mb-3 font-label text-xs tracking-[0.28em] text-accent uppercase">Supervision</p>
+            <h1 class="font-serif text-4xl text-ink italic">Statut de la plateforme</h1>
+        </div>
+    </div>
+
+    <div class="mx-auto max-w-2xl px-4 py-16 sm:px-6">
         <div class="mb-8 flex items-center gap-3 rounded-lg border p-4 {{ $isHealthy ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50' }}">
             <span class="h-3 w-3 shrink-0 rounded-full {{ $isHealthy ? 'bg-green-500' : 'bg-red-500' }}"></span>
             <p class="font-medium {{ $isHealthy ? 'text-green-800' : 'text-red-800' }}">

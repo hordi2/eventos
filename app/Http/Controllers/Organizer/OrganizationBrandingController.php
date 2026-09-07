@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Organizer;
 use App\Domain\Organization\Actions\SaveOrganizationLogo;
 use App\Domain\Organization\Actions\UpdateOrganizationBranding;
 use App\Domain\Organization\Models\Organization;
+use App\Domain\Organization\Models\ThemeMode;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\Organization\UpdateBrandingRequest;
 use App\Http\Requests\Organizer\Organization\UploadBrandingLogoRequest;
@@ -26,6 +27,7 @@ final class OrganizationBrandingController extends Controller
             'branding' => [
                 'logo_url' => $organization->logo_path !== null ? Storage::disk('public')->url($organization->logo_path) : null,
                 'primary_color' => $organization->primary_color,
+                'theme_mode' => $organization->theme_mode->value,
             ],
         ]);
     }
@@ -35,10 +37,14 @@ final class OrganizationBrandingController extends Controller
         $organization = $action->handle(
             organization: $this->currentOrganization(),
             primaryColor: $request->string('primary_color')->toString() ?: null,
+            themeMode: ThemeMode::from($request->string('theme_mode')->toString()),
             user: $request->user(),
         );
 
-        return response()->json(['primary_color' => $organization->primary_color]);
+        return response()->json([
+            'primary_color' => $organization->primary_color,
+            'theme_mode' => $organization->theme_mode->value,
+        ]);
     }
 
     public function uploadLogo(UploadBrandingLogoRequest $request, SaveOrganizationLogo $action): JsonResponse

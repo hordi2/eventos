@@ -18,8 +18,11 @@
     --color-ink-soft: #6d655c;
     --color-line: #e3e3e0;
     --color-accent: #0a0a0a;
+    --color-danger: #c0392b;
+    --color-success: #1a6e42;
 
     --radius-control: 0.5rem;
+    --radius-card: 1rem;
     --radius-pill: 999px;
 }
 

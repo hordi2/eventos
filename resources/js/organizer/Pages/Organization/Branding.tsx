@@ -8,14 +8,21 @@ interface Props {
     branding: {
         logo_url: string | null;
         primary_color: string | null;
+        theme_mode: 'light' | 'dark';
     };
 }
 
 const DEFAULT_COLOR = '#1b1611';
 
+const THEME_OPTIONS: { value: 'light' | 'dark'; label: string; description: string }[] = [
+    { value: 'light', label: 'Normal', description: 'Fond clair — mode par défaut.' },
+    { value: 'dark', label: 'Sombre', description: 'Fond sombre pour toute votre équipe.' },
+];
+
 export default function Branding({ branding }: Props) {
     const [logoUrl, setLogoUrl] = useState(branding.logo_url);
     const [primaryColor, setPrimaryColor] = useState(branding.primary_color ?? DEFAULT_COLOR);
+    const [themeMode, setThemeMode] = useState<'light' | 'dark'>(branding.theme_mode);
     const [saving, setSaving] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,11 +46,22 @@ export default function Branding({ branding }: Props) {
         }
     }
 
-    async function handleColorSave() {
+    async function handleSave() {
         setSaving(true);
+        const themeModeChanged = themeMode !== branding.theme_mode;
 
         try {
-            await window.axios.patch('/organization/branding', { primary_color: primaryColor });
+            await window.axios.patch('/organization/branding', { primary_color: primaryColor, theme_mode: themeMode });
+
+            // data-theme est posé côté serveur (resources/views/app.blade.php),
+            // au premier rendu de la page seulement — une navigation Inertia
+            // classique ne le raffraîchirait pas, d'où le rechargement complet
+            // ici, seulement quand le mode a réellement changé.
+            if (themeModeChanged) {
+                window.location.reload();
+
+                return;
+            }
         } finally {
             setSaving(false);
         }
@@ -89,7 +107,33 @@ export default function Branding({ branding }: Props) {
                 </div>
             </div>
 
-            <Button className="w-auto" onClick={() => void handleColorSave()} disabled={saving}>
+            <div className="mb-8 rounded-card bg-bg p-6 ring-1 ring-line">
+                <h2 className="mb-1 font-serif text-lg italic">Mode d'affichage</h2>
+                <p className="mb-4 text-sm text-ink-soft">
+                    S'applique à l'espace organisateur pour toute votre équipe — jamais aux pages vues par vos invités.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                    {THEME_OPTIONS.map((option) => (
+                        <label
+                            key={option.value}
+                            className={`cursor-pointer rounded-card border p-4 ${themeMode === option.value ? 'border-ink' : 'border-line'}`}
+                        >
+                            <input
+                                type="radio"
+                                name="theme_mode"
+                                value={option.value}
+                                checked={themeMode === option.value}
+                                onChange={() => setThemeMode(option.value)}
+                                className="sr-only"
+                            />
+                            <span className="font-medium text-ink">{option.label}</span>
+                            <span className="mt-1 block text-xs text-ink-soft">{option.description}</span>
+                        </label>
+                    ))}
+                </div>
+            </div>
+
+            <Button className="w-auto" onClick={() => void handleSave()} disabled={saving}>
                 {saving ? 'Enregistrement…' : 'Enregistrer'}
             </Button>
         </SettingsLayout>
