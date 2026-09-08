@@ -21,7 +21,7 @@ final class NotificationController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $events = Event::query()->orderByDesc('start_at')->get(['id', 'title']);
+        $events = Event::query()->orderByDesc('start_at')->get(['id', 'title', 'start_at', 'timezone']);
 
         $preferences = RegistrationNotificationPreference::query()
             ->where('user_id', $user->id)
@@ -38,6 +38,10 @@ final class NotificationController extends Controller
             'events' => $events->map(fn (Event $event): array => [
                 'id' => $event->id,
                 'title' => $event->title,
+                // Affichage dans le fuseau de l'événement, jamais celui du
+                // serveur (règle 4.3) ; `start_at` sert au tri côté client.
+                'start_at' => $event->start_at->toIso8601String(),
+                'start_at_formatted' => $event->start_at->setTimezone($event->timezone)->translatedFormat('j F Y \à H\hi'),
                 'notify_created' => $preferences->get($event->id)->notify_created ?? true,
                 'notify_updated' => $preferences->get($event->id)->notify_updated ?? true,
                 'notify_cancelled' => $preferences->get($event->id)->notify_cancelled ?? true,

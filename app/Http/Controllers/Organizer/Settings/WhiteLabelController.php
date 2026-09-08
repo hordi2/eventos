@@ -21,6 +21,7 @@ final class WhiteLabelController extends Controller
         return Inertia::render('Settings/WhiteLabel', [
             'emailFromName' => $organization->email_from_name,
             'emailReplyTo' => $organization->email_reply_to,
+            'defaultFromAddress' => (string) config('mail.from.address'),
         ]);
     }
 

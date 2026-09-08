@@ -155,6 +155,9 @@ Route::middleware('auth')->group(function (): void {
         ->name('settings.')
         ->group(function (): void {
             Route::get('referral', [ReferralController::class, 'edit'])->name('referral.edit');
+            Route::post('referral/invitations', [ReferralController::class, 'invite'])
+                ->middleware('throttle:10,1')
+                ->name('referral.invite');
         });
 
     Route::middleware(['verified', 'resolve-organization', 'can-organization:viewAuditLog'])->group(function (): void {

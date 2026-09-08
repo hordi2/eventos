@@ -4,6 +4,7 @@ import Button from '../../Components/Button';
 import InputError from '../../Components/InputError';
 import InputLabel from '../../Components/InputLabel';
 import TextInput from '../../Components/TextInput';
+import Toggle from '../../Components/Toggle';
 import SettingsLayout from '../../Layouts/SettingsLayout';
 import { type SharedProps } from '../../types';
 
@@ -50,37 +51,37 @@ export default function Security({ mfaEmailEnabled, organizationMfa }: Props) {
             )}
 
             <section className="mb-14">
-                <h2 className="mb-1 font-serif text-xl italic">Authentification multifactorielle (MFA)</h2>
-                <p className="mb-6 text-sm text-ink-soft">
-                    Un code à usage unique vous est envoyé par e-mail à chaque connexion, en plus de votre mot de passe.
-                </p>
+                <h2 className="mb-4 border-b border-line pb-4 text-xl">Authentification multifactorielle (MFA)</h2>
 
-                <label className="flex max-w-md items-center justify-between rounded-card border border-line p-4 text-sm">
-                    <span>Exiger un code MFA par e-mail lors de la connexion</span>
-                    <input
-                        type="checkbox"
+                <div className="flex items-start gap-4 py-2">
+                    <Toggle
                         checked={mfaEmailEnabled}
-                        onChange={(e) => toggleMfa(e.target.checked)}
-                        className="h-5 w-5 rounded border-line text-ink focus:ring-ink"
+                        onChange={toggleMfa}
+                        label="Exiger un code MFA par e-mail lors de la connexion"
                     />
-                </label>
+                    <span className="text-sm text-ink">Exiger un code MFA par e-mail lors de la connexion</span>
+                </div>
 
                 {organizationMfa && (
-                    <label className="mt-3 flex max-w-md items-center justify-between rounded-card border border-line p-4 text-sm">
-                        <span>Exiger la MFA par e-mail pour tous les membres de l'organisation</span>
-                        <input
-                            type="checkbox"
+                    <div className="flex items-start gap-4 py-2">
+                        <Toggle
                             checked={organizationMfa.requireMfaForMembers}
-                            onChange={(e) => toggleOrganizationMfa(e.target.checked)}
-                            className="h-5 w-5 rounded border-line text-ink focus:ring-ink"
+                            onChange={toggleOrganizationMfa}
+                            label="Exiger la MFA par e-mail pour tous les membres de l'organisation"
                         />
-                    </label>
+                        <span className="text-sm text-ink">
+                            Exiger la MFA par e-mail pour tous les membres de l'organisation
+                        </span>
+                    </div>
                 )}
+
+                <p className="mt-4 text-sm text-ink-soft">
+                    Un code à usage unique est envoyé par e-mail à chaque connexion, en plus du mot de passe.
+                </p>
             </section>
 
             <section className="mb-14">
-                <h2 className="mb-1 font-serif text-xl italic">Mot de passe</h2>
-                <p className="mb-6 text-sm text-ink-soft">Choisissez un mot de passe que vous n'utilisez sur aucun autre site.</p>
+                <h2 className="mb-6 border-b border-line pb-4 text-xl">Mot de passe</h2>
 
                 <form onSubmit={submitPassword} className="max-w-md">
                     <div className="mb-5">

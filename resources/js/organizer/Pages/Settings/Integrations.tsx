@@ -1,4 +1,4 @@
-import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { type FormEvent, useState } from 'react';
 import Badge from '../../Components/Badge';
 import Button from '../../Components/Button';
@@ -97,6 +97,19 @@ export default function Integrations({ tokens, webhooks, availableEvents }: Prop
     return (
         <SettingsLayout title="Paramètres" active="integrations">
             <Head title="Intégrations & API" />
+
+            <div className="mb-10 flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4">
+                <h2 className="text-xl">Intégrations</h2>
+                <div className="flex flex-wrap items-center gap-4">
+                    <p className="text-sm text-ink-soft">Besoin d'une intégration sur mesure ?</p>
+                    <Link
+                        href="/support"
+                        className="rounded-pill bg-ink px-6 py-2.5 text-sm font-medium text-bg hover:opacity-90"
+                    >
+                        Nous contacter
+                    </Link>
+                </div>
+            </div>
 
             <section className="mb-14">
                 <h2 className="mb-1 font-serif text-xl italic">Clés API</h2>

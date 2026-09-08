@@ -275,6 +275,16 @@ export default function Show({ organization, usage, plans }: Props) {
         { key: 'active_events', metric: usage.active_events },
     ];
 
+    const currentPlan = plans.find((plan) => plan.value === organization.plan);
+    const periodEnd =
+        organization.subscription_current_period_end !== null
+            ? new Date(organization.subscription_current_period_end).toLocaleDateString('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+              })
+            : null;
+
     const personalPlans = PERSONAL_PLAN_VALUES.map((value) => plans.find((plan) => plan.value === value)).filter(
         (plan): plan is Plan => plan !== undefined,
     );
@@ -286,9 +296,43 @@ export default function Show({ organization, usage, plans }: Props) {
         <SettingsLayout title="Facturation" active="billing">
             <Head title="Facturation" />
 
-            <div className="mb-8">
-                <h1 className="text-2xl">Facturation</h1>
-                <p className="text-ink-soft">Plan actuel, consommation des quotas et gestion de l'abonnement.</p>
+            <h2 className="mb-6 border-b border-line pb-4 text-xl">Abonnement</h2>
+
+            <div className="mb-10">
+                <p className="mb-1 font-serif text-2xl text-ink italic">{currentPlan?.label ?? 'Gratuit'}</p>
+                <p className="mb-6 text-sm text-ink-soft">
+                    {organization.has_subscription
+                        ? `Abonnement actif${periodEnd !== null ? ` — prochaine échéance le ${periodEnd}` : ''}.`
+                        : "Vous n'avez pas d'abonnement payant actif."}
+                </p>
+
+                <div className="flex flex-wrap gap-3">
+                    <a
+                        href="#forfaits"
+                        className="inline-flex min-h-11 items-center rounded-pill bg-ink px-6 text-[14.5px] font-medium text-bg hover:opacity-90"
+                    >
+                        Voir les forfaits et les tarifs
+                    </a>
+
+                    {organization.has_subscription && (
+                        <Button variant="secondary" className="w-auto" onClick={handlePortal}>
+                            Gérer mon abonnement (Stripe)
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            <h2 className="mb-6 border-b border-line pb-4 text-xl">Historique de la facturation</h2>
+
+            <div className="mb-12">
+                {organization.has_subscription ? (
+                    <p className="text-sm text-ink-soft">
+                        Vos factures sont émises et conservées par Stripe : retrouvez-les toutes depuis « Gérer mon
+                        abonnement » ci-dessus.
+                    </p>
+                ) : (
+                    <p className="text-sm text-ink-soft">Aucun historique de facturation à afficher.</p>
+                )}
             </div>
 
             {organization.restricted && (
@@ -336,7 +380,7 @@ export default function Show({ organization, usage, plans }: Props) {
                 </div>
             </div>
 
-            <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-line">
+            <div id="forfaits" className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-line">
                 <nav className="flex gap-6 overflow-x-auto">
                     {TABS.map((item) => (
                         <button
@@ -444,11 +488,6 @@ export default function Show({ organization, usage, plans }: Props) {
                 </FaqItem>
             </div>
 
-            {organization.has_subscription && (
-                <Button variant="secondary" className="w-auto" onClick={handlePortal}>
-                    Gérer mon abonnement et mes factures (Stripe)
-                </Button>
-            )}
         </SettingsLayout>
     );
 }

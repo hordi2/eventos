@@ -1453,6 +1453,46 @@ fonctionnalités ajoutées) :
   chaque requête, et une session pointant vers une organisation quittée
   retombe sur la première adhésion restante.
 
+### Finalisation de « Mon compte » d'après les captures
+
+Demandé par l'utilisateur (« suis à la lettre ces captures ») après une
+série de captures des sept onglets Mon compte de RSVPify :
+
+- **Navigation en onglets horizontaux** à la place de la barre latérale
+  (`SettingsLayout.tsx`) — c'est le point structurel commun aux six
+  captures.
+- **Composant `Toggle`** (interrupteur) : les captures utilisent des
+  interrupteurs, pas des cases à cocher. Utilisé par Sécurité et
+  Notifications.
+- **Notifications** : tableau complété d'une colonne « enveloppe » qui
+  bascule les trois réglages d'un événement d'un coup, d'une colonne date
+  (affichée dans le fuseau de l'événement, règle 4.3) et d'un tri sur le
+  nom et la date.
+- **Refer-a-Friend** : mise en page deux colonnes, partage Facebook /
+  Twitter / LinkedIn, et **invitation par e-mail** (nouvelle route
+  `settings/referral/invitations`, `ReferralInvitationMail`, limitée à 10
+  envois par minute).
+- **Étiquetage blanc** : encart d'accompagnement, illustration et état du
+  compte repris des captures, le formulaire nom d'expéditeur / adresse de
+  réponse restant la partie réellement fonctionnelle.
+- **Facturation** : blocs « Abonnement » et « Historique de la
+  facturation » ajoutés en tête, avec bouton « Voir les forfaits et les
+  tarifs » ancré sur la grille tarifaire. L'historique renvoie au portail
+  Stripe, seul détenteur des factures — aucune table d'historique locale.
+- **Intégrations** : en-tête « Intégrations » + contact commercial repris
+  des captures.
+
+**Deux éléments des captures volontairement non repris** :
+
+- Les logos clients (« Digne de confiance : Volvo, Verizon, Starbucks… »)
+  sont de vrais clients de RSVPify — les afficher chez Itaza serait une
+  fausse référence commerciale.
+- Les intégrations tierces listées (Zapier, Google Analytics, Facebook
+  Pixel, Salesforce, HubSpot, Blackbaud) n'existent pas dans Itaza ; la
+  page continue de présenter les intégrations réelles (clés API, webhooks
+  sortants). Le badge « Offre à durée limitée » du parrainage devient
+  « Offre permanente », faute d'échéance réelle.
+
 ---
 
 *Backlog v1.0 — à réviser à chaque fin de sprint.*
