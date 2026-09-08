@@ -7,6 +7,11 @@ import TextInput from '../../Components/TextInput';
 import SettingsLayout from '../../Layouts/SettingsLayout';
 import { type SharedProps } from '../../types';
 
+interface UsageMetric {
+    used: number;
+    quota: number | null;
+}
+
 interface Props {
     user: {
         name: string;
@@ -14,32 +19,40 @@ interface Props {
         email_verified: boolean;
     };
     isSoleOrganizationOwner: boolean;
+    plan: {
+        label: string;
+        usage: {
+            registrations: UsageMetric;
+            emails: UsageMetric;
+            active_events: UsageMetric;
+        };
+    } | null;
 }
 
 const STATUS_MESSAGES: Record<string, string> = {
     'profile-updated': 'Profil mis à jour.',
-    'password-updated': 'Mot de passe mis à jour.',
     'verification-link-sent': 'Un e-mail de vérification a été envoyé.',
 };
 
-export default function Profile({ user, isSoleOrganizationOwner }: Props) {
+const METRIC_LABELS: Record<string, string> = {
+    registrations: 'Inscriptions ce mois-ci',
+    emails: 'E-mails ce mois-ci',
+    active_events: 'Événements actifs',
+};
+
+function formatQuota(quota: number | null): string {
+    return quota === null ? 'illimité' : String(quota);
+}
+
+export default function Profile({ user, isSoleOrganizationOwner, plan }: Props) {
     const { flash } = usePage<SharedProps>().props;
 
     const profileForm = useForm({ name: user.name, email: user.email });
-    const passwordForm = useForm({ current_password: '', password: '', password_confirmation: '' });
     const deleteForm = useForm({ password: '' });
 
     function submitProfile(event: FormEvent) {
         event.preventDefault();
         profileForm.patch('/settings/profile', { preserveScroll: true });
-    }
-
-    function submitPassword(event: FormEvent) {
-        event.preventDefault();
-        passwordForm.put('/settings/profile/password', {
-            preserveScroll: true,
-            onSuccess: () => passwordForm.reset(),
-        });
     }
 
     function submitDelete(event: FormEvent) {
@@ -52,9 +65,17 @@ export default function Profile({ user, isSoleOrganizationOwner }: Props) {
         deleteForm.delete('/settings/profile');
     }
 
+    const metrics: Array<{ key: 'registrations' | 'emails' | 'active_events'; metric: UsageMetric }> = plan
+        ? [
+              { key: 'registrations', metric: plan.usage.registrations },
+              { key: 'emails', metric: plan.usage.emails },
+              { key: 'active_events', metric: plan.usage.active_events },
+          ]
+        : [];
+
     return (
         <SettingsLayout title="Paramètres" active="profile">
-            <Head title="Compte" />
+            <Head title="Mon compte" />
 
             {flash.status && STATUS_MESSAGES[flash.status] && (
                 <div className="mb-8 rounded-card bg-success-bg p-4 text-sm text-success ring-1 ring-success/30">
@@ -63,7 +84,7 @@ export default function Profile({ user, isSoleOrganizationOwner }: Props) {
             )}
 
             <section className="mb-14">
-                <h2 className="mb-1 font-serif text-xl italic">Profil</h2>
+                <h2 className="mb-1 font-serif text-xl italic">À propos de vous</h2>
                 <p className="mb-6 text-sm text-ink-soft">Votre nom et votre adresse e-mail de connexion.</p>
 
                 <form onSubmit={submitProfile} className="max-w-md">
@@ -106,48 +127,40 @@ export default function Profile({ user, isSoleOrganizationOwner }: Props) {
                 </form>
             </section>
 
-            <section className="mb-14">
-                <h2 className="mb-1 font-serif text-xl italic">Mot de passe</h2>
-                <p className="mb-6 text-sm text-ink-soft">Choisissez un mot de passe que vous n'utilisez sur aucun autre site.</p>
-
-                <form onSubmit={submitPassword} className="max-w-md">
-                    <div className="mb-5">
-                        <InputLabel htmlFor="current_password">Mot de passe actuel</InputLabel>
-                        <TextInput
-                            id="current_password"
-                            type="password"
-                            value={passwordForm.data.current_password}
-                            onChange={(e) => passwordForm.setData('current_password', e.target.value)}
-                        />
-                        <InputError message={passwordForm.errors.current_password} />
+            {plan && (
+                <section className="mb-14 rounded-card bg-bg p-6 ring-1 ring-line">
+                    <div className="mb-4 flex items-center justify-between">
+                        <div>
+                            <h2 className="font-serif text-xl italic">Plan actuel</h2>
+                            <p className="text-sm text-ink-soft">{plan.label}</p>
+                        </div>
+                        <Link href="/billing" className="text-sm text-ink underline underline-offset-4">
+                            Voir les forfaits et les tarifs
+                        </Link>
                     </div>
 
-                    <div className="mb-5">
-                        <InputLabel htmlFor="password">Nouveau mot de passe</InputLabel>
-                        <TextInput
-                            id="password"
-                            type="password"
-                            value={passwordForm.data.password}
-                            onChange={(e) => passwordForm.setData('password', e.target.value)}
-                        />
-                        <InputError message={passwordForm.errors.password} />
+                    <div className="space-y-4">
+                        {metrics.map(({ key, metric }) => (
+                            <div key={key}>
+                                <div className="mb-1 flex items-center justify-between text-sm">
+                                    <span>{METRIC_LABELS[key]}</span>
+                                    <span className="text-ink-soft">
+                                        {metric.used} / {formatQuota(metric.quota)}
+                                    </span>
+                                </div>
+                                {metric.quota !== null && (
+                                    <div className="h-2 w-full overflow-hidden rounded-full bg-bg-deep">
+                                        <div
+                                            className="h-full rounded-full bg-ink"
+                                            style={{ width: `${Math.min(100, (metric.used / metric.quota) * 100)}%` }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        ))}
                     </div>
-
-                    <div className="mb-5">
-                        <InputLabel htmlFor="password_confirmation">Confirmer le mot de passe</InputLabel>
-                        <TextInput
-                            id="password_confirmation"
-                            type="password"
-                            value={passwordForm.data.password_confirmation}
-                            onChange={(e) => passwordForm.setData('password_confirmation', e.target.value)}
-                        />
-                    </div>
-
-                    <Button type="submit" disabled={passwordForm.processing}>
-                        Mettre à jour le mot de passe
-                    </Button>
-                </form>
-            </section>
+                </section>
+            )}
 
             <section className="mb-14">
                 <h2 className="mb-1 font-serif text-xl italic">Session</h2>

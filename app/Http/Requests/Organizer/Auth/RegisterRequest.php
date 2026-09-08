@@ -26,6 +26,7 @@ final class RegisterRequest extends FormRequest
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)],
             'password' => ['required', 'confirmed', Password::defaults()],
             'organization_name' => ['required', 'string', 'max:255'],
+            'referral_code' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

@@ -8,7 +8,6 @@ use App\Domain\Organization\Models\Organization;
 use App\Models\User;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Auth\Notifications\VerifyEmail;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 
 /**
@@ -75,31 +74,6 @@ it('refuse un e-mail déjà utilisé par un autre compte', function (): void {
     ]);
 
     $response->assertSessionHasErrors('email');
-});
-
-it('change le mot de passe avec le mot de passe actuel correct', function (): void {
-    ['doorStaff' => $user] = makeCheckInEvent(MembershipRole::Owner);
-
-    $response = $this->actingAs($user)->put('/settings/profile/password', [
-        'current_password' => 'password',
-        'password' => 'un-nouveau-mot-de-passe-solide',
-        'password_confirmation' => 'un-nouveau-mot-de-passe-solide',
-    ]);
-
-    $response->assertRedirect();
-    expect(Hash::check('un-nouveau-mot-de-passe-solide', $user->fresh()->password))->toBeTrue();
-});
-
-it('refuse le changement de mot de passe avec un mot de passe actuel incorrect', function (): void {
-    ['doorStaff' => $user] = makeCheckInEvent(MembershipRole::Owner);
-
-    $response = $this->actingAs($user)->put('/settings/profile/password', [
-        'current_password' => 'mauvais-mot-de-passe',
-        'password' => 'un-nouveau-mot-de-passe-solide',
-        'password_confirmation' => 'un-nouveau-mot-de-passe-solide',
-    ]);
-
-    $response->assertSessionHasErrors('current_password');
 });
 
 it('supprime (anonymise) le compte quand l\'utilisateur n\'est pas seul propriétaire', function (): void {

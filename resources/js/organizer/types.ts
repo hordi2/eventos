@@ -22,6 +22,9 @@ export interface SharedProps {
         billing: boolean;
         auditLog: boolean;
         integrations: boolean;
+        security: boolean;
+        whiteLabel: boolean;
+        referral: boolean;
     };
     flash: {
         status: string | null;

@@ -19,6 +19,7 @@ use App\Domain\Form\Policies\FormPolicy;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Organization\Policies\OrganizationPolicy;
 use App\Listeners\LinkRegistrationToContact;
+use App\Listeners\Notifications\NotifyOrganizersOfRegistration;
 use App\Listeners\ReportHealthDiagnostics;
 use App\Listeners\SendConfirmationEmail;
 use App\Listeners\SendConfirmationWhatsapp;
@@ -78,6 +79,12 @@ class AppServiceProvider extends ServiceProvider
         EventFacade::listen(RegistrationUpdated::class, [DispatchRegistrationWebhooks::class, 'updated']);
         EventFacade::listen(RegistrationCancelled::class, [DispatchRegistrationWebhooks::class, 'cancelled']);
         EventFacade::listen(WaitlistEntryPromoted::class, DispatchWaitlistWebhooks::class);
+
+        // Paramètres → Notifications : alerte par e-mail aux organisateurs
+        // qui l'ont activée pour cet événement (demande utilisateur).
+        EventFacade::listen(RegistrationCreated::class, [NotifyOrganizersOfRegistration::class, 'created']);
+        EventFacade::listen(RegistrationUpdated::class, [NotifyOrganizersOfRegistration::class, 'updated']);
+        EventFacade::listen(RegistrationCancelled::class, [NotifyOrganizersOfRegistration::class, 'cancelled']);
 
         // T-076 : fait échouer /up (bootstrap/app.php) quand la base ou
         // Redis ne répond pas.

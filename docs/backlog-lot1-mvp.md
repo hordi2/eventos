@@ -1360,6 +1360,78 @@ déroulant listant tous les événements de l'organisation.
   l'utilisateur : où faire vivre ces deux fonctionnalités (nouveau menu,
   sous-navigation par événement, ou autre) ?
 
+### Refonte de « Mon compte » : Sécurité, Notifications, Étiquetage blanc, Refer-a-Friend
+
+Demandé par l'utilisateur à partir d'une nouvelle série de captures RSVPify
+(page Mon compte à onglets) : réorganiser les Paramètres autour de la même
+structure, et construire quatre fonctionnalités qui n'existaient pas du
+tout côté Itaza. Trois décisions confirmées avec l'utilisateur avant de
+coder (sécurité + argent réel) :
+
+- MFA : deux réglages distincts, comme sur les captures — personnel
+  (`users.mfa_email_enabled`) et politique d'organisation pour tous les
+  membres (`organizations.require_mfa_for_members`, Propriétaire
+  uniquement, nouvelle capacité `manageSecurity`).
+- Étiquetage blanc : nom d'expéditeur + adresse de réponse personnalisés
+  uniquement — pas de vérification de domaine SPF/DKIM (demanderait de
+  choisir un prestataire d'e-mail dédié et ses identifiants).
+- Parrainage : la récompense (« un mois gratuit ») prolonge
+  `subscription_current_period_end` de 30 jours pour le parrain et le
+  filleul, plutôt qu'un coupon Stripe — aucune configuration Stripe
+  supplémentaire nécessaire.
+
+**Navigation** (`SettingsLayout.tsx`) : Mon compte, Sécurité,
+Notifications, Personnalisation, Facturation, Intégrations, Étiquetage
+blanc, Refer-a-Friend, Journal d'audit, Registre des traitements — les
+trois dernières colonnes n'existent pas chez RSVPify mais restent des
+fonctionnalités Itaza réelles, conservées plutôt que masquées.
+
+**Mon compte** (`Settings/Profile.tsx`) : ne garde plus que le profil, la
+session et la suppression de compte ; gagne un résumé « Plan actuel »
+(réutilise `GetOrganizationUsage`, déjà utilisé par la page Facturation).
+Le mot de passe déménage entièrement vers Sécurité.
+
+**Sécurité** (`Settings/Security.tsx`, `SecurityController`) : mot de
+passe (déplacé depuis Mon compte) + les deux réglages MFA.
+
+**Connexion en deux étapes** : `AttemptLogin` annule la connexion
+(`Auth::logout()`) dès que la MFA est requise et stocke le défi en
+session (code haché, expiration à 10 min) plutôt qu'en base — rien à
+purger, il expire avec la session. Nouvelles routes `login/mfa` (état
+« invité », comme `/login`), `VerifyMfaCode` (vérifie + limite les
+tentatives, même mécanisme que `AttemptLogin`) et `ResendMfaCode`.
+`IssueCheckInApiToken` (postes de check-in) est resté totalement
+indépendant de `AttemptLogin` dès l'origine — aucun risque que la MFA
+bloque le check-in hors ligne.
+
+**Notifications** (`Settings/Notifications.tsx`, `NotificationController`)
+: interrupteur général (`users.registration_notifications_enabled`) + une
+ligne par événement dans `registration_notification_preferences`,
+seulement créée quand un organisateur s'écarte du défaut (tout activé).
+Nouveau listener `NotifyOrganizersOfRegistration`, branché sur les 3
+événements réellement émis par `Domain/Form` (`RegistrationCreated`,
+`RegistrationUpdated`, `RegistrationCancelled`) à côté de
+`DispatchRegistrationWebhooks` — synchrone comme les autres ponts
+inter-modules (voir le docblock de `SendConfirmationEmail`), seul l'envoi
+de chaque e-mail est mis en file (le Mailable ne porte que des chaînes).
+
+**Étiquetage blanc** (`Settings/WhiteLabel.tsx`, `WhiteLabelController`,
+capacité `manageBranding`) : `organizations.email_from_name` /
+`email_reply_to`, appliqués jusqu'au bout de la chaîne d'envoi
+(`SendEmailMessageJob` → `GenericMail`) — seul le nom affiché change,
+jamais l'adresse technique d'expédition, pour ne pas dégrader la
+délivrabilité sans SPF/DKIM.
+
+**Refer-a-Friend** (`Settings/Referral.tsx`, `ReferralController`, capacité
+`manageBilling`) : `organizations.referral_code` (généré à l'inscription,
+rattrapé à la volée pour les organisations plus anciennes),
+`referred_by_organization_id` capturé une fois pour toutes via
+`?via=CODE` sur `/register`. `ApplyReferralReward` s'exécute au premier
+paiement confirmé du filleul (`checkout.session.completed`, après la mise
+à jour du plan) ; `referral_rewarded_at` rend l'opération idempotente
+(règle 4.4). Aucune prolongation pour un compte encore au plan gratuit
+(rien à prolonger sans abonnement Stripe actif).
+
 ---
 
 *Backlog v1.0 — à réviser à chaque fin de sprint.*

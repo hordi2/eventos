@@ -35,6 +35,12 @@ final class Organization extends Model
         'subscription_current_period_end',
         'payment_failed_at',
         'dunning_stage',
+        'require_mfa_for_members',
+        'email_from_name',
+        'email_reply_to',
+        'referral_code',
+        'referred_by_organization_id',
+        'referral_rewarded_at',
     ];
 
     /**
@@ -49,6 +55,8 @@ final class Organization extends Model
             'subscription_current_period_end' => 'immutable_datetime',
             'payment_failed_at' => 'immutable_datetime',
             'dunning_stage' => 'integer',
+            'require_mfa_for_members' => 'boolean',
+            'referral_rewarded_at' => 'immutable_datetime',
         ];
     }
 

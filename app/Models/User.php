@@ -31,6 +31,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
+        'mfa_email_enabled',
+        'registration_notifications_enabled',
     ];
 
     /**
@@ -53,6 +55,8 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'mfa_email_enabled' => 'boolean',
+            'registration_notifications_enabled' => 'boolean',
         ];
     }
 

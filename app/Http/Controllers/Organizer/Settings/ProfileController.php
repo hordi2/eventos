@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Organizer\Settings;
 
+use App\Domain\Organization\Models\Organization;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\Settings\DeleteAccountRequest;
-use App\Http\Requests\Organizer\Settings\UpdatePasswordRequest;
 use App\Http\Requests\Organizer\Settings\UpdateProfileRequest;
 use App\Models\User;
+use App\Support\Billing\GetOrganizationUsage;
 use App\Support\Gdpr\AnonymizeUser;
 use App\Support\Gdpr\SoleOrganizationOwnerException;
+use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,10 +21,13 @@ use Inertia\Response;
 
 final class ProfileController extends Controller
 {
-    public function edit(Request $request, AnonymizeUser $anonymizeUser): Response
+    public function edit(Request $request, AnonymizeUser $anonymizeUser, GetOrganizationUsage $getOrganizationUsage): Response
     {
         /** @var User $user */
         $user = $request->user();
+        $organizationId = app(CurrentOrganization::class)->id();
+        $organization = $organizationId !== null ? Organization::query()->find($organizationId) : null;
+        $usage = $organization !== null ? $getOrganizationUsage->handle($organization) : null;
 
         return Inertia::render('Settings/Profile', [
             'user' => [
@@ -31,6 +36,14 @@ final class ProfileController extends Controller
                 'email_verified' => $user->hasVerifiedEmail(),
             ],
             'isSoleOrganizationOwner' => $anonymizeUser->isSoleOwnerOfAnOrganization($user),
+            'plan' => $organization !== null && $usage !== null ? [
+                'label' => $organization->plan->label(),
+                'usage' => [
+                    'registrations' => ['used' => $usage->registrationsThisMonth, 'quota' => $usage->registrationsQuota],
+                    'emails' => ['used' => $usage->emailsThisMonth, 'quota' => $usage->emailsQuota],
+                    'active_events' => ['used' => $usage->activeEvents, 'quota' => $usage->activeEventsQuota],
+                ],
+            ] : null,
         ]);
     }
 
@@ -56,18 +69,6 @@ final class ProfileController extends Controller
         }
 
         return back()->with('status', 'profile-updated');
-    }
-
-    public function updatePassword(UpdatePasswordRequest $request): RedirectResponse
-    {
-        /** @var User $user */
-        $user = $request->user();
-
-        $user->forceFill([
-            'password' => $request->string('password')->toString(),
-        ])->save();
-
-        return back()->with('status', 'password-updated');
     }
 
     public function destroy(DeleteAccountRequest $request, AnonymizeUser $anonymizeUser): RedirectResponse

@@ -7,13 +7,14 @@ import TextInput from '../../Components/TextInput';
 import Button from '../../Components/Button';
 import GoogleButton from '../../Components/GoogleButton';
 
-export default function Register() {
+export default function Register({ referralCode }: { referralCode?: string | null }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
         password: '',
         password_confirmation: '',
         organization_name: '',
+        referral_code: referralCode ?? '',
     });
 
     function submit(event: FormEvent) {
@@ -27,6 +28,13 @@ export default function Register() {
     return (
         <AuthLayout title="Créer un compte">
             <Head title="Inscription" />
+
+            {data.referral_code && (
+                <p className="mb-6 rounded-card bg-accent/10 p-4 text-sm text-ink">
+                    Vous avez été invité·e par un·e organisateur·rice Itaza — un mois offert dès votre première mise à
+                    niveau.
+                </p>
+            )}
 
             <form onSubmit={submit} className="space-y-6">
                 <div>

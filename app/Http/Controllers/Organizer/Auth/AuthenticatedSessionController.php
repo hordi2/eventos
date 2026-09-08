@@ -24,12 +24,16 @@ final class AuthenticatedSessionController extends Controller
 
     public function store(LoginRequest $request, AttemptLogin $attemptLogin): RedirectResponse
     {
-        $attemptLogin->handle(
+        $mfaPending = $attemptLogin->handle(
             $request->string('email')->toString(),
             $request->string('password')->toString(),
             $request->ip() ?? '',
             $request->boolean('remember'),
         );
+
+        if ($mfaPending) {
+            return redirect()->route('login.mfa.show');
+        }
 
         $request->session()->regenerate();
 

@@ -27,6 +27,7 @@ final class OrganizationPolicy
      */
     private const ABILITIES = [
         'manageBilling' => [MembershipRole::Owner],
+        'manageSecurity' => [MembershipRole::Owner],
         'manageBranding' => [MembershipRole::Owner, MembershipRole::Admin],
         'manageIntegrations' => [MembershipRole::Owner, MembershipRole::Admin],
         'inviteMembers' => [MembershipRole::Owner, MembershipRole::Admin],
@@ -58,6 +59,11 @@ final class OrganizationPolicy
     private const EDITOR_CONFIGURABLE_ABILITIES = ['viewFinancials', 'exportData'];
 
     public function manageBilling(User $user, Organization $organization): bool
+    {
+        return $this->check($user, $organization, __FUNCTION__);
+    }
+
+    public function manageSecurity(User $user, Organization $organization): bool
     {
         return $this->check($user, $organization, __FUNCTION__);
     }

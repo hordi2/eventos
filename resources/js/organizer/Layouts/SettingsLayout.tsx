@@ -3,7 +3,17 @@ import { type PropsWithChildren } from 'react';
 import { type SharedProps } from '../types';
 import OrganizerLayout from './OrganizerLayout';
 
-export type SettingsSection = 'profile' | 'branding' | 'billing' | 'audit-log' | 'compliance' | 'integrations';
+export type SettingsSection =
+    | 'profile'
+    | 'security'
+    | 'notifications'
+    | 'branding'
+    | 'billing'
+    | 'integrations'
+    | 'white-label'
+    | 'referral'
+    | 'audit-log'
+    | 'compliance';
 
 interface SettingsLayoutProps {
     title: string;
@@ -14,12 +24,16 @@ export default function SettingsLayout({ title, active, children }: PropsWithChi
     const { settingsAccess } = usePage<SharedProps>().props;
 
     const sections: { key: SettingsSection; label: string; href: string; visible: boolean }[] = [
-        { key: 'profile', label: 'Compte', href: '/settings/profile', visible: true },
+        { key: 'profile', label: 'Mon compte', href: '/settings/profile', visible: true },
+        { key: 'security', label: 'Sécurité', href: '/settings/security', visible: true },
+        { key: 'notifications', label: 'Notifications', href: '/settings/notifications', visible: true },
         { key: 'branding', label: 'Personnalisation', href: '/organization/branding', visible: settingsAccess.branding },
         { key: 'billing', label: 'Facturation', href: '/billing', visible: settingsAccess.billing },
+        { key: 'integrations', label: 'Intégrations', href: '/settings/api', visible: settingsAccess.integrations },
+        { key: 'white-label', label: 'Étiquetage blanc', href: '/settings/white-label', visible: settingsAccess.whiteLabel },
+        { key: 'referral', label: 'Refer-a-Friend', href: '/settings/referral', visible: settingsAccess.referral },
         { key: 'audit-log', label: "Journal d'audit", href: '/audit-log', visible: settingsAccess.auditLog },
         { key: 'compliance', label: 'Registre des traitements', href: '/compliance/register', visible: settingsAccess.auditLog },
-        { key: 'integrations', label: 'Intégrations & API', href: '/settings/api', visible: settingsAccess.integrations },
     ];
 
     return (

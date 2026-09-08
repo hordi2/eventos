@@ -26,6 +26,7 @@ final class RecordStripeBillingWebhookEvent
 {
     public function __construct(
         private readonly CurrentOrganization $currentOrganization,
+        private readonly ApplyReferralReward $applyReferralReward,
     ) {}
 
     public function handle(string $payload, string $signatureHeader): void
@@ -105,6 +106,8 @@ final class RecordStripeBillingWebhookEvent
             'dunning_stage' => 0,
             'payment_failed_at' => null,
         ]);
+
+        $this->applyReferralReward->handle($organization->fresh());
     }
 
     private function handleSubscriptionUpdated(object $object): void

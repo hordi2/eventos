@@ -112,7 +112,15 @@ class HandleInertiaRequests extends Middleware
         $organization = $organizationId !== null ? Organization::query()->find($organizationId) : null;
 
         if ($user === null || $organization === null) {
-            return ['branding' => false, 'billing' => false, 'auditLog' => false, 'integrations' => false];
+            return [
+                'branding' => false,
+                'billing' => false,
+                'auditLog' => false,
+                'integrations' => false,
+                'security' => false,
+                'whiteLabel' => false,
+                'referral' => false,
+            ];
         }
 
         $gate = Gate::forUser($user);
@@ -122,6 +130,9 @@ class HandleInertiaRequests extends Middleware
             'billing' => $gate->allows('manageBilling', $organization),
             'auditLog' => $gate->allows('viewAuditLog', $organization),
             'integrations' => $gate->allows('manageIntegrations', $organization),
+            'security' => $gate->allows('manageSecurity', $organization),
+            'whiteLabel' => $gate->allows('manageBranding', $organization),
+            'referral' => $gate->allows('manageBilling', $organization),
         ];
     }
 }

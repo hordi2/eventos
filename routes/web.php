@@ -14,6 +14,7 @@ use App\Http\Controllers\Organizer\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Organizer\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Organizer\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Organizer\Auth\GoogleAuthController;
+use App\Http\Controllers\Organizer\Auth\MfaChallengeController;
 use App\Http\Controllers\Organizer\Auth\NewPasswordController;
 use App\Http\Controllers\Organizer\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Organizer\Auth\RegisteredUserController;
@@ -38,7 +39,11 @@ use App\Http\Controllers\Organizer\OrganizationBrandingController;
 use App\Http\Controllers\Organizer\PageController;
 use App\Http\Controllers\Organizer\SeatingController;
 use App\Http\Controllers\Organizer\Settings\IntegrationController;
+use App\Http\Controllers\Organizer\Settings\NotificationController;
 use App\Http\Controllers\Organizer\Settings\ProfileController;
+use App\Http\Controllers\Organizer\Settings\ReferralController;
+use App\Http\Controllers\Organizer\Settings\SecurityController;
+use App\Http\Controllers\Organizer\Settings\WhiteLabelController;
 use App\Http\Controllers\Organizer\TagController;
 use App\Http\Controllers\Organizer\TicketTypeController;
 use App\Http\Controllers\Organizer\WhatsappTemplateController;
@@ -70,6 +75,10 @@ Route::middleware('guest')->group(function (): void {
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:6,1');
+
+    Route::get('login/mfa', [MfaChallengeController::class, 'show'])->name('login.mfa.show');
+    Route::post('login/mfa', [MfaChallengeController::class, 'store'])->middleware('throttle:6,1')->name('login.mfa.store');
+    Route::post('login/mfa/resend', [MfaChallengeController::class, 'resend'])->middleware('throttle:3,1')->name('login.mfa.resend');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
@@ -121,8 +130,31 @@ Route::middleware('auth')->group(function (): void {
         ->group(function (): void {
             Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
             Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
-            Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
             Route::delete('profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+            Route::get('security', [SecurityController::class, 'edit'])->name('security.edit');
+            Route::put('security/password', [SecurityController::class, 'updatePassword'])->name('security.password');
+            Route::patch('security/mfa', [SecurityController::class, 'updateMfa'])->name('security.mfa');
+            Route::patch('security/organization-mfa', [SecurityController::class, 'updateOrganizationMfa'])->name('security.organization-mfa');
+
+            Route::get('notifications', [NotificationController::class, 'edit'])->name('notifications.edit');
+            Route::patch('notifications', [NotificationController::class, 'updateMaster'])->name('notifications.update');
+            Route::patch('notifications/events/{event}', [NotificationController::class, 'updateEvent'])->name('notifications.events.update');
+        });
+
+    Route::middleware(['verified', 'resolve-organization', 'can-organization:manageBranding'])
+        ->prefix('settings')
+        ->name('settings.')
+        ->group(function (): void {
+            Route::get('white-label', [WhiteLabelController::class, 'edit'])->name('white-label.edit');
+            Route::patch('white-label', [WhiteLabelController::class, 'update'])->name('white-label.update');
+        });
+
+    Route::middleware(['verified', 'resolve-organization', 'can-organization:manageBilling'])
+        ->prefix('settings')
+        ->name('settings.')
+        ->group(function (): void {
+            Route::get('referral', [ReferralController::class, 'edit'])->name('referral.edit');
         });
 
     Route::middleware(['verified', 'resolve-organization', 'can-organization:viewAuditLog'])->group(function (): void {

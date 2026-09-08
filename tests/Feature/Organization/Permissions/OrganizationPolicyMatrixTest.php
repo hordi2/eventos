@@ -21,6 +21,13 @@ dataset('matrice_m03', [
         MembershipRole::DoorStaff->value => false,
         MembershipRole::Viewer->value => false,
     ]],
+    'gérer la sécurité de l\'organisation' => ['manageSecurity', [
+        MembershipRole::Owner->value => true,
+        MembershipRole::Admin->value => false,
+        MembershipRole::Editor->value => false,
+        MembershipRole::DoorStaff->value => false,
+        MembershipRole::Viewer->value => false,
+    ]],
     'gérer la charte graphique' => ['manageBranding', [
         MembershipRole::Owner->value => true,
         MembershipRole::Admin->value => true,
@@ -160,6 +167,7 @@ it('viewer ne peut effectuer aucune écriture', function (): void {
         'checkIn',
         'refundTickets',
         'manageBilling',
+        'manageSecurity',
         'exportData',
     ];
 

@@ -68,6 +68,55 @@ it('active le plan et enregistre l\'abonnement sur checkout.session.completed', 
     expect($fresh->subscription_status)->toBe('active');
 });
 
+it('prolonge de 30 jours l\'abonnement du parrain et du filleul au premier paiement confirmé (Refer-a-Friend)', function (): void {
+    $referrer = Organization::factory()->create([
+        'referral_code' => 'ami-itaza',
+        'stripe_subscription_id' => 'sub_referrer',
+        'subscription_current_period_end' => now()->addDays(10),
+    ]);
+    $referred = Organization::factory()->create(['referred_by_organization_id' => $referrer->id]);
+
+    $payload = stripeBillingEventPayload('checkout.session.completed', 'evt_referral_1', [
+        'mode' => 'subscription',
+        'customer' => 'cus_referred',
+        'subscription' => 'sub_referred',
+        'client_reference_id' => (string) $referred->id,
+        'metadata' => ['organization_id' => (string) $referred->id, 'plan' => 'personal_essential'],
+    ]);
+
+    postSignedStripeBillingWebhook($payload)->assertOk();
+
+    $freshReferred = Organization::query()->withoutGlobalScopes()->findOrFail($referred->id);
+    $freshReferrer = Organization::query()->withoutGlobalScopes()->findOrFail($referrer->id);
+
+    expect($freshReferred->referral_rewarded_at)->not->toBeNull();
+    expect($freshReferred->subscription_current_period_end->diffInDays(now(), true))->toBeGreaterThan(28);
+    expect($freshReferrer->subscription_current_period_end->format('Y-m-d'))->toBe(now()->addDays(40)->format('Y-m-d'));
+});
+
+it('ne récompense pas deux fois le même parrainage si le webhook est rejoué', function (): void {
+    $referrer = Organization::factory()->create(['referral_code' => 'ami-itaza-2', 'stripe_subscription_id' => 'sub_referrer_2']);
+    $referred = Organization::factory()->create([
+        'referred_by_organization_id' => $referrer->id,
+        'referral_rewarded_at' => now()->subDay(),
+        'stripe_subscription_id' => 'sub_referred_2',
+        'subscription_current_period_end' => now()->addDays(5),
+    ]);
+
+    $payload = stripeBillingEventPayload('checkout.session.completed', 'evt_referral_2', [
+        'mode' => 'subscription',
+        'customer' => 'cus_referred_2',
+        'subscription' => 'sub_referred_2',
+        'client_reference_id' => (string) $referred->id,
+        'metadata' => ['organization_id' => (string) $referred->id, 'plan' => 'personal_essential'],
+    ]);
+
+    postSignedStripeBillingWebhook($payload)->assertOk();
+
+    $fresh = Organization::query()->withoutGlobalScopes()->findOrFail($referred->id);
+    expect($fresh->subscription_current_period_end->format('Y-m-d'))->toBe(now()->addDays(5)->format('Y-m-d'));
+});
+
 it('repasse l\'organisation au plan gratuit sur customer.subscription.deleted', function (): void {
     $organization = Organization::factory()->create([
         'plan' => PlanTier::PersonalEssential,

@@ -6,6 +6,7 @@ namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -28,11 +29,21 @@ final class GenericMail extends Mailable
         public readonly ?string $icsAttachment = null,
         public readonly ?string $organizationLogoUrl = null,
         public readonly ?string $organizationPrimaryColor = null,
+        public readonly ?string $fromName = null,
+        public readonly ?string $replyToAddress = null,
     ) {}
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: $this->mailSubject);
+        // Étiquetage blanc (Paramètres → Étiquetage blanc) : seul le nom
+        // affiché change, jamais l'adresse technique d'expédition
+        // (MAIL_FROM_ADDRESS) — la modifier sans vérification de domaine
+        // SPF/DKIM dégraderait la délivrabilité plutôt que de l'améliorer.
+        return new Envelope(
+            from: $this->fromName !== null ? new Address(config('mail.from.address'), $this->fromName) : null,
+            replyTo: $this->replyToAddress !== null ? [new Address($this->replyToAddress)] : [],
+            subject: $this->mailSubject,
+        );
     }
 
     public function content(): Content
