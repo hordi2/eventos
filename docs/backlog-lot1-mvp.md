@@ -1432,6 +1432,27 @@ paiement confirmé du filleul (`checkout.session.completed`, après la mise
 (règle 4.4). Aucune prolongation pour un compte encore au plan gratuit
 (rien à prolonger sans abonnement Stripe actif).
 
+### Correctif : résolution de l'organisation courante
+
+Trouvé en relisant les logs après le chantier précédent (deux problèmes
+préexistants dans `ResolveCurrentOrganization`, sans lien avec les
+fonctionnalités ajoutées) :
+
+- **Erreur 500 non gérée** : un compte sans aucune adhésion laissait le
+  middleware passer sans organisation, puis la première lecture cloisonnée
+  levait `MissingOrganizationContextException` en pleine page. Le cas est
+  anormal (les deux parcours d'inscription créent toujours une
+  organisation) mais atteignable si la dernière adhésion est retirée.
+  Désormais un 403 explicite.
+- **Isolation multi-tenant (règle 4.1)** : `current_organization_id` était
+  lu depuis la session sans revérifier l'adhésion. Un membre retiré d'une
+  organisation gardait donc l'accès en lecture à ses données jusqu'à
+  l'expiration de sa session — les lectures cloisonnées ordinaires
+  (tableau de bord, contacts...) ne passent par aucune policy, seul le
+  scope organisation les filtre. L'adhésion est maintenant revérifiée à
+  chaque requête, et une session pointant vers une organisation quittée
+  retombe sur la première adhésion restante.
+
 ---
 
 *Backlog v1.0 — à réviser à chaque fin de sprint.*
