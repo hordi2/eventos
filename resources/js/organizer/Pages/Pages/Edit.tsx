@@ -4,7 +4,7 @@ import Button from '../../Components/Button';
 import InputLabel from '../../Components/InputLabel';
 import Textarea from '../../Components/Textarea';
 import TextInput from '../../Components/TextInput';
-import OrganizerLayout from '../../Layouts/OrganizerLayout';
+import EventLayout from '../../Layouts/EventLayout';
 
 interface ProgramItem {
     time: string;
@@ -96,7 +96,7 @@ export default function Edit({ event, publicUrl, page }: Props) {
     }
 
     return (
-        <OrganizerLayout title="Page événement" eyebrow={event.title}>
+        <EventLayout title="Page événement" eyebrow={event.title}>
             <Head title="Page événement" />
 
             <div className="mb-8 flex items-center justify-between">
@@ -194,6 +194,6 @@ export default function Edit({ event, publicUrl, page }: Props) {
             <Button className="w-auto" onClick={() => void handleSave()} disabled={saving}>
                 {saving ? 'Enregistrement…' : 'Enregistrer'}
             </Button>
-        </OrganizerLayout>
+        </EventLayout>
     );
 }

@@ -1645,6 +1645,47 @@ pied de page mais n'est plus liée au menu utilisateur.
   à l'éditeur, au personnel d'accueil et au lecteur (CreateEvent exige
   `createEvents`) ; un test de route le verrouille désormais.
 
+### Interface d'un événement : liste de contrôle et menu latéral
+
+Demandé par l'utilisateur à partir de captures RSVPify (page « guide » d'un
+événement). Règles tranchées avec lui : menu latéral sur toutes les pages
+d'un événement ; rubriques absentes d'Itaza affichées « Bientôt » ;
+complétion automatique quand Itaza la constate, bouton sinon ; un événement
+publié peut repasser en « Inédit ».
+
+- **Après la création**, redirection vers `/events/{id}` : liste de contrôle
+  de 14 étapes en quatre onglets (Personnaliser, Lancement, Organiser,
+  Suivi), progression « x sur 14 », statut En attente / Complet, lien vers
+  la page Itaza correspondante et « À suivre » vers l'onglet suivant.
+  Textes rédigés pour Itaza, pas repris des captures.
+- **Complétion** (`GetEventChecklist`) : automatique pour le site web
+  personnalisé, le formulaire publié, les inscrits, les e-mails de
+  confirmation/rappel, la publication, les invitations, le plan de table, le
+  check-in, un export terminé et les remerciements ; sinon « Marquer comme
+  terminé » (`event_checklist_marks`, décocher remet `marked_at` à null,
+  jamais de DELETE). La publication ne se coche jamais à la main. Ouvrir
+  l'aperçu ou copier le lien coche l'étape correspondante.
+- **Menu latéral et barre du haut** (`EventLayout`, `BuildEventNavigation`
+  partagé en prop `eventNav`) sur les 13 pages d'un événement : fil
+  d'Ariane, menu « Inédit / Publié », aperçu, compte. Chaque lien est calculé
+  côté serveur selon les capacités : un collaborateur ne voit que les pages
+  qu'il peut ouvrir. « Bientôt » : événements secondaires, préférences
+  alimentaires, dons et cadeaux, décors, changer d'expérience, calendrier
+  d'ouverture (les dates existent en base mais aucun écran ne les modifie).
+- **Publication** : `PublishEvent` enfin branché (il n'avait aucune route) et
+  nouveau `UnpublishEvent` (publié → brouillon ; un archivé ne revient
+  jamais). Dépublier ferme la page publique et les inscriptions, les
+  inscriptions reçues restent. Changement journalisé par `Auditable`.
+- **Lien de test** : aperçu signé valable 7 jours qui ouvre la page publique
+  d'un brouillon (`ResolveGuestEvent`), mémorisé en session pour les étapes
+  suivantes du parcours. Un lien altéré ou un événement archivé : 404.
+- `ResolveRouteEventId` extrait de la restriction des collaborateurs, pour
+  être partagé avec la navigation.
+
+**Hors périmètre, à décider** : écran des dates d'ouverture/fermeture des
+inscriptions ; interface des sous-événements (le modèle existe) ; les
+inscriptions faites via le lien de test comptent comme de vraies réponses.
+
 ---
 
 *Backlog v1.0 — à réviser à chaque fin de sprint.*

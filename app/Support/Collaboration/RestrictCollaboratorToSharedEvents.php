@@ -4,15 +4,10 @@ declare(strict_types=1);
 
 namespace App\Support\Collaboration;
 
-use App\Domain\Form\Models\Attendee;
-use App\Domain\Form\Models\Form;
-use App\Domain\Form\Models\Registration;
-use App\Domain\Messaging\Models\MessageAutomation;
 use App\Domain\Organization\Models\CollaboratorPermission;
 use App\Domain\Organization\Services\CollaboratorAccess;
-use App\Domain\Ticketing\Models\PriceTier;
-use App\Domain\Ticketing\Models\TicketType;
 use App\Models\User;
+use App\Support\Events\ResolveRouteEventId;
 use App\Support\MultiTenancy\CurrentEvent;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
@@ -58,6 +53,7 @@ final class RestrictCollaboratorToSharedEvents
     public function __construct(
         private readonly CollaboratorAccess $collaboratorAccess,
         private readonly CurrentEvent $currentEvent,
+        private readonly ResolveRouteEventId $resolveRouteEventId,
     ) {}
 
     public function handle(Request $request, User $user, int $organizationId): void
@@ -70,13 +66,17 @@ final class RestrictCollaboratorToSharedEvents
 
         $route = $request->route();
         $routeName = $route instanceof Route ? (string) $route->getName() : '';
-        $eventId = $route instanceof Route ? $this->eventIdFromRoute($route) : null;
 
-        if ($eventId === null) {
+        if (! $route instanceof Route || ! $this->resolveRouteEventId->targetsEvent($route)) {
             abort_unless($this->isAllowedWithoutEvent($routeName), 403, 'Cette page ne fait pas partie des événements partagés avec vous.');
 
             return;
         }
+
+        // Ressource enfant introuvable : sans cela, un collaborateur pourrait
+        // viser celle d'un événement non partagé.
+        $eventId = $this->resolveRouteEventId->handle($route);
+        abort_if($eventId === null, 404);
 
         abort_if(in_array($routeName, self::FORBIDDEN_EVENT_ROUTES, true), 403);
 
@@ -90,40 +90,5 @@ final class RestrictCollaboratorToSharedEvents
     {
         return in_array($routeName, self::ROUTES_WITHOUT_EVENT, true)
             || str_starts_with($routeName, self::ROUTE_PREFIX_WITHOUT_EVENT);
-    }
-
-    /**
-     * Les routes enfants (formulaire, billet, automatisation, participant) ne
-     * portent pas {event} : l'événement est retrouvé depuis la ressource, sans
-     * quoi un collaborateur pourrait viser celle d'un événement non partagé.
-     */
-    private function eventIdFromRoute(Route $route): ?int
-    {
-        $parameters = $route->parameters();
-
-        if (isset($parameters['event'])) {
-            return (int) $parameters['event'];
-        }
-
-        $eventId = match (true) {
-            isset($parameters['form']) => Form::query()->whereKey((int) $parameters['form'])->value('event_id'),
-            isset($parameters['ticketType']) => TicketType::query()->whereKey((int) $parameters['ticketType'])->value('event_id'),
-            isset($parameters['priceTier']) => TicketType::query()
-                ->whereKey(PriceTier::query()->whereKey((int) $parameters['priceTier'])->value('ticket_type_id'))
-                ->value('event_id'),
-            isset($parameters['messageAutomation']) => MessageAutomation::query()->whereKey((int) $parameters['messageAutomation'])->value('event_id'),
-            isset($parameters['attendee']) => Registration::query()
-                ->whereKey(Attendee::query()->whereKey((int) $parameters['attendee'])->value('registration_id'))
-                ->value('event_id'),
-            default => false,
-        };
-
-        if ($eventId === false) {
-            return null;
-        }
-
-        abort_if($eventId === null, 404);
-
-        return (int) $eventId;
     }
 }

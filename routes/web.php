@@ -29,8 +29,10 @@ use App\Http\Controllers\Organizer\ContactController;
 use App\Http\Controllers\Organizer\ContactImportController;
 use App\Http\Controllers\Organizer\DashboardController;
 use App\Http\Controllers\Organizer\EmailTemplateController;
+use App\Http\Controllers\Organizer\EventChecklistController;
 use App\Http\Controllers\Organizer\EventController;
 use App\Http\Controllers\Organizer\EventDashboardController;
+use App\Http\Controllers\Organizer\EventPublicationController;
 use App\Http\Controllers\Organizer\EventSegmentController;
 use App\Http\Controllers\Organizer\ExportController;
 use App\Http\Controllers\Organizer\FormController;
@@ -237,6 +239,11 @@ Route::middleware('auth')->group(function (): void {
             Route::get('events/create', [EventController::class, 'create'])->name('events.create');
             Route::post('events', [EventController::class, 'store'])->name('events.store');
         });
+
+        Route::get('events/{event}', [EventChecklistController::class, 'show'])->whereNumber('event')->name('events.show');
+        Route::post('events/{event}/checklist', [EventChecklistController::class, 'mark'])->name('events.checklist.mark');
+        Route::post('events/{event}/publish', [EventPublicationController::class, 'publish'])->name('events.publish');
+        Route::post('events/{event}/unpublish', [EventPublicationController::class, 'unpublish'])->name('events.unpublish');
 
         Route::get('events/{event}/edit', [EventController::class, 'edit'])->name('events.edit');
         Route::patch('events/{event}', [EventController::class, 'update'])->name('events.update');

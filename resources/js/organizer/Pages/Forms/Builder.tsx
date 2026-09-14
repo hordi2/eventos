@@ -8,7 +8,7 @@ import InputLabel from '../../Components/InputLabel';
 import Select from '../../Components/Select';
 import Textarea from '../../Components/Textarea';
 import TextInput from '../../Components/TextInput';
-import OrganizerLayout from '../../Layouts/OrganizerLayout';
+import EventLayout from '../../Layouts/EventLayout';
 
 interface EventSummary {
     id: number;
@@ -398,7 +398,7 @@ export default function FormBuilder({ event, form, fieldTypes }: BuilderPageProp
     const visibility = computeVisibility(fields, rules, simulatedAnswers);
 
     return (
-        <OrganizerLayout title={form ? name : 'Nouveau formulaire'} eyebrow={event.title}>
+        <EventLayout title={form ? name : 'Nouveau formulaire'} eyebrow={event.title}>
             <Head title={form ? name : 'Nouveau formulaire'} />
 
             <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
@@ -587,7 +587,7 @@ export default function FormBuilder({ event, form, fieldTypes }: BuilderPageProp
                     </Button>
                 </div>
             )}
-        </OrganizerLayout>
+        </EventLayout>
     );
 }
 

@@ -18,6 +18,38 @@ export interface OrganizationChoice {
     current: boolean;
 }
 
+export type EventNavLinkKey =
+    | 'checklist'
+    | 'responses'
+    | 'guests'
+    | 'form'
+    | 'website'
+    | 'settings'
+    | 'import'
+    | 'communications'
+    | 'collaborators'
+    | 'seating'
+    | 'checkIn'
+    | 'badges'
+    | 'tickets'
+    | 'exports'
+    | 'referral';
+
+/**
+ * Navigation d'un événement (BuildEventNavigation) : un lien vaut null quand
+ * l'utilisateur ne peut pas ouvrir la page.
+ */
+export interface EventNav {
+    id: number;
+    title: string;
+    status: 'draft' | 'published' | 'archived';
+    organizationName: string;
+    publicUrl: string | null;
+    previewUrl: string | null;
+    canChangeStatus: boolean;
+    links: Record<EventNavLinkKey, string | null>;
+}
+
 export interface SharedProps {
     auth: {
         user: User | null;
@@ -34,6 +66,7 @@ export interface SharedProps {
         eventSharing: boolean;
     };
     organizations: OrganizationChoice[];
+    eventNav: EventNav | null;
     flash: {
         status: string | null;
         plainToken: string | null;

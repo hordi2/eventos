@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import OrganizerLayout from '../../Layouts/OrganizerLayout';
+import EventLayout from '../../Layouts/EventLayout';
 
 interface Guest {
     guest_type: 'attendee' | 'ticket';
@@ -73,7 +73,7 @@ export default function Overview({ event, tables }: Props) {
     const canvasHeight = Math.max(560, ...tables.map((t) => t.position_y + t.height + 80));
 
     return (
-        <OrganizerLayout title="Vue d'ensemble de la salle" eyebrow={event.title}>
+        <EventLayout title="Vue d'ensemble de la salle" eyebrow={event.title}>
             <Head title="Vue d'ensemble de la salle" />
 
             <div className="mb-6 flex items-center justify-between">
@@ -140,6 +140,6 @@ export default function Overview({ event, tables }: Props) {
                 ))}
                 {tables.length === 0 && <p className="text-sm text-ink-soft">Aucune table créée pour cet événement.</p>}
             </div>
-        </OrganizerLayout>
+        </EventLayout>
     );
 }

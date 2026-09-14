@@ -9,6 +9,7 @@ use App\Domain\Organization\Models\Membership;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Organization\Services\CollaboratorAccess;
 use App\Models\User;
+use App\Support\Events\BuildEventNavigation;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -56,6 +57,7 @@ class HandleInertiaRequests extends Middleware
             'nav' => fn (): ?array => $this->buildNav($request),
             'settingsAccess' => fn (): array => $this->buildSettingsAccess($request),
             'organizations' => fn (): array => $this->buildOrganizations($request),
+            'eventNav' => fn (): ?array => app(BuildEventNavigation::class)->handle($request),
             'flash' => [
                 'status' => fn (): ?string => $request->session()->get('status'),
                 'plainToken' => fn (): ?string => $request->session()->get('plainToken'),

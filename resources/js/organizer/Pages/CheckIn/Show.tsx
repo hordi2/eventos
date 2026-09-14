@@ -9,7 +9,7 @@ import Modal from '../../Components/Modal';
 import Select from '../../Components/Select';
 import Table from '../../Components/Table';
 import TextInput from '../../Components/TextInput';
-import OrganizerLayout from '../../Layouts/OrganizerLayout';
+import EventLayout from '../../Layouts/EventLayout';
 
 interface Guest {
     guest_type: 'attendee' | 'ticket';
@@ -205,7 +205,7 @@ export default function Show({ event, guests: initialGuests, ticketTypes }: Prop
     }, []);
 
     return (
-        <OrganizerLayout title="Check-in" eyebrow={event.title}>
+        <EventLayout title="Check-in" eyebrow={event.title}>
             <Head title="Check-in" />
 
             <div className="mb-8 flex items-center justify-between">
@@ -362,6 +362,6 @@ export default function Show({ event, guests: initialGuests, ticketTypes }: Prop
                     </div>
                 </form>
             </Modal>
-        </OrganizerLayout>
+        </EventLayout>
     );
 }

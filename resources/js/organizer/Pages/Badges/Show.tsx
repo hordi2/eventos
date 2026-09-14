@@ -3,7 +3,7 @@ import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 import Button from '../../Components/Button';
 import InputLabel from '../../Components/InputLabel';
 import Table from '../../Components/Table';
-import OrganizerLayout from '../../Layouts/OrganizerLayout';
+import EventLayout from '../../Layouts/EventLayout';
 
 interface Guest {
     guest_type: 'attendee' | 'ticket';
@@ -88,7 +88,7 @@ export default function Show({ event, guests, hasLogo, batches: initialBatches }
     }
 
     return (
-        <OrganizerLayout title="Badges" eyebrow={event.title}>
+        <EventLayout title="Badges" eyebrow={event.title}>
             <Head title="Badges" />
 
             <div className="mb-8">
@@ -162,6 +162,6 @@ export default function Show({ event, guests, hasLogo, batches: initialBatches }
                 rowKey={(guest) => `${guest.guest_type}-${guest.id}`}
                 emptyMessage="Aucun invité pour l'instant."
             />
-        </OrganizerLayout>
+        </EventLayout>
     );
 }

@@ -2,7 +2,7 @@ import { Head } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import BarChart from '../../Components/BarChart';
 import LineChart from '../../Components/LineChart';
-import OrganizerLayout from '../../Layouts/OrganizerLayout';
+import EventLayout from '../../Layouts/EventLayout';
 
 interface RegistrationPoint {
     date: string;
@@ -49,7 +49,7 @@ export default function Show({ event, stats: initialStats }: Props) {
     }, [event.id]);
 
     return (
-        <OrganizerLayout title="Tableau de bord" eyebrow={event.title}>
+        <EventLayout title="Tableau de bord" eyebrow={event.title}>
             <Head title="Tableau de bord" />
 
             <div className="mb-8 flex items-center justify-between">
@@ -88,7 +88,7 @@ export default function Show({ event, stats: initialStats }: Props) {
                 <h2 className="mb-4 font-serif text-lg italic">Arrivées par tranche horaire</h2>
                 <BarChart bars={stats.arrival_curve.map((point) => ({ label: point.hour, value: point.count }))} />
             </div>
-        </OrganizerLayout>
+        </EventLayout>
     );
 }
 

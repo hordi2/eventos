@@ -3,7 +3,7 @@ import Badge from '../../Components/Badge';
 import Button from '../../Components/Button';
 import Select from '../../Components/Select';
 import Table from '../../Components/Table';
-import OrganizerLayout from '../../Layouts/OrganizerLayout';
+import EventLayout from '../../Layouts/EventLayout';
 
 interface AttendeeInfo {
     attendee_id: number;
@@ -64,7 +64,7 @@ export default function Show({
     }
 
     return (
-        <OrganizerLayout title={segment.label} eyebrow={event.title}>
+        <EventLayout title={segment.label} eyebrow={event.title}>
             <Head title={`${segment.label} — ${event.title}`} />
 
             {canApplyTag && tags.length > 0 && (
@@ -141,6 +141,6 @@ export default function Show({
                     ))}
                 </nav>
             )}
-        </OrganizerLayout>
+        </EventLayout>
     );
 }

@@ -44,7 +44,7 @@ final class ResolveGuestEvent
 
         $event = Event::query()->where('slug', $request->route('event'))->firstOrFail();
 
-        abort_if($event->status !== EventStatus::Published, 404);
+        abort_unless($event->status === EventStatus::Published || $this->isDraftPreview($request, $event), 404);
 
         $needsPassword = $event->access_mode === EventAccessMode::Password
             && ! in_array($request->route()?->getName(), self::PASSWORD_EXEMPT_ROUTES, true)
@@ -58,5 +58,27 @@ final class ResolveGuestEvent
         $request->attributes->set('guestEvent', $event);
 
         return $next($request);
+    }
+
+    /**
+     * Lien d'aperçu signé (EventPublicLinks) sur un brouillon. Mémorisé en
+     * session : les étapes suivantes du parcours d'inscription ont leurs
+     * propres URL, sans la signature. Un événement archivé reste fermé.
+     */
+    private function isDraftPreview(Request $request, Event $event): bool
+    {
+        if ($event->status !== EventStatus::Draft) {
+            return false;
+        }
+
+        $sessionKey = "guest_event_preview.{$event->id}";
+
+        if ($request->hasValidSignature()) {
+            $request->session()->put($sessionKey, true);
+
+            return true;
+        }
+
+        return (bool) $request->session()->get($sessionKey, false);
     }
 }

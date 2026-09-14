@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domain\Event\Actions\ArchiveEvent;
 use App\Domain\Event\Actions\PublishEvent;
+use App\Domain\Event\Actions\UnpublishEvent;
 use App\Domain\Event\InvalidEventTransitionException;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventLifecycleStatus;
@@ -57,6 +58,27 @@ it('refuse de publier un événement archivé', function (): void {
 
     app(PublishEvent::class)->handle($event, $admin);
 })->throws(InvalidEventTransitionException::class);
+
+it('remet un événement publié en brouillon', function (): void {
+    $organization = organizationInContext();
+    $admin = eventEditor($organization);
+    $event = Event::factory()->for($organization)->published()->create();
+
+    $unpublished = app(UnpublishEvent::class)->handle($event, $admin);
+
+    expect($unpublished->status)->toBe(EventStatus::Draft);
+});
+
+it('refuse de dépublier un brouillon ou un événement archivé', function (EventStatus $status): void {
+    $organization = organizationInContext();
+    $admin = eventEditor($organization);
+    $event = Event::factory()->for($organization)->create(['status' => $status]);
+
+    app(UnpublishEvent::class)->handle($event, $admin);
+})->with([
+    'brouillon' => EventStatus::Draft,
+    'archivé' => EventStatus::Archived,
+])->throws(InvalidEventTransitionException::class);
 
 it('archive un événement brouillon ou publié', function (): void {
     $organization = organizationInContext();

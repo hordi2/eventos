@@ -4,7 +4,7 @@ import Button from '../../Components/Button';
 import InputLabel from '../../Components/InputLabel';
 import Select from '../../Components/Select';
 import TextInput from '../../Components/TextInput';
-import OrganizerLayout from '../../Layouts/OrganizerLayout';
+import EventLayout from '../../Layouts/EventLayout';
 
 interface Guest {
     guest_type: 'attendee' | 'ticket';
@@ -270,7 +270,7 @@ export default function Show({ event, tables: initialTables, unassignedGuests: i
     }
 
     return (
-        <OrganizerLayout title="Plan de table" eyebrow={event.title}>
+        <EventLayout title="Plan de table" eyebrow={event.title}>
             <Head title="Plan de table" />
 
             <div className="mb-6 flex items-center justify-between">
@@ -501,6 +501,6 @@ export default function Show({ event, tables: initialTables, unassignedGuests: i
                     </div>
                 </div>
             </div>
-        </OrganizerLayout>
+        </EventLayout>
     );
 }

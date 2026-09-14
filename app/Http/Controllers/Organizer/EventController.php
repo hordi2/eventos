@@ -43,7 +43,7 @@ final class EventController extends Controller
     {
         $event = $action->handle($this->currentOrganization(), $request->user(), $request->validated());
 
-        return redirect()->route('events.edit', $event);
+        return redirect()->route('events.show', $event);
     }
 
     public function edit(Request $request, int $event, CollaboratorAccess $collaboratorAccess): Response

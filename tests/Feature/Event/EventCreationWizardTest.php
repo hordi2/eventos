@@ -51,7 +51,7 @@ it('crée un événement brouillon avec seulement le titre, la date et le fuseau
 
     $event = Event::query()->where('organization_id', $organization->id)->firstOrFail();
 
-    $response->assertRedirect(route('events.edit', $event));
+    $response->assertRedirect(route('events.show', $event));
     expect($event->title)->toBe('Assemblée générale 2026');
     expect($event->type)->toBe(EventType::Other);
     expect($event->audience)->toBe(EventAudience::Professional);
@@ -73,7 +73,7 @@ it('enregistre le genre d\'événement choisi à la création', function (): voi
 
     $event = Event::query()->where('organization_id', $organization->id)->firstOrFail();
 
-    $response->assertRedirect(route('events.edit', $event));
+    $response->assertRedirect(route('events.show', $event));
     expect($event->audience)->toBe(EventAudience::Personal);
 });
 
@@ -151,7 +151,7 @@ it('attache un lieu déjà saisi à un nouvel événement', function (): void {
     ]);
 
     $event = Event::query()->where('organization_id', $organization->id)->firstOrFail();
-    $response->assertRedirect(route('events.edit', $event));
+    $response->assertRedirect(route('events.show', $event));
     expect($event->venue_id)->toBe($venue->id);
 });
 
@@ -167,7 +167,7 @@ it('crée un nouveau lieu à la volée et l\'attache à l\'événement', functio
     ]);
 
     $event = Event::query()->where('organization_id', $organization->id)->firstOrFail();
-    $response->assertRedirect(route('events.edit', $event));
+    $response->assertRedirect(route('events.show', $event));
     expect($event->venue)->not->toBeNull();
     expect($event->venue->name)->toBe('Salle des fêtes de la Gombe');
     expect($event->venue->organization_id)->toBe($organization->id);

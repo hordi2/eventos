@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import OrganizerLayout from '../../Layouts/OrganizerLayout';
+import EventLayout from '../../Layouts/EventLayout';
 
 interface SegmentSummary {
     value: string;
@@ -9,7 +9,7 @@ interface SegmentSummary {
 
 export default function Index({ event, segments }: { event: { id: number; title: string }; segments: SegmentSummary[] }) {
     return (
-        <OrganizerLayout title="Segments" eyebrow={event.title}>
+        <EventLayout title="Segments" eyebrow={event.title}>
             <Head title="Segments" />
 
             <div className="mb-8 flex items-center justify-between gap-4">
@@ -33,6 +33,6 @@ export default function Index({ event, segments }: { event: { id: number; title:
                     </Link>
                 ))}
             </div>
-        </OrganizerLayout>
+        </EventLayout>
     );
 }

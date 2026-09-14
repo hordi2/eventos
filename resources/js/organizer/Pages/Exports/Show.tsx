@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import Button from '../../Components/Button';
 import InputLabel from '../../Components/InputLabel';
 import Select from '../../Components/Select';
-import OrganizerLayout from '../../Layouts/OrganizerLayout';
+import EventLayout from '../../Layouts/EventLayout';
 
 interface ExportType {
     value: string;
@@ -100,7 +100,7 @@ export default function Show({ event, types, segments, exports: initialExports }
     }
 
     return (
-        <OrganizerLayout title="Exports" eyebrow={event.title}>
+        <EventLayout title="Exports" eyebrow={event.title}>
             <Head title="Exports" />
 
             <div className="mb-8">
@@ -181,6 +181,6 @@ export default function Show({ event, types, segments, exports: initialExports }
                     </ul>
                 )}
             </div>
-        </OrganizerLayout>
+        </EventLayout>
     );
 }

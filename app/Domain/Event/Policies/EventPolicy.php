@@ -36,6 +36,11 @@ final class EventPolicy
         return $user->can('updateEvents', $event->organization);
     }
 
+    public function unpublish(User $user, Event $event): bool
+    {
+        return $user->can('updateEvents', $event->organization);
+    }
+
     public function archive(User $user, Event $event): bool
     {
         return $user->can('updateEvents', $event->organization);

@@ -6,7 +6,7 @@ import InputLabel from '../../Components/InputLabel';
 import Select from '../../Components/Select';
 import Table from '../../Components/Table';
 import TextInput from '../../Components/TextInput';
-import OrganizerLayout from '../../Layouts/OrganizerLayout';
+import EventLayout from '../../Layouts/EventLayout';
 
 interface AutomationRow {
     id: number;
@@ -94,7 +94,7 @@ export default function Index({
     }
 
     return (
-        <OrganizerLayout title="Automatisations" eyebrow={event.title}>
+        <EventLayout title="Automatisations" eyebrow={event.title}>
             <Head title="Automatisations" />
 
             <div className="mb-8 flex justify-end gap-4">
@@ -216,6 +216,6 @@ export default function Index({
                 ]}
                 rows={automations}
             />
-        </OrganizerLayout>
+        </EventLayout>
     );
 }

@@ -7,6 +7,7 @@ import InputLabel from '../../Components/InputLabel';
 import Select from '../../Components/Select';
 import Textarea from '../../Components/Textarea';
 import TextInput from '../../Components/TextInput';
+import EventLayout from '../../Layouts/EventLayout';
 import OrganizerLayout from '../../Layouts/OrganizerLayout';
 
 interface EventTypeOption {
@@ -91,6 +92,9 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
     const [venueMode, setVenueMode] = useState<'none' | 'existing' | 'new'>(event?.venueId ? 'existing' : 'none');
     const [showDuplicate, setShowDuplicate] = useState(false);
 
+    // Un événement existant a déjà son menu latéral ; la création n'en a pas encore.
+    const PageLayout = event ? EventLayout : OrganizerLayout;
+
     const duplicateForm = useForm({ new_start_at: '' });
 
     function submitDuplicate(formEvent: FormEvent) {
@@ -144,7 +148,7 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
     }
 
     return (
-        <OrganizerLayout title="Créer un événement" eyebrow="Nouvel événement">
+        <PageLayout title={event ? "Paramètres de l'événement" : 'Créer un événement'} eyebrow="Nouvel événement">
             <Head title="Créer un événement" />
 
             <div className="mb-10 flex items-center gap-3">
@@ -435,7 +439,7 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                     )}
                 </div>
             )}
-        </OrganizerLayout>
+        </PageLayout>
     );
 }
 
