@@ -6,12 +6,14 @@ namespace App\Http\Controllers\Organizer;
 
 use App\Domain\Contact\Models\Tag;
 use App\Domain\Event\Models\Event;
+use App\Domain\Event\Models\EventCategory;
 use App\Domain\Form\Actions\CreateForm;
 use App\Domain\Form\Actions\PublishFormVersion;
 use App\Domain\Form\Actions\ReviseForm;
 use App\Domain\Form\Actions\UpdateFormDraft;
 use App\Domain\Form\Actions\UpdateFormSettings;
 use App\Domain\Form\FormRequiresPaidPlanException;
+use App\Domain\Form\InvalidConditionalRuleException;
 use App\Domain\Form\Models\ConditionalRule;
 use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\Form;
@@ -23,6 +25,7 @@ use App\Domain\Organization\Models\Organization;
 use App\Domain\Organization\Models\PlanTier;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\Form\SaveFormRequest;
+use App\Models\User;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
@@ -39,7 +42,7 @@ final class FormController extends Controller
         Gate::authorize('create', [Form::class, $this->currentOrganization()]);
 
         return Inertia::render('Forms/Builder', [
-            'event' => ['id' => $event->id, 'title' => $event->title],
+            'event' => $this->presentEvent($event),
             'form' => null,
             ...$this->builderOptions(),
         ]);
@@ -49,7 +52,12 @@ final class FormController extends Controller
     {
         $eventModel = $this->findEvent($event);
         $data = $request->validated();
-        $form = $action->handle($this->currentOrganization(), $eventModel->id, $request->user(), $data);
+
+        try {
+            $form = $action->handle($this->currentOrganization(), $eventModel->id, $request->user(), $data);
+        } catch (InvalidConditionalRuleException $exception) {
+            return back()->withErrors(['rules' => $exception->getMessage()]);
+        }
 
         if (is_array($data['settings'] ?? null)) {
             $updateFormSettings->handle($form, $request->user(), $data['settings']);
@@ -64,25 +72,22 @@ final class FormController extends Controller
 
         Gate::authorize('update', $form);
 
-        $event = Event::query()->findOrFail($form->event_id);
-
         return Inertia::render('Forms/Builder', [
-            'event' => ['id' => $event->id, 'title' => $event->title],
+            'event' => $this->presentEvent(Event::query()->findOrFail($form->event_id)),
             'form' => $this->presentForm($form),
             ...$this->builderOptions(),
         ]);
     }
 
-    public function update(SaveFormRequest $request, int $form, UpdateFormDraft $updateFormDraft, ReviseForm $reviseForm, UpdateFormSettings $updateFormSettings): RedirectResponse
+    public function update(SaveFormRequest $request, int $form, UpdateFormSettings $updateFormSettings): RedirectResponse
     {
         $formModel = $this->findForm($form);
-        $latest = $formModel->latestVersion();
         $data = $request->validated();
 
-        if ($latest?->status === FormVersionStatus::Published) {
-            $reviseForm->handle($formModel, $request->user(), $data['fields'], $data['rules'] ?? []);
-        } else {
-            $updateFormDraft->handle($formModel, $request->user(), $data['fields'], $data['rules'] ?? [], $data['name']);
+        try {
+            $this->writeVersion($formModel, $request->user(), $data);
+        } catch (InvalidConditionalRuleException $exception) {
+            return back()->withErrors(['rules' => $exception->getMessage()]);
         }
 
         if (is_array($data['settings'] ?? null)) {
@@ -105,6 +110,23 @@ final class FormController extends Controller
         return redirect()->route('forms.edit', $formModel);
     }
 
+    /**
+     * Un brouillon jamais publié se modifie en place ; une version publiée ne
+     * change jamais, la modification ouvre une nouvelle version (règle 4.7).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function writeVersion(Form $form, User $editor, array $data): void
+    {
+        if ($form->latestVersion()?->status === FormVersionStatus::Published) {
+            app(ReviseForm::class)->handle($form, $editor, $data['fields'], $data['rules'] ?? []);
+
+            return;
+        }
+
+        app(UpdateFormDraft::class)->handle($form, $editor, $data['fields'], $data['rules'] ?? [], $data['name']);
+    }
+
     private function findEvent(int $id): Event
     {
         return Event::query()->findOrFail($id);
@@ -118,6 +140,19 @@ final class FormController extends Controller
     private function currentOrganization(): Organization
     {
         return Organization::query()->findOrFail(app(CurrentOrganization::class)->requireId());
+    }
+
+    /**
+     * @return array{id: int, title: string, phoneRequired: bool}
+     */
+    private function presentEvent(Event $event): array
+    {
+        return [
+            'id' => $event->id,
+            'title' => $event->title,
+            // Même règle que l'étape « Coordonnées » du parcours invité.
+            'phoneRequired' => $event->type->category() === EventCategory::Personal,
+        ];
     }
 
     /**
@@ -135,7 +170,7 @@ final class FormController extends Controller
                 FieldType::cases(),
             ),
             'fonts' => array_map(
-                fn (string $key, array $font): array => ['value' => $key, 'label' => $font['label']],
+                fn (string $key, array $font): array => ['value' => $key, 'label' => $font['label'], 'stack' => $font['stack']],
                 array_keys(FormSettings::FONTS),
                 FormSettings::FONTS,
             ),
@@ -160,6 +195,7 @@ final class FormController extends Controller
             'id' => $form->id,
             'name' => $form->name,
             'status' => $version?->status->value ?? 'draft',
+            'has_published_version' => $form->hasPublishedVersion(),
             'fields' => $version?->fields->map($this->presentField(...))->all() ?? [],
             'rules' => $version?->conditionalRules->map($this->presentRule(...))->all() ?? [],
             'settings' => $this->presentSettings($form),

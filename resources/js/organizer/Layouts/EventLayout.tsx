@@ -13,6 +13,8 @@ interface EventLayoutProps {
     // Titre de l'événement, affiché par le fil d'Ariane : conservé pour que
     // les pages existantes gardent la même signature qu'OrganizerLayout.
     eyebrow?: string;
+    // Pages outils (constructeur de formulaire) qui ont besoin de toute la largeur.
+    wide?: boolean;
 }
 
 const STATUS_MESSAGES: Record<string, string> = {
@@ -25,7 +27,7 @@ const STATUS_MESSAGES: Record<string, string> = {
  * d'Ariane, menu de statut et aperçu. Hors d'une page d'événement (aucune
  * navigation partagée), elle retombe sur la mise en page organisateur.
  */
-export default function EventLayout({ title, eyebrow, children }: PropsWithChildren<EventLayoutProps>) {
+export default function EventLayout({ title, eyebrow, wide = false, children }: PropsWithChildren<EventLayoutProps>) {
     const { eventNav, auth, settingsAccess, organizations, flash, errors } = usePage<SharedProps & { errors: Record<string, string> }>().props;
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -110,7 +112,7 @@ export default function EventLayout({ title, eyebrow, children }: PropsWithChild
                 </header>
 
                 <main className="flex-1 px-4 py-10 sm:px-8">
-                    <div className="mx-auto max-w-5xl">
+                    <div className={`mx-auto ${wide ? 'max-w-7xl' : 'max-w-5xl'}`}>
                         {flash.status && STATUS_MESSAGES[flash.status] && (
                             <div className="mb-6 rounded-card bg-success-bg p-4 text-sm text-success ring-1 ring-success/30">
                                 {STATUS_MESSAGES[flash.status]}

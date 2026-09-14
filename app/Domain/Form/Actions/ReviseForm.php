@@ -9,6 +9,7 @@ use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormVersion;
 use App\Domain\Form\Models\FormVersionStatus;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -41,16 +42,19 @@ final class ReviseForm
             throw InvalidFormVersionTransitionException::cannotReviseFromDraft();
         }
 
-        $newVersion = FormVersion::query()->create([
-            'organization_id' => $form->organization_id,
-            'form_id' => $form->id,
-            'version_number' => $latest->version_number + 1,
-            'status' => FormVersionStatus::Draft,
-        ]);
+        // Une règle refusée ne doit jamais laisser une version à moitié écrite.
+        return DB::transaction(function () use ($form, $latest, $fields, $rules): FormVersion {
+            $newVersion = FormVersion::query()->create([
+                'organization_id' => $form->organization_id,
+                'form_id' => $form->id,
+                'version_number' => $latest->version_number + 1,
+                'status' => FormVersionStatus::Draft,
+            ]);
 
-        $this->writeFormFields->handle($newVersion, $fields);
-        $this->writeConditionalRules->handle($newVersion, $rules);
+            $this->writeFormFields->handle($newVersion, $fields);
+            $this->writeConditionalRules->handle($newVersion, $rules);
 
-        return $newVersion->refresh();
+            return $newVersion->refresh();
+        });
     }
 }

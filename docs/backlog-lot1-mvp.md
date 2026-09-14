@@ -263,6 +263,15 @@ Opérateurs : est, n'est pas, contient, >, <, est vide. Combinaisons ET/OU.
 - [ ] Aperçu fidèle au rendu final
 - [ ] Sauvegarde automatique, avertissement en cas de sortie non enregistrée
 
+> **Constructeur à blocs, étape B (livrée)** :
+> - **Organisation de l'écran** : palette « Questions du formulaire » (glisser-déposer ou clic) et aperçu du parcours invité dans l'ordre réel (logo, bienvenue, coordonnées et réponse, questions, confirmation, refus), en mode ordinateur ou mobile.
+> - **Blocs** : chaque question se règle, se duplique, monte, descend ou se retire, avec annulation possible du retrait.
+> - **Réglages d'une question** : Question, Description, « Demander si », tags, Obligatoire, logique conditionnelle, Annuler/Enregistrer.
+> - **Thème** : image de fond, logo avec fenêtre d'envoi, 5 couleurs, 2 polices.
+> - **Aperçu** : on y simule la réponse « Je ne peux pas venir ».
+> - **Enregistrement** : sauvegarde automatique ; la création, la révision et le brouillon s'écrivent dans une transaction, et une règle circulaire est refusée avec un message clair.
+> - **Affiché « Bientôt »** : image et vidéo dans un bloc texte, question par personne du groupe, accompagnants, CSS personnalisé, « Mes images » et bibliothèque d'images, ainsi que les blocs du lot 2.
+
 ---
 
 ### T-024 · Capacités et liste d'attente · M

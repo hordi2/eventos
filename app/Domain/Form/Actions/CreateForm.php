@@ -9,6 +9,7 @@ use App\Domain\Form\Models\FormVersion;
 use App\Domain\Form\Models\FormVersionStatus;
 use App\Domain\Organization\Models\Organization;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 final class CreateForm
@@ -29,23 +30,26 @@ final class CreateForm
     {
         Gate::forUser($creator)->authorize('create', [Form::class, $organization]);
 
-        $form = Form::query()->create([
-            'organization_id' => $organization->id,
-            'event_id' => $eventId,
-            'created_by' => $creator->id,
-            'name' => $data['name'],
-        ]);
+        // Une règle refusée ne doit jamais laisser un formulaire à moitié créé.
+        return DB::transaction(function () use ($organization, $eventId, $creator, $data): Form {
+            $form = Form::query()->create([
+                'organization_id' => $organization->id,
+                'event_id' => $eventId,
+                'created_by' => $creator->id,
+                'name' => $data['name'],
+            ]);
 
-        $version = FormVersion::query()->create([
-            'organization_id' => $organization->id,
-            'form_id' => $form->id,
-            'version_number' => 1,
-            'status' => FormVersionStatus::Draft,
-        ]);
+            $version = FormVersion::query()->create([
+                'organization_id' => $organization->id,
+                'form_id' => $form->id,
+                'version_number' => 1,
+                'status' => FormVersionStatus::Draft,
+            ]);
 
-        $this->writeFormFields->handle($version, $data['fields'] ?? []);
-        $this->writeConditionalRules->handle($version, $data['rules'] ?? []);
+            $this->writeFormFields->handle($version, $data['fields'] ?? []);
+            $this->writeConditionalRules->handle($version, $data['rules'] ?? []);
 
-        return $form->refresh();
+            return $form->refresh();
+        });
     }
 }

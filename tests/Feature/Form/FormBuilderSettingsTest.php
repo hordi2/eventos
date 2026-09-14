@@ -54,9 +54,46 @@ it('enregistre les écrans, le thème et le public des questions avec le formula
     $this->actingAs($admin)->get("/forms/{$form->id}/edit")->assertInertia(fn ($page) => $page
         ->where('form.settings.theme.heading_font', 'georgia')
         ->where('form.settings.welcome.title', 'Bienvenue')
+        ->where('form.has_published_version', false)
         ->where('isFreePlan', true)
         ->has('fonts', 5)
+        ->where('fonts.0.stack', fn (string $stack): bool => str_contains($stack, 'Plus Jakarta Sans'))
+        ->has('event.phoneRequired')
         ->where('fieldTypes', fn ($types): bool => collect($types)->firstWhere('value', 'quantity')['premium'] === true));
+});
+
+it('ignore un chemin ou une adresse d\'image glissés dans les réglages du thème', function (): void {
+    [, $admin, $form] = formWithBuilderSettings();
+
+    $this->actingAs($admin)->patch("/forms/{$form->id}", [
+        'name' => 'Inscription',
+        'fields' => [['key' => 'nom', 'type' => 'short_text', 'label' => 'Nom']],
+        'settings' => ['theme' => ['logo_path' => '../../.env', 'logo_url' => 'https://exemple.test/logo.png', 'accent_color' => '#123456']],
+    ])->assertRedirect(route('forms.edit', $form));
+
+    $theme = $form->fresh()->settings['theme'];
+    expect($theme['logo_path'])->toBeNull();
+    expect($theme)->not->toHaveKey('logo_url');
+    expect($theme['accent_color'])->toBe('#123456');
+});
+
+it('refuse une logique conditionnelle circulaire sans toucher aux questions enregistrées', function (): void {
+    [, $admin, $form] = formWithBuilderSettings();
+    $dependsOn = fn (string $source): array => ['combinator' => 'and', 'conditions' => [['field_key' => $source, 'operator' => 'is_not_empty', 'value' => '']]];
+
+    $this->actingAs($admin)->from("/forms/{$form->id}/edit")->patch("/forms/{$form->id}", [
+        'name' => 'Inscription',
+        'fields' => [
+            ['key' => 'a', 'type' => 'short_text', 'label' => 'Question A'],
+            ['key' => 'b', 'type' => 'short_text', 'label' => 'Question B'],
+        ],
+        'rules' => [
+            ['target_field_key' => 'a', 'action' => 'show', 'condition_group' => $dependsOn('b')],
+            ['target_field_key' => 'b', 'action' => 'show', 'condition_group' => $dependsOn('a')],
+        ],
+    ])->assertRedirect("/forms/{$form->id}/edit")->assertSessionHasErrors('rules');
+
+    expect($form->fresh()->latestVersion()->fields->pluck('key')->all())->toBe(['nom']);
 });
 
 it('refuse une couleur de thème invalide, une police inconnue et un public de question inconnu', function (): void {

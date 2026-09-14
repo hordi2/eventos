@@ -8,6 +8,7 @@ use App\Domain\Form\InvalidFormVersionTransitionException;
 use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormField;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -38,16 +39,20 @@ final class UpdateFormDraft
             throw InvalidFormVersionTransitionException::cannotEditPublishedDraft();
         }
 
-        // Supprimer les champs supprime en cascade (FK) les règles qui les
-        // ciblaient : pas besoin de les effacer explicitement ici.
-        FormField::query()->where('form_version_id', $version->id)->delete();
-        $this->writeFormFields->handle($version, $fields);
-        $this->writeConditionalRules->handle($version, $rules);
+        // Une seule transaction : une règle refusée (référence circulaire…)
+        // ne doit jamais laisser des champs réécrits sans leurs règles.
+        return DB::transaction(function () use ($form, $version, $fields, $rules, $name): Form {
+            // Supprimer les champs supprime en cascade (FK) les règles qui les
+            // ciblaient : pas besoin de les effacer explicitement ici.
+            FormField::query()->where('form_version_id', $version->id)->delete();
+            $this->writeFormFields->handle($version, $fields);
+            $this->writeConditionalRules->handle($version, $rules);
 
-        if ($name !== null) {
-            $form->update(['name' => $name]);
-        }
+            if ($name !== null) {
+                $form->update(['name' => $name]);
+            }
 
-        return $form->refresh();
+            return $form->refresh();
+        });
     }
 }
