@@ -1551,6 +1551,29 @@ documentation des deux produits avant de coder :
   suppose une app listée + OAuth 2.0. Pour Zapier, la connexion reste donc
   la clé Itaza côté Zapier et l'URL de Catch Hook côté Itaza.
 
+**Liste des workflows n8n chargée en arrière-plan** — correctif après
+livraison : la page Intégrations interrogeait l'instance n8n du client à
+chaque affichage (jusqu'à 10 s par page, et bien plus sur une grosse
+instance paginée), contraire à la règle « tout traitement > 2 secondes
+part en queue ».
+
+- La page ne contacte plus jamais n8n : elle lit `N8nWorkflowCache`
+  (par organisation, 10 minutes). Cache vide : elle lance
+  `RefreshN8nWorkflowsJob` et affiche « Récupération de vos workflows
+  n8n… », puis se recharge partiellement toutes les 2 s (prop `n8n`
+  seule) jusqu'à ce que la liste arrive, 30 s au plus.
+- Le job est unique par organisation : plusieurs onglets ou visites
+  rapprochées n'empilent pas d'appels vers l'instance du client. Une
+  instance injoignable est mémorisée comme erreur et affichée, sans
+  casser la page.
+- Bouton « Rafraîchir » : vide le cache et relance la récupération. La
+  connexion le fait aussi ; la déconnexion vide le cache.
+- Seule la vérification de la clé à la connexion reste synchrone : un
+  unique appel léger (`limit=1`), pour dire tout de suite si la clé est
+  refusée.
+- **Condition d'exploitation** : un worker de file d'attente doit tourner
+  (`php artisan horizon`), sans quoi la liste reste en chargement.
+
 **Reste à faire côté utilisateur, hors code** : publier l'app Zapier sur
 le compte développeur Zapier (création de l'app, déclencheurs pointant sur
 les points d'entrée ci-dessus, revue par Zapier). Sans cette étape, la

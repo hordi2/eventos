@@ -1,5 +1,5 @@
 import { router, useForm } from '@inertiajs/react';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import Button from './Button';
 import InputError from './InputError';
 import InputLabel from './InputLabel';
@@ -15,8 +15,10 @@ export interface N8nWorkflow {
 export interface N8nState {
     connected: boolean;
     base_url: string | null;
+    loading: boolean;
     workflows: N8nWorkflow[];
     error: string | null;
+    fetched_at: string | null;
 }
 
 interface EventOption {
@@ -29,6 +31,12 @@ interface Props {
     availableEvents: EventOption[];
 }
 
+const POLL_INTERVAL_MS = 2000;
+
+// La liste est récupérée en file d'attente : au-delà de ce délai on cesse
+// d'interroger le serveur plutôt que de le solliciter indéfiniment.
+const POLL_TIMEOUT_MS = 30000;
+
 /**
  * Connexion à l'instance n8n du client par clé API : contrairement à
  * Zapier, n8n expose une API publique authentifiée par clé, ce qui permet
@@ -36,8 +44,29 @@ interface Props {
  */
 export default function N8nConnection({ n8n, availableEvents }: Props) {
     const [selectedEvents, setSelectedEvents] = useState<string[]>([availableEvents[0]?.value].filter(Boolean) as string[]);
+    const [pollTimedOut, setPollTimedOut] = useState(false);
 
     const connectForm = useForm({ base_url: '', api_key: '' });
+
+    useEffect(() => {
+        if (!n8n.loading) {
+            return;
+        }
+
+        const startedAt = Date.now();
+        const interval = setInterval(() => {
+            if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
+                clearInterval(interval);
+                setPollTimedOut(true);
+
+                return;
+            }
+
+            router.reload({ only: ['n8n'] });
+        }, POLL_INTERVAL_MS);
+
+        return () => clearInterval(interval);
+    }, [n8n.loading]);
 
     function submitConnection(event: FormEvent) {
         event.preventDefault();
@@ -51,6 +80,11 @@ export default function N8nConnection({ n8n, availableEvents }: Props) {
         if (confirm('Déconnecter n8n ? Les webhooks déjà créés continueront de fonctionner.')) {
             router.delete('/settings/api/n8n', { preserveScroll: true });
         }
+    }
+
+    function refresh() {
+        setPollTimedOut(false);
+        router.post('/settings/api/n8n/refresh', {}, { preserveScroll: true });
     }
 
     function toggleEvent(value: string) {
@@ -114,16 +148,34 @@ export default function N8nConnection({ n8n, availableEvents }: Props) {
                 <p className="text-sm text-ink">
                     Connecté à <span className="font-medium">{n8n.base_url}</span>
                 </p>
-                <button type="button" onClick={disconnect} className="text-sm text-danger underline underline-offset-2">
-                    Déconnecter
-                </button>
+                <div className="flex gap-4">
+                    <button
+                        type="button"
+                        onClick={refresh}
+                        disabled={n8n.loading && !pollTimedOut}
+                        className="text-sm text-ink underline underline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        Rafraîchir
+                    </button>
+                    <button type="button" onClick={disconnect} className="text-sm text-danger underline underline-offset-2">
+                        Déconnecter
+                    </button>
+                </div>
             </div>
 
-            {n8n.error !== null && (
+            {n8n.loading && (
+                <p className="text-sm text-ink-soft">
+                    {pollTimedOut
+                        ? 'La liste de vos workflows met plus de temps que prévu à arriver. Réessayez dans un instant avec « Rafraîchir ».'
+                        : 'Récupération de vos workflows n8n…'}
+                </p>
+            )}
+
+            {!n8n.loading && n8n.error !== null && (
                 <p className="mb-4 rounded-card bg-danger-bg p-3 text-sm text-danger ring-1 ring-danger/30">{n8n.error}</p>
             )}
 
-            {n8n.error === null && (
+            {!n8n.loading && n8n.error === null && (
                 <>
                     <p className="mb-2 font-label text-xs tracking-[0.1em] text-ink-soft uppercase">
                         Événements à envoyer
@@ -147,8 +199,8 @@ export default function N8nConnection({ n8n, availableEvents }: Props) {
 
                     {n8n.workflows.length === 0 ? (
                         <p className="text-sm text-ink-soft">
-                            Aucun workflow dans cette instance. Créez-en un dans n8n avec un nœud « Webhook », il
-                            apparaîtra ici.
+                            Aucun workflow dans cette instance. Créez-en un dans n8n avec un nœud « Webhook », puis
+                            cliquez sur « Rafraîchir ».
                         </p>
                     ) : (
                         <ul className="space-y-2">
@@ -178,6 +230,13 @@ export default function N8nConnection({ n8n, availableEvents }: Props) {
                                 </li>
                             ))}
                         </ul>
+                    )}
+
+                    {n8n.fetched_at !== null && (
+                        <p className="mt-3 text-xs text-ink-soft">
+                            Liste mise à jour à{' '}
+                            {new Date(n8n.fetched_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}.
+                        </p>
                     )}
                 </>
             )}

@@ -9,9 +9,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\Settings\StoreApiTokenRequest;
 use App\Http\Requests\Organizer\Settings\StoreWebhookRequest;
 use App\Http\Requests\Organizer\Settings\UpdateWebhookRequest;
+use App\Jobs\RefreshN8nWorkflowsJob;
 use App\Models\User;
-use App\Support\Integrations\N8nClient;
-use App\Support\Integrations\N8nConnectionException;
+use App\Support\Integrations\N8nWorkflowCache;
 use App\Support\MultiTenancy\CurrentOrganization;
 use App\Support\Webhooks\Actions\CreateWebhook;
 use App\Support\Webhooks\Actions\DeleteWebhook;
@@ -26,7 +26,7 @@ use Inertia\Response;
 final class IntegrationController extends Controller
 {
     public function __construct(
-        private readonly N8nClient $n8n,
+        private readonly N8nWorkflowCache $workflowCache,
     ) {}
 
     public function index(Request $request): Response
@@ -57,43 +57,50 @@ final class IntegrationController extends Controller
             // pour que l'organisateur puisse copier-coller sans deviner le
             // domaine de son instance.
             'apiBaseUrl' => url('/api/v1'),
-            'n8n' => $this->n8nState($request),
+            'n8n' => $this->n8nState(),
         ]);
     }
 
     /**
-     * État de la connexion n8n, workflows compris quand elle est établie.
-     * L'instance appartient au client : si elle ne répond plus (arrêtée,
-     * clé révoquée), on affiche le message d'erreur plutôt que de casser
-     * toute la page Intégrations.
+     * État de la connexion n8n, lu uniquement dans le cache : la page ne
+     * contacte jamais l'instance du client, qui peut être lente ou arrêtée.
+     * Cache vide (première visite, liste expirée, rafraîchissement demandé)
+     * : la récupération part en file d'attente et la page se met à jour
+     * toute seule quand elle est prête.
      *
-     * @return array{connected: bool, base_url: ?string, workflows: list<array{id: string, name: string, active: bool, webhook_url: ?string}>, error: ?string}
+     * @return array{connected: bool, base_url: ?string, loading: bool, workflows: list<array{id: string, name: string, active: bool, webhook_url: ?string}>, error: ?string, fetched_at: ?string}
      */
-    private function n8nState(Request $request): array
+    private function n8nState(): array
     {
         $organizationId = app(CurrentOrganization::class)->id();
         $organization = $organizationId !== null ? Organization::query()->find($organizationId) : null;
 
         if ($organization?->n8n_base_url === null || $organization->n8n_api_key === null) {
-            return ['connected' => false, 'base_url' => null, 'workflows' => [], 'error' => null];
+            return ['connected' => false, 'base_url' => null, 'loading' => false, 'workflows' => [], 'error' => null, 'fetched_at' => null];
         }
 
-        try {
-            $workflows = $this->n8n->workflows($organization->n8n_base_url, $organization->n8n_api_key);
-        } catch (N8nConnectionException $exception) {
+        $cached = $this->workflowCache->get($organization->id);
+
+        if ($cached === null) {
+            RefreshN8nWorkflowsJob::dispatch($organization->id);
+
             return [
                 'connected' => true,
                 'base_url' => $organization->n8n_base_url,
+                'loading' => true,
                 'workflows' => [],
-                'error' => $exception->getMessage(),
+                'error' => null,
+                'fetched_at' => null,
             ];
         }
 
         return [
             'connected' => true,
             'base_url' => $organization->n8n_base_url,
-            'workflows' => $workflows,
-            'error' => null,
+            'loading' => false,
+            'workflows' => $cached['workflows'],
+            'error' => $cached['error'],
+            'fetched_at' => $cached['fetched_at'],
         ];
     }
 

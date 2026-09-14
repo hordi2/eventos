@@ -190,6 +190,7 @@ Route::middleware('auth')->group(function (): void {
             Route::delete('tokens/{token}', [IntegrationController::class, 'destroyToken'])->name('tokens.destroy');
             Route::post('n8n', [N8nConnectionController::class, 'store'])->name('n8n.store');
             Route::delete('n8n', [N8nConnectionController::class, 'destroy'])->name('n8n.destroy');
+            Route::post('n8n/refresh', [N8nConnectionController::class, 'refresh'])->name('n8n.refresh');
             Route::post('n8n/workflows', [N8nConnectionController::class, 'connectWorkflow'])->name('n8n.workflows.store');
 
             Route::post('webhooks', [IntegrationController::class, 'storeWebhook'])->name('webhooks.store');
