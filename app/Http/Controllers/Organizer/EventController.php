@@ -12,13 +12,16 @@ use App\Domain\Event\Models\EventAudience;
 use App\Domain\Event\Models\EventType;
 use App\Domain\Event\Models\Venue;
 use App\Domain\Organization\Models\Organization;
+use App\Domain\Organization\Services\CollaboratorAccess;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\Event\CreateEventRequest;
 use App\Http\Requests\Organizer\Event\DuplicateEventRequest;
 use App\Http\Requests\Organizer\Event\UpdateEventRequest;
+use App\Models\User;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -43,11 +46,14 @@ final class EventController extends Controller
         return redirect()->route('events.edit', $event);
     }
 
-    public function edit(int $event): Response
+    public function edit(Request $request, int $event, CollaboratorAccess $collaboratorAccess): Response
     {
         $event = $this->findEvent($event);
 
         Gate::authorize('update', $event);
+
+        /** @var User $user */
+        $user = $request->user();
 
         return Inertia::render('Events/Create', [
             'event' => $this->presentEvent($event),
@@ -55,6 +61,10 @@ final class EventController extends Controller
             'eventAudiences' => $this->eventAudienceOptions(),
             'timezones' => $this->timezoneOptions(),
             'venues' => $this->venueOptions(),
+            // La duplication crée un nouvel événement dans l'organisation :
+            // refusée aux collaborateurs, même administrateurs de celui-ci
+            // (RestrictCollaboratorToSharedEvents).
+            'canDuplicate' => ! $collaboratorAccess->isCollaborator($user, $event->organization_id),
         ]);
     }
 

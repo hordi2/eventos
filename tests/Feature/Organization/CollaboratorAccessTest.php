@@ -55,7 +55,9 @@ it('interdit à la lecture seule de modifier l\'événement partagé', function 
 it('laisse l\'administrateur de l\'événement le modifier', function (): void {
     ['sharedEvent' => $event, 'collaborator' => $collaborator] = makeSharedEventSetup(CollaboratorPermission::Administrator);
 
-    $this->actingAs($collaborator)->get("/events/{$event->id}/edit")->assertOk();
+    $this->actingAs($collaborator)->get("/events/{$event->id}/edit")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('canDuplicate', false));
     $this->actingAs($collaborator)->get("/events/{$event->id}/exports")->assertOk();
 });
 
@@ -128,7 +130,9 @@ it('coupe l\'accès d\'un collaborateur retiré', function (): void {
 it('garde tous leurs droits aux membres de l\'organisation', function (): void {
     ['owner' => $owner, 'otherEvent' => $otherEvent] = makeSharedEventSetup(CollaboratorPermission::CheckIn);
 
-    $this->actingAs($owner)->get("/events/{$otherEvent->id}/edit")->assertOk();
+    $this->actingAs($owner)->get("/events/{$otherEvent->id}/edit")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('canDuplicate', true));
     $this->actingAs($owner)->get('/dashboard')->assertInertia(fn ($page) => $page
         ->has('events', 2)
         ->where('settingsAccess.eventSharing', true));

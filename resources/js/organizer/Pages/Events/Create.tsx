@@ -46,6 +46,7 @@ interface CreateEventPageProps {
     eventAudiences: EventAudienceOption[];
     timezones: Record<string, string>;
     venues: VenueOption[];
+    canDuplicate?: boolean;
 }
 
 function toDatetimeLocalValue(isoString: string, timeZone: string): string {
@@ -84,7 +85,7 @@ function addHoursToLocalValue(value: string, hours: number): string {
     return `${shifted.getFullYear()}-${pad(shifted.getMonth() + 1)}-${pad(shifted.getDate())}T${pad(shifted.getHours())}:${pad(shifted.getMinutes())}`;
 }
 
-export default function CreateEvent({ event, eventTypes, eventAudiences, timezones, venues }: CreateEventPageProps) {
+export default function CreateEvent({ event, eventTypes, eventAudiences, timezones, venues, canDuplicate = false }: CreateEventPageProps) {
     const [step, setStep] = useState<1 | 2 | 3>(event ? 3 : 1);
     const [endTouched, setEndTouched] = useState(Boolean(event));
     const [venueMode, setVenueMode] = useState<'none' | 'existing' | 'new'>(event?.venueId ? 'existing' : 'none');
@@ -390,9 +391,11 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                         <Button type="button" variant="secondary" onClick={() => setStep(2)}>
                             Modifier
                         </Button>
-                        <Button type="button" variant="secondary" onClick={() => setShowDuplicate((v) => !v)}>
-                            Dupliquer
-                        </Button>
+                        {canDuplicate && (
+                            <Button type="button" variant="secondary" onClick={() => setShowDuplicate((v) => !v)}>
+                                Dupliquer
+                            </Button>
+                        )}
                         <Link
                             href={`/events/${event.id}/form/create`}
                             className="inline-flex min-h-11 items-center justify-center gap-2.5 rounded-pill border border-line px-8 py-4 font-sans text-[14.5px] font-medium text-ink transition-all duration-300 hover:-translate-y-0.5 hover:border-ink"
@@ -407,7 +410,7 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                         </Link>
                     </div>
 
-                    {showDuplicate && (
+                    {canDuplicate && showDuplicate && (
                         <form onSubmit={submitDuplicate} className="space-y-4 border-t border-line pt-6">
                             <div>
                                 <InputLabel htmlFor="new_start_at">Nouvelle date de début</InputLabel>
