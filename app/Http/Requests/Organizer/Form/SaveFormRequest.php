@@ -6,13 +6,15 @@ namespace App\Http\Requests\Organizer\Form;
 
 use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\RuleAction;
+use App\Domain\Form\Support\FormSettings;
+use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
  * Utilisée à la fois pour créer et pour enregistrer un formulaire : les deux
- * actions envoient la même forme de données (nom, champs, règles), seule
- * l'action qui les reçoit diffère (CreateForm vs UpdateFormDraft/ReviseForm).
+ * actions envoient la même forme de données (nom, champs, règles, réglages),
+ * seule l'action qui les reçoit diffère (CreateForm vs UpdateFormDraft/ReviseForm).
  */
 final class SaveFormRequest extends FormRequest
 {
@@ -36,6 +38,14 @@ final class SaveFormRequest extends FormRequest
             'fields.*.help_text' => ['nullable', 'string'],
             'fields.*.is_required' => ['nullable', 'boolean'],
             'fields.*.config' => ['nullable', 'array'],
+            // Réglages « Demander si » et « Seulement pour les invités portant
+            // le tag… » du panneau d'un bloc (EvaluateFormVisibility).
+            'fields.*.config.show_if' => ['nullable', Rule::in(['always', 'attending', 'not_attending'])],
+            'fields.*.config.tag_ids' => ['nullable', 'array'],
+            'fields.*.config.tag_ids.*' => [
+                'integer',
+                Rule::exists('tags', 'id')->where('organization_id', app(CurrentOrganization::class)->requireId()),
+            ],
             'fields.*.options' => ['nullable', 'array'],
             'fields.*.options.*.value' => ['nullable', 'string', 'max:255'],
             'fields.*.options.*.label' => ['required', 'string', 'max:255'],
@@ -45,6 +55,8 @@ final class SaveFormRequest extends FormRequest
             'rules.*.target_field_key' => ['required', 'string'],
             'rules.*.action' => ['required', Rule::enum(RuleAction::class)],
             'rules.*.condition_group' => ['required', 'array'],
+
+            ...FormSettings::rules(),
         ];
     }
 }

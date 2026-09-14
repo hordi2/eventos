@@ -12,13 +12,19 @@
         <form method="POST" action="{{ route('guest.registration.answers.store', [request()->route('organization'), request()->route('event'), $draft->resume_token]) }}" novalidate>
             @csrf
 
+            @php($hasVisibleQuestion = collect($visibility)->contains(fn (array $state): bool => $state['visible']))
+
+            @unless ($hasVisibleQuestion)
+                <p class="mb-8 text-ink-soft">Aucune question supplémentaire : vous pouvez continuer.</p>
+            @endunless
+
             @foreach ($version->fields as $field)
                 @if ($visibility[$field->key]['visible'])
                     @include('guest.registration._field', ['field' => $field, 'value' => data_get($draft->answers, $field->key)])
                 @endif
             @endforeach
 
-            <button type="submit" class="min-h-11 w-full rounded-pill bg-ink px-8 py-3 font-medium text-bg">Continuer</button>
+            <button type="submit" class="form-button min-h-11 w-full rounded-pill px-8 py-3 font-medium">Continuer</button>
         </form>
     </div>
 @endsection

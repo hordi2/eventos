@@ -6,6 +6,7 @@ namespace App\Http\Requests\Guest;
 
 use App\Domain\Form\Models\RegistrationDraft;
 use App\Domain\Form\Support\BuildFormValidationRules;
+use App\Support\Registration\BuildGuestVisibilityContext;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -31,7 +32,14 @@ final class SaveAnswersRequest extends FormRequest
             ->firstOrFail();
 
         $version = $draft->formVersion()->with(['fields.options', 'conditionalRules.targetField'])->firstOrFail();
+        $identity = $draft->identity ?? [];
 
-        return app(BuildFormValidationRules::class)->handle($version, $this->all());
+        $context = app(BuildGuestVisibilityContext::class)->handle(
+            $draft->organization_id,
+            $identity['email'] ?? null,
+            (bool) ($identity['attending'] ?? true),
+        );
+
+        return app(BuildFormValidationRules::class)->handle($version, $this->all(), $context);
     }
 }

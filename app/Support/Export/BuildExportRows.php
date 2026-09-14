@@ -210,6 +210,7 @@ final class BuildExportRows
             'confirmed' => 'Confirmé',
             'waitlisted' => "Liste d'attente",
             'cancelled' => 'Décliné',
+            'declined' => 'Décliné',
             default => 'Sans réponse',
         };
     }

@@ -13,15 +13,19 @@ use App\Domain\Form\Actions\UpdateRegistration;
 use App\Domain\Form\Data\AttendeeIdentity;
 use App\Domain\Form\Data\EventEditPolicy;
 use App\Domain\Form\Data\EventRegistrationContext;
+use App\Domain\Form\Data\FormVisibilityContext;
 use App\Domain\Form\Data\RegistrationSubmissionMetadata;
 use App\Domain\Form\Data\SubmitRegistrationOutcome;
 use App\Domain\Form\EventFullException;
 use App\Domain\Form\Models\Form;
+use App\Domain\Form\Models\FormVersion;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationDraft;
+use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Form\OptionFullException;
 use App\Domain\Form\RegistrationClosedException;
 use App\Domain\Form\Support\EvaluateFormVisibility;
+use App\Domain\Form\Support\FormSettings;
 use App\Domain\Form\Support\IsRegistrationWindowOpen;
 use App\Domain\Organization\Actions\GetEffectivePlan;
 use App\Domain\Organization\Actions\GetPlanQuotas;
@@ -32,11 +36,13 @@ use App\Http\Requests\Guest\UpdateRegistrationRequest;
 use App\Http\Requests\Guest\VerifyEventPasswordRequest;
 use App\Support\Capacity\Actions\GetRemainingCapacity;
 use App\Support\Page\GetEventPage;
+use App\Support\Registration\BuildGuestVisibilityContext;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -111,35 +117,65 @@ final class RegistrationController extends Controller
 
         $draft = app(StartRegistrationDraft::class)->handle($eventModel->organization_id, $eventModel->id, $form->current_version_id);
 
-        return redirect()->route('guest.registration.identity.show', [$organization, $event, $draft->resume_token]);
+        $firstStep = FormSettings::resolve($form->settings)['welcome']['enabled']
+            ? 'guest.registration.welcome.show'
+            : 'guest.registration.identity.show';
+
+        return redirect()->route($firstStep, [$organization, $event, $draft->resume_token]);
+    }
+
+    /**
+     * Écran « Message de bienvenue » du constructeur, avant l'identité.
+     */
+    public function welcomeShow(Request $request, string $organization, string $event, string $token): View
+    {
+        $eventModel = $this->event($request);
+
+        return view('guest.registration.welcome', [
+            'event' => $eventModel,
+            'draft' => $this->draft($token),
+            ...$this->presentation($eventModel),
+        ]);
     }
 
     public function identityShow(Request $request, string $organization, string $event, string $token): View
     {
+        $eventModel = $this->event($request);
+
         return view('guest.registration.identity', [
-            'event' => $this->event($request),
+            'event' => $eventModel,
             'draft' => $this->draft($token),
+            ...$this->presentation($eventModel),
         ]);
     }
 
     public function identityStore(SaveIdentityRequest $request, string $organization, string $event, string $token): RedirectResponse
     {
-        $draft = app(SaveRegistrationDraft::class)->handle($this->draft($token), identity: $request->validated());
+        $declineEnabled = (bool) $this->presentation($this->event($request))['settings']['rsvp']['decline_enabled'];
+
+        $identity = [
+            ...$request->safe()->except('attending'),
+            // Sans réponse « Je ne peux pas venir » proposée, tout invité vient.
+            'attending' => ! $declineEnabled || $request->boolean('attending'),
+        ];
+
+        $draft = app(SaveRegistrationDraft::class)->handle($this->draft($token), identity: $identity);
 
         return redirect()->route('guest.registration.answers.show', [$organization, $event, $draft->resume_token]);
     }
 
     public function answersShow(Request $request, string $organization, string $event, string $token): View
     {
+        $eventModel = $this->event($request);
         $draft = $this->draft($token);
-        $version = $draft->formVersion()->with(['fields.options', 'conditionalRules.targetField'])->firstOrFail();
-        $visibility = app(EvaluateFormVisibility::class)->handle($version, $draft->answers ?? []);
+        $version = $this->versionFor($draft);
 
         return view('guest.registration.answers', [
-            'event' => $this->event($request),
+            'event' => $eventModel,
             'draft' => $draft,
             'version' => $version,
-            'visibility' => $visibility,
+            'visibility' => app(EvaluateFormVisibility::class)->handle($version, $draft->answers ?? [], $this->visibilityContext($draft)),
+            ...$this->presentation($eventModel),
         ]);
     }
 
@@ -152,15 +188,17 @@ final class RegistrationController extends Controller
 
     public function reviewShow(Request $request, string $organization, string $event, string $token): View
     {
+        $eventModel = $this->event($request);
         $draft = $this->draft($token);
-        $version = $draft->formVersion()->with(['fields.options', 'conditionalRules.targetField'])->firstOrFail();
-        $visibility = app(EvaluateFormVisibility::class)->handle($version, $draft->answers ?? []);
+        $version = $this->versionFor($draft);
 
         return view('guest.registration.review', [
-            'event' => $this->event($request),
+            'event' => $eventModel,
             'draft' => $draft,
             'version' => $version,
-            'visibility' => $visibility,
+            'visibility' => app(EvaluateFormVisibility::class)->handle($version, $draft->answers ?? [], $this->visibilityContext($draft)),
+            'attending' => $this->attending($draft),
+            ...$this->presentation($eventModel),
         ]);
     }
 
@@ -168,7 +206,7 @@ final class RegistrationController extends Controller
     {
         $eventModel = $this->event($request);
         $draft = $this->draft($token);
-        $version = $draft->formVersion()->with(['fields.options', 'conditionalRules.targetField'])->firstOrFail();
+        $version = $this->versionFor($draft);
         $identity = $draft->identity ?? [];
 
         try {
@@ -186,6 +224,7 @@ final class RegistrationController extends Controller
                     locale: $request->getPreferredLanguage(),
                 ),
                 "draft:{$draft->id}",
+                $this->visibilityContext($draft),
             );
         } catch (RegistrationClosedException|EventFullException|OptionFullException $e) {
             return back()->withErrors(['submission' => $e->getMessage()]);
@@ -206,12 +245,15 @@ final class RegistrationController extends Controller
         $eventModel = $this->event($request);
         $registration = $draft->registration()->firstOrFail();
         $policy = $this->editPolicyFor($eventModel);
+        // Un refus n'a ni inscription à modifier ni place à libérer.
+        $hideLinks = $policy->isLocked() || $registration->status === RegistrationStatus::Declined;
 
         return view('guest.registration.confirmation', [
             'event' => $eventModel,
             'registration' => $registration,
-            'editUrl' => $policy->isLocked() ? null : $this->signedEditUrl($organization, $event, $eventModel, $registration),
-            'cancelUrl' => $policy->isLocked() ? null : $this->signedCancelUrl($organization, $event, $eventModel, $registration),
+            'editUrl' => $hideLinks ? null : $this->signedEditUrl($organization, $event, $eventModel, $registration),
+            'cancelUrl' => $hideLinks ? null : $this->signedCancelUrl($organization, $event, $eventModel, $registration),
+            ...$this->presentation($eventModel),
         ]);
     }
 
@@ -244,6 +286,7 @@ final class RegistrationController extends Controller
                     $policy,
                     new AttendeeIdentity($data['email'], $data['first_name'] ?? null, $data['last_name'] ?? null, $data['phone'] ?? null),
                     $data,
+                    $this->registrationVisibilityContext($registrationModel),
                 );
             } catch (OptionFullException $e) {
                 return back()->withErrors(['submission' => $e->getMessage()]);
@@ -256,7 +299,7 @@ final class RegistrationController extends Controller
         $answers = $registrationModel->answers()->with('formField')->get()
             ->mapWithKeys(fn ($answer) => [$answer->formField->key => $this->denormalizeForDisplay($answer->formField->type->value, $answer->value)])
             ->all();
-        $visibility = app(EvaluateFormVisibility::class)->handle($version, $answers);
+        $visibility = app(EvaluateFormVisibility::class)->handle($version, $answers, $this->registrationVisibilityContext($registrationModel));
 
         return view('guest.registration.edit', [
             'event' => $eventModel,
@@ -264,6 +307,7 @@ final class RegistrationController extends Controller
             'version' => $version,
             'visibility' => $visibility,
             'answers' => $answers,
+            ...$this->presentation($eventModel),
         ]);
     }
 
@@ -284,6 +328,56 @@ final class RegistrationController extends Controller
         }
 
         return view('guest.registration.cancel', ['event' => $eventModel, 'registration' => $registrationModel]);
+    }
+
+    /**
+     * Réglages d'écrans et thème du formulaire de l'événement, pour les vues
+     * du parcours et la mise en page invitée.
+     *
+     * @return array{settings: array<string, array<string, mixed>>, formTheme: array{variables: array<string, string>, logoUrl: ?string, backgroundUrl: ?string}}
+     */
+    private function presentation(Event $event): array
+    {
+        $form = Form::query()->where('event_id', $event->id)->first();
+        $settings = FormSettings::resolve($form?->settings);
+        $theme = $settings['theme'];
+
+        return [
+            'settings' => $settings,
+            'formTheme' => [
+                'variables' => FormSettings::cssVariables($settings),
+                'logoUrl' => is_string($theme['logo_path']) ? Storage::disk('public')->url($theme['logo_path']) : null,
+                'backgroundUrl' => is_string($theme['background_image_path']) ? Storage::disk('public')->url($theme['background_image_path']) : null,
+            ],
+        ];
+    }
+
+    private function versionFor(RegistrationDraft $draft): FormVersion
+    {
+        return $draft->formVersion()->with(['fields.options', 'conditionalRules.targetField'])->firstOrFail();
+    }
+
+    private function attending(RegistrationDraft $draft): bool
+    {
+        return (bool) (($draft->identity ?? [])['attending'] ?? true);
+    }
+
+    private function visibilityContext(RegistrationDraft $draft): FormVisibilityContext
+    {
+        return app(BuildGuestVisibilityContext::class)->handle(
+            $draft->organization_id,
+            ($draft->identity ?? [])['email'] ?? null,
+            $this->attending($draft),
+        );
+    }
+
+    private function registrationVisibilityContext(Registration $registration): FormVisibilityContext
+    {
+        return app(BuildGuestVisibilityContext::class)->handle(
+            $registration->organization_id,
+            $registration->email,
+            $registration->status !== RegistrationStatus::Declined,
+        );
     }
 
     private function registrationFor(Event $event, int $registrationId): Registration
@@ -321,6 +415,7 @@ final class RegistrationController extends Controller
         return match ($type) {
             'yes_no' => $value ? '1' : '0',
             'date' => $value ? CarbonImmutable::parse($value)->format('Y-m-d') : $value,
+            'date_time' => $value ? CarbonImmutable::parse($value)->format('Y-m-d\TH:i') : $value,
             default => $value,
         };
     }

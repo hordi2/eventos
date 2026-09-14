@@ -36,6 +36,7 @@ use App\Http\Controllers\Organizer\EventPublicationController;
 use App\Http\Controllers\Organizer\EventSegmentController;
 use App\Http\Controllers\Organizer\ExportController;
 use App\Http\Controllers\Organizer\FormController;
+use App\Http\Controllers\Organizer\FormThemeImageController;
 use App\Http\Controllers\Organizer\HelpController;
 use App\Http\Controllers\Organizer\MessageAutomationController;
 use App\Http\Controllers\Organizer\OrganizationBrandingController;
@@ -257,6 +258,12 @@ Route::middleware('auth')->group(function (): void {
         Route::get('forms/{form}/edit', [FormController::class, 'edit'])->name('forms.edit');
         Route::patch('forms/{form}', [FormController::class, 'update'])->name('forms.update');
         Route::post('forms/{form}/publish', [FormController::class, 'publish'])->name('forms.publish');
+        Route::post('forms/{form}/theme/{kind}', [FormThemeImageController::class, 'store'])
+            ->whereIn('kind', ['logo', 'background'])
+            ->name('forms.theme-images.store');
+        Route::delete('forms/{form}/theme/{kind}', [FormThemeImageController::class, 'destroy'])
+            ->whereIn('kind', ['logo', 'background'])
+            ->name('forms.theme-images.destroy');
 
         Route::get('contacts', [ContactController::class, 'index'])->name('contacts.index');
         Route::get('contacts/create', [ContactController::class, 'create'])->name('contacts.create');
@@ -366,6 +373,8 @@ Route::middleware('resolve-guest-event')
 
         Route::get('/', [RegistrationController::class, 'start'])->name('start');
         Route::get('commencer', [RegistrationController::class, 'begin'])->name('begin');
+
+        Route::get('{token}/accueil', [RegistrationController::class, 'welcomeShow'])->name('welcome.show');
 
         Route::get('{token}/identite', [RegistrationController::class, 'identityShow'])->name('identity.show');
         Route::post('{token}/identite', [RegistrationController::class, 'identityStore'])->name('identity.store');

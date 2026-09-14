@@ -112,9 +112,9 @@ function makeField(FieldType $type, array $overrides = [], array $options = []):
  * @param  array<int, array<string, mixed>>  $fields
  * @return array{organization: Organization, event: Event}
  */
-function makeGuestReadyEvent(array $fields = [], array $eventOverrides = []): array
+function makeGuestReadyEvent(array $fields = [], array $eventOverrides = [], array $organizationOverrides = []): array
 {
-    $organization = Organization::factory()->create();
+    $organization = Organization::factory()->create($organizationOverrides);
     app(CurrentOrganization::class)->set($organization);
 
     $admin = User::factory()->create();

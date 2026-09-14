@@ -58,7 +58,34 @@ final class FieldValidationRules
             FieldType::YesNo => [$field->key => ['boolean']],
             FieldType::Consent => [$field->key => ['accepted']],
             FieldType::InformationalText => [$field->key => ['prohibited']],
+            FieldType::Dropdown => [$field->key => [Rule::in($field->options->pluck('value'))]],
+            FieldType::DateTime => [$field->key => ['date']],
+            FieldType::Url, FieldType::SocialProfile => [$field->key => ['string', 'max:2048', 'url:http,https']],
+            FieldType::Quantity => [$field->key => ['integer', 'min:'.(int) ($config['min'] ?? 0), 'max:'.(int) ($config['max'] ?? 99)]],
+            FieldType::PostalAddress => $this->postalAddressRules($field),
         };
+    }
+
+    /**
+     * Adresse saisie en plusieurs lignes : « obligatoire » exige au moins la
+     * rue et la ville, le reste peut manquer (tous les pays n'ont pas de code
+     * postal).
+     *
+     * @return array<string, list<mixed>>
+     */
+    private function postalAddressRules(FormField $field): array
+    {
+        $essential = $field->is_required ? 'required' : 'nullable';
+
+        return [
+            $field->key => ['array'],
+            "{$field->key}.line1" => [$essential, 'string', 'max:255'],
+            "{$field->key}.line2" => ['nullable', 'string', 'max:255'],
+            "{$field->key}.city" => [$essential, 'string', 'max:120'],
+            "{$field->key}.region" => ['nullable', 'string', 'max:120'],
+            "{$field->key}.postal_code" => ['nullable', 'string', 'max:20'],
+            "{$field->key}.country" => ['nullable', 'string', 'max:120'],
+        ];
     }
 
     /**

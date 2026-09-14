@@ -219,6 +219,20 @@ multiple, oui/non, consentement, menu/repas, texte informatif.
 - [ ] Champ consentement horodaté avec IP
 - [ ] Quota par option de choix (« 50 places pour l'atelier A »)
 
+> **Extension « Personnaliser → Formulaire d'inscription », étape A (livrée)** :
+> six questions de plus — liste déroulante (gratuite), date et heure, lien web,
+> profil de réseau social, quantité, adresse postale (plans payants : essai
+> possible au plan Gratuit, publication refusée tant qu'elles restent dans le
+> formulaire). Réglages par bloc « Demander si » (toujours / invités présents /
+> invités qui déclinent) et « Seulement pour les tags… ». Écran de bienvenue,
+> réponse « Je ne peux pas venir » (statut Décliné, aucune place ni quota
+> consommé, segment « Déclinés »), écrans de confirmation et de refus
+> personnalisés, thème du parcours invité (5 couleurs, 2 polices, logo, image
+> de fond). Réglages de présentation dans `forms.settings`, hors versionnement.
+> Reste l'étape B (constructeur à blocs React) puis le lot 2 (téléversement
+> de fichier avec antivirus, dons, sous-événements, informations du donateur,
+> présence par participant — dépend de T-032).
+
 ---
 
 ### T-022 · Moteur de logique conditionnelle · L

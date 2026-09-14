@@ -124,6 +124,81 @@
             >
             @break
 
+        @case('dropdown')
+            <select
+                id="field_{{ $field->key }}"
+                name="{{ $field->key }}"
+                @if ($field->is_required) required @endif
+                class="w-full rounded-control border border-line bg-bg px-3 py-2 text-ink"
+            >
+                <option value="">Choisissez…</option>
+                @foreach ($field->options as $option)
+                    <option value="{{ $option->value }}" @selected(old($field->key, $value) === $option->value)>{{ $option->label }}</option>
+                @endforeach
+            </select>
+            @break
+
+        @case('date_time')
+            <input
+                type="datetime-local"
+                id="field_{{ $field->key }}"
+                name="{{ $field->key }}"
+                value="{{ old($field->key, $value) }}"
+                @if ($field->is_required) required @endif
+                class="w-full rounded-control border border-line px-3 py-2 text-ink"
+            >
+            @break
+
+        @case('url')
+        @case('social_profile')
+            <input
+                type="url"
+                inputmode="url"
+                id="field_{{ $field->key }}"
+                name="{{ $field->key }}"
+                value="{{ old($field->key, $value) }}"
+                @if ($field->is_required) required @endif
+                placeholder="{{ $field->type->value === 'social_profile' ? 'https://www.linkedin.com/in/…' : 'https://' }}"
+                class="w-full rounded-control border border-line px-3 py-2 text-ink"
+            >
+            @break
+
+        @case('quantity')
+            <input
+                type="number"
+                inputmode="numeric"
+                step="1"
+                id="field_{{ $field->key }}"
+                name="{{ $field->key }}"
+                value="{{ old($field->key, $value) }}"
+                min="{{ $config['min'] ?? 0 }}"
+                max="{{ $config['max'] ?? 99 }}"
+                @if ($field->is_required) required @endif
+                class="w-full rounded-control border border-line px-3 py-2 text-ink sm:w-40"
+            >
+            @break
+
+        @case('postal_address')
+            @php($address = (array) old($field->key, $value ?? []))
+            <div class="space-y-3">
+                <input type="text" name="{{ $field->key }}[line1]" value="{{ $address['line1'] ?? '' }}" placeholder="Adresse" aria-label="Adresse" autocomplete="address-line1" @if ($field->is_required) required @endif class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                <input type="text" name="{{ $field->key }}[line2]" value="{{ $address['line2'] ?? '' }}" placeholder="Complément d'adresse" aria-label="Complément d'adresse" autocomplete="address-line2" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="text" name="{{ $field->key }}[city]" value="{{ $address['city'] ?? '' }}" placeholder="Ville" aria-label="Ville" autocomplete="address-level2" @if ($field->is_required) required @endif class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                    <input type="text" name="{{ $field->key }}[region]" value="{{ $address['region'] ?? '' }}" placeholder="Province ou région" aria-label="Province ou région" autocomplete="address-level1" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="text" name="{{ $field->key }}[postal_code]" value="{{ $address['postal_code'] ?? '' }}" placeholder="Code postal" aria-label="Code postal" autocomplete="postal-code" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                    <input type="text" name="{{ $field->key }}[country]" value="{{ $address['country'] ?? '' }}" placeholder="Pays" aria-label="Pays" autocomplete="country-name" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                </div>
+            </div>
+            @foreach (['line1', 'city'] as $part)
+                @error("{$field->key}.{$part}")
+                    <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            @endforeach
+            @break
+
         @default
             <input
                 type="text"

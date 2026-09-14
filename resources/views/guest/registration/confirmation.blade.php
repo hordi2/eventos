@@ -1,26 +1,26 @@
 @extends('guest.layout')
 
-@section('title', "Inscription confirmée — {$event->title}")
+@section('title', $registration->status->value === 'declined' ? "Réponse enregistrée — {$event->title}" : "Inscription confirmée — {$event->title}")
 
 @section('content')
     <div class="mx-auto max-w-lg px-4 py-16 text-center">
-        <h1 class="mb-4 text-2xl">
-            @if ($registration->status->value === 'waitlisted')
-                Vous êtes sur liste d'attente
-            @else
-                Inscription confirmée
-            @endif
-        </h1>
+        @if ($registration->status->value === 'declined')
+            <h1 class="mb-4 text-2xl">{{ $settings['decline_screen']['title'] !== '' ? $settings['decline_screen']['title'] : 'Merci pour votre réponse' }}</h1>
 
-        <p class="mb-8 text-ink-soft">
-            @if ($registration->status->value === 'waitlisted')
-                {{ $event->title }} affiche complet pour le moment. Nous vous préviendrons si une place se libère.
-            @else
-                Merci, votre inscription à {{ $event->title }} est enregistrée.
+            @if ($settings['decline_screen']['message'] !== '')
+                <p class="mb-8 whitespace-pre-line text-ink-soft">{{ $settings['decline_screen']['message'] }}</p>
             @endif
+        @elseif ($registration->status->value === 'waitlisted')
+            <h1 class="mb-4 text-2xl">Vous êtes sur liste d'attente</h1>
+            <p class="mb-8 text-ink-soft">{{ $event->title }} affiche complet pour le moment. Nous vous préviendrons si une place se libère.</p>
+        @else
+            <h1 class="mb-4 text-2xl">{{ $settings['confirmation']['title'] !== '' ? $settings['confirmation']['title'] : 'Inscription confirmée' }}</h1>
+            <p class="mb-8 whitespace-pre-line text-ink-soft">{{ $settings['confirmation']['message'] !== '' ? $settings['confirmation']['message'] : "Merci, votre inscription à {$event->title} est enregistrée." }}</p>
+        @endif
+
+        <p class="mb-8 text-sm text-ink-soft">
+            {{ $registration->status->value === 'declined' ? 'Réponse enregistrée' : 'Inscription enregistrée' }} avec l'adresse {{ $registration->email }}.
         </p>
-
-        <p class="mb-8 text-sm text-ink-soft">Inscription enregistrée avec l'adresse {{ $registration->email }}.</p>
 
         @if ($editUrl || $cancelUrl)
             <div class="flex items-center justify-center gap-6 text-sm">

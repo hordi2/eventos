@@ -9,6 +9,7 @@ use App\Domain\Form\Events\RegistrationCancelled;
 use App\Domain\Form\Events\RegistrationCreated;
 use App\Domain\Form\Events\RegistrationUpdated;
 use App\Domain\Form\Models\Registration;
+use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Organization\Models\RegistrationNotificationPreference;
 use App\Mail\OrganizerRegistrationNotificationMail;
 use App\Models\User;
@@ -31,7 +32,9 @@ final class NotifyOrganizersOfRegistration
 
     public function created(RegistrationCreated $event): void
     {
-        $this->notify($event->registration, 'created');
+        $registration = $event->registration;
+
+        $this->notify($registration, $registration->status === RegistrationStatus::Declined ? 'declined' : 'created');
     }
 
     public function updated(RegistrationUpdated $event): void
@@ -72,7 +75,8 @@ final class NotifyOrganizersOfRegistration
             $preference = $preferences->get($recipient->id);
 
             $wantsThisType = match ($type) {
-                'created' => $preference->notify_created ?? true,
+                // Un refus est une nouvelle réponse, suivie comme une inscription.
+                'created', 'declined' => $preference->notify_created ?? true,
                 'updated' => $preference->notify_updated ?? true,
                 'cancelled' => $preference->notify_cancelled ?? true,
                 default => true,

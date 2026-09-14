@@ -6,6 +6,8 @@ namespace App\Http\Requests\Guest;
 
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventCategory;
+use App\Domain\Form\Models\Form;
+use App\Domain\Form\Support\FormSettings;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -38,6 +40,9 @@ final class SaveIdentityRequest extends FormRequest
             // — accord explicite) : posé par ResolveGuestEvent avant que ce
             // Form Request ne soit résolu.
             'phone' => [$this->isPersonalEvent() ? 'required' : 'nullable', 'string', 'max:32'],
+            // « Je serai présent(e) » / « Je ne peux pas venir » : demandé
+            // seulement si l'organisateur propose le refus.
+            'attending' => [$this->declineEnabled() ? 'required' : 'nullable', 'boolean'],
         ];
     }
 
@@ -48,14 +53,27 @@ final class SaveIdentityRequest extends FormRequest
     {
         return [
             'phone.required' => 'Le numéro de téléphone est obligatoire pour ce type d\'événement.',
+            'attending.required' => 'Indiquez si vous serez présent(e).',
         ];
     }
 
     private function isPersonalEvent(): bool
     {
+        return $this->guestEvent()->type->category() === EventCategory::Personal;
+    }
+
+    private function declineEnabled(): bool
+    {
+        $form = Form::query()->where('event_id', $this->guestEvent()->id)->first();
+
+        return (bool) FormSettings::resolve($form?->settings)['rsvp']['decline_enabled'];
+    }
+
+    private function guestEvent(): Event
+    {
         /** @var Event $event */
         $event = $this->attributes->get('guestEvent');
 
-        return $event->type->category() === EventCategory::Personal;
+        return $event;
     }
 }

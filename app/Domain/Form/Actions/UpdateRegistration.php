@@ -6,6 +6,7 @@ namespace App\Domain\Form\Actions;
 
 use App\Domain\Form\Data\AttendeeIdentity;
 use App\Domain\Form\Data\EventEditPolicy;
+use App\Domain\Form\Data\FormVisibilityContext;
 use App\Domain\Form\Events\RegistrationUpdated;
 use App\Domain\Form\Models\FormField;
 use App\Domain\Form\Models\Registration;
@@ -42,15 +43,20 @@ final class UpdateRegistration
     /**
      * @param  array<string, mixed>  $answers
      */
-    public function handle(Registration $registration, EventEditPolicy $policy, AttendeeIdentity $identity, array $answers): Registration
-    {
+    public function handle(
+        Registration $registration,
+        EventEditPolicy $policy,
+        AttendeeIdentity $identity,
+        array $answers,
+        ?FormVisibilityContext $visibilityContext = null,
+    ): Registration {
         if ($policy->isLocked()) {
             throw RegistrationEditLockedException::locked();
         }
 
         $version = $registration->formVersion()->with(['fields.options', 'conditionalRules.targetField'])->firstOrFail();
-        $visibility = $this->evaluateFormVisibility->handle($version, $answers);
-        $rules = $this->buildFormValidationRules->handle($version, $answers);
+        $visibility = $this->evaluateFormVisibility->handle($version, $answers, $visibilityContext);
+        $rules = $this->buildFormValidationRules->handle($version, $answers, $visibilityContext);
         Validator::make($answers, $rules)->validate();
 
         DB::transaction(function () use ($registration, $version, $identity, $answers, $visibility): void {

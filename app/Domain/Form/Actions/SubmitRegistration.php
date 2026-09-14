@@ -6,6 +6,7 @@ namespace App\Domain\Form\Actions;
 
 use App\Domain\Form\Data\AttendeeIdentity;
 use App\Domain\Form\Data\EventRegistrationContext;
+use App\Domain\Form\Data\FormVisibilityContext;
 use App\Domain\Form\Data\RegistrationSubmissionMetadata;
 use App\Domain\Form\Data\SubmitRegistrationResult;
 use App\Domain\Form\EventFullException;
@@ -47,6 +48,7 @@ final class SubmitRegistration
 
     /**
      * @param  array<string, mixed>  $answers
+     * @param  FormVisibilityContext|null  $visibilityContext  réponse de l'invité (vient ou non) et tags de son contact
      */
     public function handle(
         EventRegistrationContext $context,
@@ -55,6 +57,7 @@ final class SubmitRegistration
         array $answers,
         RegistrationSubmissionMetadata $metadata,
         string $idempotencyKey,
+        ?FormVisibilityContext $visibilityContext = null,
     ): SubmitRegistrationResult {
         app(CurrentOrganization::class)->set($context->organizationId);
         $formVersion->loadMissing(['fields.options', 'conditionalRules.targetField']);
@@ -78,27 +81,17 @@ final class SubmitRegistration
             return SubmitRegistrationResult::duplicateFound($duplicate);
         }
 
-        $visibility = $this->evaluateFormVisibility->handle($formVersion, $answers);
-        $rules = $this->buildFormValidationRules->handle($formVersion, $answers);
+        // « Je ne peux pas venir » : la réponse est gardée comme refus et ne
+        // tient aucune place, ni dans la capacité de l'événement ni dans le
+        // quota d'une option (décision produit).
+        $declined = $visibilityContext !== null && ! $visibilityContext->attending;
+
+        $visibility = $this->evaluateFormVisibility->handle($formVersion, $answers, $visibilityContext);
+        $rules = $this->buildFormValidationRules->handle($formVersion, $answers, $visibilityContext);
         Validator::make($answers, $rules)->validate();
 
-        $registration = DB::transaction(function () use ($context, $formVersion, $identity, $email, $answers, $metadata, $idempotencyKey, $visibility): Registration {
-            $outcome = $this->reserveCapacity->handle(
-                organizationId: $context->organizationId,
-                holderType: 'event',
-                holderId: (string) $context->eventId,
-                capacityLimit: $context->capacity,
-                reservationKey: $idempotencyKey,
-                allowWaitlist: $context->allowWaitlist,
-            );
-
-            if ($outcome->outcome === ReservationOutcome::Rejected) {
-                throw EventFullException::forEvent($context->eventId);
-            }
-
-            $status = $outcome->outcome === ReservationOutcome::Accepted && ! $this->organizationOverMonthlyQuota($context)
-                ? RegistrationStatus::Confirmed
-                : RegistrationStatus::Waitlisted;
+        $registration = DB::transaction(function () use ($context, $formVersion, $identity, $email, $answers, $metadata, $idempotencyKey, $visibility, $declined): Registration {
+            $status = $declined ? RegistrationStatus::Declined : $this->reserveEventPlace($context, $idempotencyKey);
 
             $registration = Registration::query()->create([
                 'organization_id' => $context->organizationId,
@@ -128,7 +121,7 @@ final class SubmitRegistration
                 'is_primary' => true,
             ]);
 
-            $this->writeAnswers($context, $formVersion, $registration, $answers, $visibility, $metadata->ipAddress, $idempotencyKey);
+            $this->writeAnswers($context, $formVersion, $registration, $answers, $visibility, $metadata->ipAddress, $idempotencyKey, ! $declined);
 
             return $registration;
         });
@@ -138,12 +131,32 @@ final class SubmitRegistration
         return SubmitRegistrationResult::created($registration);
     }
 
+    private function reserveEventPlace(EventRegistrationContext $context, string $idempotencyKey): RegistrationStatus
+    {
+        $outcome = $this->reserveCapacity->handle(
+            organizationId: $context->organizationId,
+            holderType: 'event',
+            holderId: (string) $context->eventId,
+            capacityLimit: $context->capacity,
+            reservationKey: $idempotencyKey,
+            allowWaitlist: $context->allowWaitlist,
+        );
+
+        if ($outcome->outcome === ReservationOutcome::Rejected) {
+            throw EventFullException::forEvent($context->eventId);
+        }
+
+        return $outcome->outcome === ReservationOutcome::Accepted && ! $this->organizationOverMonthlyQuota($context)
+            ? RegistrationStatus::Confirmed
+            : RegistrationStatus::Waitlisted;
+    }
+
     /**
      * Dépassement de quota mensuel du plan (T-074, AC : « les nouvelles
      * inscriptions passent en attente ») : jamais un rejet, seulement une
      * bascule en liste d'attente — l'inscription est toujours créée, aucune
      * donnée n'est perdue, elle sera confirmable manuellement ou dès le
-     * mois suivant.
+     * mois suivant. Un refus n'est pas une inscription : il ne compte pas.
      */
     private function organizationOverMonthlyQuota(EventRegistrationContext $context): bool
     {
@@ -153,6 +166,7 @@ final class SubmitRegistration
 
         $count = Registration::query()
             ->where('organization_id', $context->organizationId)
+            ->where('status', '!=', RegistrationStatus::Declined->value)
             ->where('created_at', '>=', CarbonImmutable::now()->startOfMonth())
             ->count();
 
@@ -178,6 +192,7 @@ final class SubmitRegistration
         array $visibility,
         ?string $ip,
         string $idempotencyKey,
+        bool $reserveOptions,
     ): void {
         foreach ($formVersion->fields as $field) {
             if (! $visibility[$field->key]['visible'] || ! array_key_exists($field->key, $answers)) {
@@ -192,6 +207,11 @@ final class SubmitRegistration
 
             $normalized = $this->normalizeFieldAnswer->handle($field, $rawValue, $ip);
 
+            // Adresse laissée entièrement vide : rien à enregistrer.
+            if ($normalized === []) {
+                continue;
+            }
+
             RegistrationAnswer::query()->create([
                 'organization_id' => $context->organizationId,
                 'registration_id' => $registration->id,
@@ -199,7 +219,7 @@ final class SubmitRegistration
                 'value' => $normalized,
             ]);
 
-            if ($field->type->supportsOptions()) {
+            if ($reserveOptions && $field->type->supportsOptions()) {
                 $this->reserveSelectedOptions($context, $field, $rawValue, $idempotencyKey);
             }
         }

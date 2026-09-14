@@ -40,7 +40,27 @@
                 @enderror
             </div>
 
-            <button type="submit" class="min-h-11 w-full rounded-pill bg-ink px-8 py-3 font-medium text-bg">Continuer</button>
+            @if ($settings['rsvp']['decline_enabled'])
+                @php($attendingChoice = (string) old('attending', ($draft->identity['attending'] ?? true) ? '1' : '0'))
+                <fieldset class="mb-8">
+                    <legend class="mb-2 block text-sm font-medium text-ink">Votre réponse *</legend>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 rounded-control border border-line bg-bg px-4 py-3 text-ink">
+                            <input type="radio" name="attending" value="1" @checked($attendingChoice === '1') required>
+                            {{ $settings['rsvp']['attending_label'] }}
+                        </label>
+                        <label class="flex items-center gap-3 rounded-control border border-line bg-bg px-4 py-3 text-ink">
+                            <input type="radio" name="attending" value="0" @checked($attendingChoice === '0')>
+                            {{ $settings['rsvp']['decline_label'] }}
+                        </label>
+                    </div>
+                    @error('attending')
+                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </fieldset>
+            @endif
+
+            <button type="submit" class="form-button min-h-11 w-full rounded-pill px-8 py-3 font-medium">Continuer</button>
         </form>
 
         <p class="mt-6 text-center text-xs text-ink-soft">

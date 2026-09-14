@@ -29,7 +29,9 @@
 body {
     font-family: var(--font-sans);
     color: var(--color-ink);
-    background: var(--color-bg);
+    /* --form-background : couleur de fond du thème du formulaire, posée
+       seulement sur le parcours d'inscription (FormSettings::cssVariables). */
+    background-color: var(--form-background, var(--color-bg));
 }
 
 h1,
@@ -38,6 +40,13 @@ h3 {
     font-family: var(--font-serif);
     font-weight: 500;
     letter-spacing: -0.01em;
+}
+
+/* Bouton principal du parcours d'inscription : couleurs du thème du
+   formulaire (FormSettings::cssVariables), à défaut l'encre du site. */
+.form-button {
+    background: var(--form-button, var(--color-ink));
+    color: var(--form-button-text, var(--color-bg));
 }
 
 :focus-visible {

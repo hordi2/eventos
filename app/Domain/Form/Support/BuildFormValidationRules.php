@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Form\Support;
 
+use App\Domain\Form\Data\FormVisibilityContext;
 use App\Domain\Form\Models\FormVersion;
 
 /**
@@ -25,9 +26,9 @@ final class BuildFormValidationRules
      * @param  array<string, mixed>  $answers
      * @return array<string, list<mixed>>
      */
-    public function handle(FormVersion $version, array $answers): array
+    public function handle(FormVersion $version, array $answers, ?FormVisibilityContext $context = null): array
     {
-        $visibility = $this->evaluateFormVisibility->handle($version, $answers);
+        $visibility = $this->evaluateFormVisibility->handle($version, $answers, $context);
         $rules = [];
 
         foreach ($version->fields as $field) {

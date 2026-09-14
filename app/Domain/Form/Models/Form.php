@@ -35,7 +35,15 @@ final class Form extends Model
         'created_by',
         'name',
         'current_version_id',
+        'settings',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'settings' => 'array',
+        ];
+    }
 
     protected static function newFactory(): FormFactory
     {

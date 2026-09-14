@@ -48,7 +48,7 @@
                 @endif
             @endforeach
 
-            <button type="submit" class="min-h-11 w-full rounded-pill bg-ink px-8 py-3 font-medium text-bg">Enregistrer les modifications</button>
+            <button type="submit" class="form-button min-h-11 w-full rounded-pill px-8 py-3 font-medium">Enregistrer les modifications</button>
         </form>
     </div>
 @endsection

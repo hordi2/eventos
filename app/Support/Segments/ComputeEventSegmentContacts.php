@@ -30,7 +30,7 @@ final class ComputeEventSegmentContacts
         return match ($segment) {
             EventSegment::SansReponse => $this->sansReponse($event),
             EventSegment::Confirmes => $this->registeredWithStatus($event, RegistrationStatus::Confirmed),
-            EventSegment::Declines => $this->registeredWithStatus($event, RegistrationStatus::Cancelled),
+            EventSegment::Declines => $this->registeredWithStatus($event, RegistrationStatus::Declined, RegistrationStatus::Cancelled),
             EventSegment::Presents => $this->presents($event),
             EventSegment::NoShow => $this->noShow($event),
         };
@@ -89,10 +89,12 @@ final class ComputeEventSegmentContacts
     /**
      * @return Builder<Contact>
      */
-    private function registeredWithStatus(Event $event, RegistrationStatus $status): Builder
+    private function registeredWithStatus(Event $event, RegistrationStatus ...$statuses): Builder
     {
+        $values = array_map(fn (RegistrationStatus $status): string => $status->value, $statuses);
+
         return $this->baseContacts($event)->whereExists(
-            fn (QueryBuilder $query) => $this->registrationsForEvent($query, $event)->where('registrations.status', $status->value),
+            fn (QueryBuilder $query) => $this->registrationsForEvent($query, $event)->whereIn('registrations.status', $values),
         );
     }
 

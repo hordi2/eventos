@@ -32,6 +32,7 @@ final class OrganizerRegistrationNotificationMail extends Mailable
             'created' => "Nouvelle inscription — {$this->eventTitle}",
             'updated' => "Inscription modifiée — {$this->eventTitle}",
             'cancelled' => "Inscription annulée — {$this->eventTitle}",
+            'declined' => "Réponse négative — {$this->eventTitle}",
             default => "Inscription — {$this->eventTitle}",
         };
 
@@ -44,6 +45,7 @@ final class OrganizerRegistrationNotificationMail extends Mailable
             'created' => "{$this->guestName} vient de s'inscrire à « {$this->eventTitle} ».",
             'updated' => "{$this->guestName} a modifié son inscription à « {$this->eventTitle} ».",
             'cancelled' => "{$this->guestName} a annulé son inscription à « {$this->eventTitle} ».",
+            'declined' => "{$this->guestName} ne pourra pas venir à « {$this->eventTitle} ».",
             default => "Mise à jour d'inscription pour « {$this->eventTitle} ».",
         };
 

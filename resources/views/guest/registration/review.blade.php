@@ -25,6 +25,16 @@
             @endif
         </div>
 
+        @if ($settings['rsvp']['decline_enabled'])
+            <div class="mb-6 rounded-card border border-line p-4">
+                <div class="mb-3 flex items-center justify-between">
+                    <h2 class="font-label text-xs tracking-[0.1em] text-ink-soft uppercase">Votre réponse</h2>
+                    <a href="{{ route('guest.registration.identity.show', [request()->route('organization'), request()->route('event'), $draft->resume_token]) }}" class="text-xs text-accent underline">Modifier</a>
+                </div>
+                <p class="text-sm text-ink">{{ $attending ? $settings['rsvp']['attending_label'] : $settings['rsvp']['decline_label'] }}</p>
+            </div>
+        @endif
+
         @if ($version->fields->isNotEmpty())
             <div class="mb-8 rounded-card border border-line p-4">
                 <div class="mb-3 flex items-center justify-between">
@@ -41,6 +51,7 @@
                             @switch($field->type->value)
                                 @case('single_choice')
                                 @case('meal_choice')
+                                @case('dropdown')
                                     {{ $field->options->firstWhere('value', $raw)?->label ?? $raw }}
                                     @break
                                 @case('multiple_choice')
@@ -51,6 +62,9 @@
                                     @break
                                 @case('consent')
                                     Accepté
+                                    @break
+                                @case('postal_address')
+                                    {{ \App\Domain\Form\Support\PostalAddress::format((array) $raw) }}
                                     @break
                                 @default
                                     {{ $raw }}
@@ -63,7 +77,7 @@
 
         <form method="POST" action="{{ route('guest.registration.review.confirm', [request()->route('organization'), request()->route('event'), $draft->resume_token]) }}">
             @csrf
-            <button type="submit" class="min-h-11 w-full rounded-pill bg-ink px-8 py-3 font-medium text-bg">Confirmer mon inscription</button>
+            <button type="submit" class="form-button min-h-11 w-full rounded-pill px-8 py-3 font-medium">{{ $attending ? 'Confirmer mon inscription' : 'Envoyer ma réponse' }}</button>
         </form>
 
         <p class="mt-6 text-center text-xs text-ink-soft">

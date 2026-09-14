@@ -7,7 +7,9 @@ namespace App\Http\Requests\Guest;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventCategory;
 use App\Domain\Form\Models\Registration;
+use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Form\Support\BuildFormValidationRules;
+use App\Support\Registration\BuildGuestVisibilityContext;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -47,12 +49,18 @@ final class UpdateRegistrationRequest extends FormRequest
         // n'étant pas sous Domain/Form, il peut le faire librement.
         $event = Event::query()->findOrFail($registration->event_id);
 
+        $context = app(BuildGuestVisibilityContext::class)->handle(
+            $registration->organization_id,
+            $registration->email,
+            $registration->status !== RegistrationStatus::Declined,
+        );
+
         return [
             'email' => ['required', 'email:rfc'],
             'first_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'phone' => [$event->type->category() === EventCategory::Personal ? 'required' : 'nullable', 'string', 'max:32'],
-            ...app(BuildFormValidationRules::class)->handle($version, $this->all()),
+            ...app(BuildFormValidationRules::class)->handle($version, $this->all(), $context),
         ];
     }
 

@@ -7,6 +7,7 @@ namespace App\Domain\Form\Actions;
 use App\Domain\Form\InvalidFieldAnswerException;
 use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\FormField;
+use App\Domain\Form\Support\PostalAddress;
 use Carbon\CarbonImmutable;
 use libphonenumber\NumberParseException;
 use libphonenumber\PhoneNumberFormat;
@@ -35,7 +36,33 @@ final class NormalizeFieldAnswer
             FieldType::YesNo => filter_var($value, FILTER_VALIDATE_BOOLEAN),
             FieldType::Consent => $this->normalizeConsent($field, $value, $ip),
             FieldType::InformationalText => null,
+            FieldType::Dropdown => (string) $value,
+            // Heure locale choisie par l'invité (rendez-vous, horaire
+            // d'arrivée), sans fuseau : gardée telle que saisie, jamais
+            // convertie en UTC comme un instant de l'événement.
+            FieldType::DateTime => CarbonImmutable::parse((string) $value)->format('Y-m-d H:i'),
+            FieldType::Url, FieldType::SocialProfile => trim((string) $value),
+            FieldType::Quantity => (int) $value,
+            FieldType::PostalAddress => $this->normalizeAddress($value),
         };
+    }
+
+    /**
+     * @return array<string, string> seulement les parties renseignées
+     */
+    private function normalizeAddress(mixed $value): array
+    {
+        $address = [];
+
+        foreach (PostalAddress::PARTS as $part) {
+            $text = is_array($value) ? trim((string) ($value[$part] ?? '')) : '';
+
+            if ($text !== '') {
+                $address[$part] = $text;
+            }
+        }
+
+        return $address;
     }
 
     private function normalizePhone(FormField $field, string $rawNumber): string

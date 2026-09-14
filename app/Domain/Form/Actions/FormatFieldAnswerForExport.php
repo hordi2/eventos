@@ -7,6 +7,7 @@ namespace App\Domain\Form\Actions;
 use App\Domain\Form\Models\FieldOption;
 use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\FormField;
+use App\Domain\Form\Support\PostalAddress;
 
 /**
  * Transforme une valeur déjà normalisée (NormalizeFieldAnswer) en texte lisible
@@ -27,6 +28,9 @@ final class FormatFieldAnswerForExport
             FieldType::YesNo => $normalizedValue ? 'Oui' : 'Non',
             FieldType::Consent => $this->consentExport($normalizedValue),
             FieldType::InformationalText => '',
+            FieldType::Dropdown => $this->optionLabel($field, (string) $normalizedValue),
+            FieldType::DateTime, FieldType::Url, FieldType::SocialProfile, FieldType::Quantity => (string) $normalizedValue,
+            FieldType::PostalAddress => PostalAddress::format((array) $normalizedValue),
         };
     }
 
