@@ -33,6 +33,23 @@ it('duplique un événement via la route dédiée et redirige vers son édition'
     $response->assertRedirect(route('events.edit', $duplicate));
 });
 
+it('refuse la duplication par la route à un rôle sans createEvents', function (MembershipRole $role): void {
+    [$organization, $member] = organizationWithDuplicatorHttpRole($role);
+    $source = Event::factory()->for($organization)->create(['title' => 'Assemblée générale 2025']);
+
+    $response = $this->actingAs($member)->post("/events/{$source->id}/duplicate", [
+        'new_start_at' => '2026-09-08T14:30',
+    ]);
+
+    $response->assertForbidden();
+    app(CurrentOrganization::class)->set($organization);
+    expect(Event::query()->where('title', 'Assemblée générale 2025')->count())->toBe(1);
+})->with([
+    'éditeur' => MembershipRole::Editor,
+    'personnel d\'accueil' => MembershipRole::DoorStaff,
+    'lecteur' => MembershipRole::Viewer,
+]);
+
 it('refuse de dupliquer un événement d\'une autre organisation', function (): void {
     [, $admin] = organizationWithDuplicatorHttpRole(MembershipRole::Admin);
 

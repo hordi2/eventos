@@ -1630,6 +1630,21 @@ qui passe par « Continuer avec Google » reçoit une organisation comme une
 inscription normale ; la page publique `/partage-evenements` reste dans le
 pied de page mais n'est plus liée au menu utilisateur.
 
+**Suites de la démonstration avec un compte collaborateur fictif** :
+
+- Le bouton « Dupliquer » est masqué pour un collaborateur (prop
+  `canDuplicate`) : la duplication lui était refusée mais le bouton menait
+  à une erreur 403.
+- Pages d'erreur en français : `lang/fr.json` traduit les pages 401 à 503
+  de Laravel, dont « This action is unauthorized. », affiché à chaque refus
+  d'une policy. Nouvelle vue de repli `resources/views/errors/4xx.blade.php`
+  pour les codes sans page dédiée (409, 410...) : sans elle, la production
+  perdait le message français d'`abort()`, comme celui d'une invitation
+  expirée.
+- Vérifié, pas de défaut : la duplication d'un événement est bien refusée
+  à l'éditeur, au personnel d'accueil et au lecteur (CreateEvent exige
+  `createEvents`) ; un test de route le verrouille désormais.
+
 ---
 
 *Backlog v1.0 — à réviser à chaque fin de sprint.*
