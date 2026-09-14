@@ -76,8 +76,7 @@ export default function Overview({ event, tables }: Props) {
         <EventLayout title="Vue d'ensemble de la salle" eyebrow={event.title}>
             <Head title="Vue d'ensemble de la salle" />
 
-            <div className="mb-6 flex items-center justify-between">
-                <h1 className="text-2xl">Vue d'ensemble de la salle</h1>
+            <div className="mb-6 flex items-center justify-end">
                 <a href={`/events/${event.id}/seating`} className="text-sm text-accent underline underline-offset-2">
                     Retour à l'éditeur
                 </a>

@@ -96,11 +96,10 @@ export default function Edit({ event, publicUrl, page }: Props) {
     }
 
     return (
-        <EventLayout title="Page événement" eyebrow={event.title}>
-            <Head title="Page événement" />
+        <EventLayout title="Site web de l'événement" eyebrow={event.title}>
+            <Head title="Site web de l'événement" />
 
-            <div className="mb-8 flex items-center justify-between">
-                <h1 className="text-2xl">Page événement publique</h1>
+            <div className="mb-8 flex items-center justify-end">
                 <a href={publicUrl} target="_blank" rel="noreferrer" className="text-sm text-accent underline underline-offset-2">
                     Voir la page publique
                 </a>

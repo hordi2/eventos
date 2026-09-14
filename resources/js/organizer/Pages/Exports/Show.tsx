@@ -104,7 +104,6 @@ export default function Show({ event, types, segments, exports: initialExports }
             <Head title="Exports" />
 
             <div className="mb-8">
-                <h1 className="text-2xl">Exports</h1>
                 <p className="text-ink-soft">Export CSV des invités, inscriptions, commandes et check-ins, en tâche de fond.</p>
             </div>
 

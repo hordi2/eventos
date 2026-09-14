@@ -76,10 +76,11 @@ export default function EventLayout({ title, eyebrow, children }: PropsWithChild
                             ) : (
                                 <span className="min-w-[3rem] truncate">{eventNav.title}</span>
                             )}
-                            <span aria-hidden="true" className="shrink-0">
+                            {/* Sous la largeur de bureau, le grand titre de la page suffit. */}
+                            <span aria-hidden="true" className="hidden shrink-0 lg:inline">
                                 /
                             </span>
-                            <span className="shrink-0 whitespace-nowrap text-ink">{title}</span>
+                            <span className="hidden shrink-0 whitespace-nowrap text-ink lg:inline">{title}</span>
                         </nav>
 
                         <div className="flex items-center gap-3">

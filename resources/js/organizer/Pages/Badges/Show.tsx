@@ -92,7 +92,6 @@ export default function Show({ event, guests, hasLogo, batches: initialBatches }
             <Head title="Badges" />
 
             <div className="mb-8">
-                <h1 className="text-2xl">Badges</h1>
                 <p className="text-ink-soft">{guests.length} invités</p>
             </div>
 

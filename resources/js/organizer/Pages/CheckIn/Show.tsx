@@ -208,9 +208,8 @@ export default function Show({ event, guests: initialGuests, ticketTypes }: Prop
         <EventLayout title="Check-in" eyebrow={event.title}>
             <Head title="Check-in" />
 
-            <div className="mb-8 flex items-center justify-between">
+            <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl">Check-in</h1>
                     <p className="text-ink-soft">
                         {checkedInCount} / {guests.length} invités enregistrés
                     </p>

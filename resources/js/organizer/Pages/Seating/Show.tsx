@@ -273,9 +273,8 @@ export default function Show({ event, tables: initialTables, unassignedGuests: i
         <EventLayout title="Plan de table" eyebrow={event.title}>
             <Head title="Plan de table" />
 
-            <div className="mb-6 flex items-center justify-between">
-                <h1 className="text-2xl">Plan de table</h1>
-                <div className="flex gap-3">
+            <div className="mb-6 flex justify-end">
+                <div className="flex flex-wrap justify-end gap-3">
                     <a href={`/events/${event.id}/seating/overview`} className="text-sm text-accent underline underline-offset-2">
                         Vue d'ensemble de la salle
                     </a>

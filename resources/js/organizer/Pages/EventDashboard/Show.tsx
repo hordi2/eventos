@@ -52,8 +52,7 @@ export default function Show({ event, stats: initialStats }: Props) {
         <EventLayout title="Tableau de bord" eyebrow={event.title}>
             <Head title="Tableau de bord" />
 
-            <div className="mb-8 flex items-center justify-between">
-                <h1 className="text-2xl">Tableau de bord</h1>
+            <div className="mb-8 flex items-center justify-end">
                 <span className={`text-xs font-medium ${connected ? 'text-success' : 'text-ink-soft'}`}>
                     {connected ? '● Mise à jour en direct' : '○ Connexion…'}
                 </span>
