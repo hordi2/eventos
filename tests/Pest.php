@@ -14,6 +14,9 @@ use App\Domain\Form\Models\FormField;
 use App\Domain\Form\Models\FormVersion;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationStatus;
+use App\Domain\Organization\Models\Collaborator;
+use App\Domain\Organization\Models\CollaboratorEventPermission;
+use App\Domain\Organization\Models\CollaboratorPermission;
 use App\Domain\Organization\Models\Membership;
 use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Organization\Models\Organization;
@@ -213,6 +216,28 @@ function makeCheckInEvent(MembershipRole $role = MembershipRole::DoorStaff): arr
     app(CurrentOrganization::class)->clear();
 
     return ['organization' => $organization, 'event' => $event, 'doorStaff' => $doorStaff];
+}
+
+/**
+ * Collaborateur ayant accepté son invitation, avec une permission sur un
+ * seul événement (Paramètres → Partage d'événements).
+ */
+function makeEventCollaborator(Organization $organization, Event $event, CollaboratorPermission $permission): User
+{
+    $user = User::factory()->create();
+
+    app(CurrentOrganization::class)->set($organization);
+    $collaborator = Collaborator::factory()->accepted($user)->create(['organization_id' => $organization->id]);
+    CollaboratorEventPermission::factory()->create([
+        'organization_id' => $organization->id,
+        'collaborator_id' => $collaborator->id,
+        'event_id' => $event->id,
+        'permission' => $permission,
+    ]);
+    Membership::factory()->for($organization)->for($user)->create(['role' => MembershipRole::Collaborator]);
+    app(CurrentOrganization::class)->clear();
+
+    return $user;
 }
 
 /**

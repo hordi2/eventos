@@ -11,6 +11,7 @@ use App\Http\Controllers\Guest\UnsubscribeController;
 use App\Http\Controllers\Organizer\AttendeeController;
 use App\Http\Controllers\Organizer\AuditLogController;
 use App\Http\Controllers\Organizer\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Organizer\Auth\CollaboratorInvitationController;
 use App\Http\Controllers\Organizer\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Organizer\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Organizer\Auth\GoogleAuthController;
@@ -38,6 +39,7 @@ use App\Http\Controllers\Organizer\MessageAutomationController;
 use App\Http\Controllers\Organizer\OrganizationBrandingController;
 use App\Http\Controllers\Organizer\PageController;
 use App\Http\Controllers\Organizer\SeatingController;
+use App\Http\Controllers\Organizer\Settings\EventSharingController;
 use App\Http\Controllers\Organizer\Settings\IntegrationController;
 use App\Http\Controllers\Organizer\Settings\N8nConnectionController;
 use App\Http\Controllers\Organizer\Settings\NotificationController;
@@ -45,6 +47,7 @@ use App\Http\Controllers\Organizer\Settings\ProfileController;
 use App\Http\Controllers\Organizer\Settings\ReferralController;
 use App\Http\Controllers\Organizer\Settings\SecurityController;
 use App\Http\Controllers\Organizer\Settings\WhiteLabelController;
+use App\Http\Controllers\Organizer\SwitchOrganizationController;
 use App\Http\Controllers\Organizer\TagController;
 use App\Http\Controllers\Organizer\TicketTypeController;
 use App\Http\Controllers\Organizer\WhatsappTemplateController;
@@ -93,6 +96,22 @@ Route::middleware('guest')->group(function (): void {
     Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
 });
 
+// Invitation d'un collaborateur (Paramètres → Partage d'événements) :
+// consultable connecté ou non, puisqu'elle peut viser une adresse sans
+// compte. Le jeton du lien est la seule preuve d'accès : débit limité.
+Route::prefix('invitations/{organization}/{token}')
+    ->name('collaborator-invitations.')
+    ->middleware('throttle:30,1')
+    ->group(function (): void {
+        Route::get('/', [CollaboratorInvitationController::class, 'show'])->name('show');
+        Route::post('accepter', [CollaboratorInvitationController::class, 'accept'])
+            ->middleware(['auth', 'throttle:6,1'])
+            ->name('accept');
+        Route::post('inscription', [CollaboratorInvitationController::class, 'register'])
+            ->middleware(['guest', 'throttle:6,1'])
+            ->name('register');
+    });
+
 Route::middleware('auth')->group(function (): void {
     Route::get('verify-email', EmailVerificationPromptController::class)->name('verification.notice');
 
@@ -105,6 +124,10 @@ Route::middleware('auth')->group(function (): void {
         ->name('verification.send');
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+
+    Route::post('organizations/{organization}/switch', SwitchOrganizationController::class)
+        ->middleware('verified')
+        ->name('organizations.switch');
 
     Route::get('dashboard', DashboardController::class)
         ->middleware(['verified', 'resolve-organization'])
@@ -159,6 +182,17 @@ Route::middleware('auth')->group(function (): void {
             Route::post('referral/invitations', [ReferralController::class, 'invite'])
                 ->middleware('throttle:10,1')
                 ->name('referral.invite');
+        });
+
+    Route::middleware(['verified', 'resolve-organization', 'can-organization:inviteMembers'])
+        ->prefix('settings/event-sharing')
+        ->name('settings.event-sharing.')
+        ->group(function (): void {
+            Route::get('/', [EventSharingController::class, 'index'])->name('index');
+            Route::post('/', [EventSharingController::class, 'store'])->middleware('throttle:20,1')->name('store');
+            Route::patch('{collaborator}', [EventSharingController::class, 'update'])->name('update');
+            Route::post('{collaborator}/resend', [EventSharingController::class, 'resend'])->middleware('throttle:10,1')->name('resend');
+            Route::delete('{collaborator}', [EventSharingController::class, 'destroy'])->name('destroy');
         });
 
     Route::middleware(['verified', 'resolve-organization', 'can-organization:viewAuditLog'])->group(function (): void {

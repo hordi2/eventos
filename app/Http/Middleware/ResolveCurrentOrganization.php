@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Domain\Organization\Models\Membership;
+use App\Domain\Organization\Models\MembershipRole;
+use App\Models\User;
+use App\Support\Collaboration\RestrictCollaboratorToSharedEvents;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Closure;
 use Illuminate\Http\Request;
@@ -14,13 +17,14 @@ final class ResolveCurrentOrganization
 {
     public function __construct(
         private readonly CurrentOrganization $currentOrganization,
+        private readonly RestrictCollaboratorToSharedEvents $restrictCollaboratorToSharedEvents,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
 
-        if ($user === null) {
+        if (! $user instanceof User) {
             return $next($request);
         }
 
@@ -28,13 +32,17 @@ final class ResolveCurrentOrganization
 
         // Sans organisation, la moindre lecture cloisonnée plus loin lèverait
         // MissingOrganizationContextException en pleine page (erreur 500
-        // brute). Le cas est anormal — les deux parcours d'inscription
-        // (RegisterUser, AuthenticateViaGoogle) créent toujours une
-        // organisation — mais reste atteignable si la dernière adhésion de
+        // brute). Le cas est anormal — l'inscription crée toujours une
+        // organisation, l'acceptation d'une invitation une adhésion de
+        // collaborateur — mais reste atteignable si la dernière adhésion de
         // l'utilisateur a été retirée entre-temps.
         abort_if($organizationId === null, 403, "Votre compte n'appartient à aucune organisation.");
 
         $this->currentOrganization->set($organizationId);
+
+        // Ici plutôt que dans un middleware à ajouter route par route : aucune
+        // page organisateur ne peut l'oublier.
+        $this->restrictCollaboratorToSharedEvents->handle($request, $user, $organizationId);
 
         return $next($request);
     }
@@ -67,8 +75,13 @@ final class ResolveCurrentOrganization
             $request->session()->forget('current_organization_id');
         }
 
+        // Son propre espace avant ceux où l'on n'est que collaborateur : un
+        // organisateur invité ailleurs retrouve ses événements à la connexion
+        // et passe à l'autre espace par le sélecteur du menu utilisateur.
         $organizationId = Membership::query()
             ->where('user_id', $request->user()?->id)
+            ->orderByRaw('role = ?', [MembershipRole::Collaborator->value])
+            ->orderBy('id')
             ->value('organization_id');
 
         return $organizationId !== null ? (int) $organizationId : null;

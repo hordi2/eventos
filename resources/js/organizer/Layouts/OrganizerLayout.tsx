@@ -2,11 +2,13 @@ import { Link, usePage } from '@inertiajs/react';
 import { type PropsWithChildren, useEffect, useRef, useState } from 'react';
 import Footer from '../Components/Footer';
 import Logo from '../Components/Logo';
-import { type NavItem, type SharedProps } from '../types';
+import { type NavItem, type OrganizationChoice, type SharedProps } from '../types';
 
 interface OrganizerLayoutProps {
     title: string;
     eyebrow?: string;
+    subtitle?: string;
+    closeHref?: string;
 }
 
 function isActive(href: string, currentUrl: string): boolean {
@@ -114,13 +116,23 @@ function GiftIcon() {
     );
 }
 
-function UserMenu({ name, canManageBilling }: { name: string; canManageBilling: boolean }) {
+function UserMenu({
+    name,
+    canManageBilling,
+    canShareEvents,
+    organizations,
+}: {
+    name: string;
+    canManageBilling: boolean;
+    canShareEvents: boolean;
+    organizations: OrganizationChoice[];
+}) {
     const [open, setOpen] = useState(false);
     const ref = useCloseOnClickOutside(open, () => setOpen(false));
 
     const items = [
         { label: 'Mon compte', href: '/settings/profile' },
-        { label: "Partage d'événements", href: '/partage-evenements' },
+        ...(canShareEvents ? [{ label: "Partage d'événements", href: '/settings/event-sharing' }] : []),
         { label: 'Obtenez du soutien', href: '/support' },
         { label: 'Forum communautaire', href: '/community' },
     ];
@@ -150,6 +162,29 @@ function UserMenu({ name, canManageBilling }: { name: string; canManageBilling: 
 
             {open && (
                 <div className="absolute top-full right-0 z-20 mt-3 min-w-[220px] rounded-card border border-line bg-bg py-2 shadow-lg">
+                    {organizations.length > 1 && (
+                        <div className="mb-2 border-b border-line pb-2">
+                            <p className="px-4 pt-1 pb-2 font-label text-[10px] tracking-[0.14em] text-ink-soft uppercase">
+                                Espaces de travail
+                            </p>
+                            {organizations.map((organization) => (
+                                <Link
+                                    key={organization.id}
+                                    href={`/organizations/${organization.id}/switch`}
+                                    method="post"
+                                    as="button"
+                                    onClick={() => setOpen(false)}
+                                    aria-current={organization.current ? 'true' : undefined}
+                                    className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm ${
+                                        organization.current ? 'text-ink' : 'text-ink-soft hover:text-ink'
+                                    }`}
+                                >
+                                    <span className="truncate">{organization.name}</span>
+                                    {organization.current && <span className="h-2 w-2 shrink-0 rounded-full bg-accent" />}
+                                </Link>
+                            ))}
+                        </div>
+                    )}
                     {items.map((item) => (
                         <Link
                             key={item.href}
@@ -175,8 +210,8 @@ function UserMenu({ name, canManageBilling }: { name: string; canManageBilling: 
     );
 }
 
-export default function OrganizerLayout({ title, eyebrow, children }: PropsWithChildren<OrganizerLayoutProps>) {
-    const { nav, auth, settingsAccess } = usePage<SharedProps>().props;
+export default function OrganizerLayout({ title, eyebrow, subtitle, closeHref, children }: PropsWithChildren<OrganizerLayoutProps>) {
+    const { nav, auth, settingsAccess, organizations } = usePage<SharedProps>().props;
 
     return (
         <div className="flex min-h-screen flex-col bg-bg-alt">
@@ -186,13 +221,32 @@ export default function OrganizerLayout({ title, eyebrow, children }: PropsWithC
                         <Logo />
                     </Link>
                     <nav className="flex min-w-0 flex-1 items-center gap-4 overflow-x-auto sm:gap-6">{nav && <MainNav items={nav} />}</nav>
-                    {auth.user && <UserMenu name={auth.user.name} canManageBilling={settingsAccess.billing} />}
+                    {auth.user && (
+                        <UserMenu
+                            name={auth.user.name}
+                            canManageBilling={settingsAccess.billing}
+                            canShareEvents={settingsAccess.eventSharing}
+                            organizations={organizations}
+                        />
+                    )}
                 </div>
             </header>
 
             <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-16">
-                {eyebrow && <p className="font-label text-xs tracking-[0.28em] text-accent uppercase">{eyebrow}</p>}
-                <h1 className="mt-4 font-serif text-3xl font-medium text-ink italic">{title}</h1>
+                <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                        {eyebrow && <p className="font-label text-xs tracking-[0.28em] text-accent uppercase">{eyebrow}</p>}
+                        <h1 className="mt-4 font-serif text-3xl font-medium text-ink italic">{title}</h1>
+                        {subtitle && <p className="mt-2 text-ink-soft">{subtitle}</p>}
+                    </div>
+                    {closeHref && (
+                        <Link href={closeHref} aria-label="Fermer" className="mt-4 shrink-0 text-ink-soft hover:text-ink">
+                            <svg viewBox="0 0 24 24" className="h-6 w-6 stroke-current" fill="none" strokeWidth="1.6" strokeLinecap="round">
+                                <path d="M6 6l12 12M18 6 6 18" />
+                            </svg>
+                        </Link>
+                    )}
+                </div>
                 <div className="mt-8">{children}</div>
             </main>
 

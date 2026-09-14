@@ -11,4 +11,8 @@ enum MembershipRole: string
     case Editor = 'editor';
     case DoorStaff = 'door_staff';
     case Viewer = 'viewer';
+
+    // Aucune capacité à l'échelle de l'organisation : ses droits viennent
+    // uniquement des événements partagés avec lui (CollaboratorPermission).
+    case Collaborator = 'collaborator';
 }

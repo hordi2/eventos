@@ -12,6 +12,12 @@ export interface NavLink {
 
 export type NavItem = NavLink | { label: string; items: NavLink[] };
 
+export interface OrganizationChoice {
+    id: number;
+    name: string;
+    current: boolean;
+}
+
 export interface SharedProps {
     auth: {
         user: User | null;
@@ -25,7 +31,9 @@ export interface SharedProps {
         security: boolean;
         whiteLabel: boolean;
         referral: boolean;
+        eventSharing: boolean;
     };
+    organizations: OrganizationChoice[];
     flash: {
         status: string | null;
         plainToken: string | null;

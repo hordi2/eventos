@@ -21,15 +21,22 @@ use Illuminate\Support\Facades\Storage;
 final class GetOrganizationEventSummaries
 {
     /**
+     * @param  list<int>|null  $onlyEventIds  événements partagés d'un collaborateur ; null pour tous
      * @return list<array{
      *     id: int, title: string, banner_url: ?string, lifecycle_status: string,
      *     start_at_formatted: string, is_past: bool,
      *     stats: array{confirmed: int, waitlisted: int, cancelled: int}
      * }>
      */
-    public function handle(Organization $organization): array
+    public function handle(Organization $organization, ?array $onlyEventIds = null): array
     {
-        $events = Event::query()->orderByDesc('start_at')->get();
+        $query = Event::query()->orderByDesc('start_at');
+
+        if ($onlyEventIds !== null) {
+            $query->whereIn('id', $onlyEventIds);
+        }
+
+        $events = $query->get();
 
         if ($events->isEmpty()) {
             return [];

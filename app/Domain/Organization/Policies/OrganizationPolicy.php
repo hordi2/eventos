@@ -7,7 +7,9 @@ namespace App\Domain\Organization\Policies;
 use App\Domain\Organization\Models\Membership;
 use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Organization\Models\Organization;
+use App\Domain\Organization\Services\CollaboratorAccess;
 use App\Models\User;
+use App\Support\MultiTenancy\CurrentEvent;
 
 /**
  * Matrice de rôles M0.3 du cahier des charges. Les capacités portant sur des
@@ -16,9 +18,10 @@ use App\Models\User;
  * concernés (T-010+) les consommeront via $user->can('...', $organization)
  * plutôt que de réinventer une matrice de rôles à chaque fois.
  *
- * Le rôle spécifique par événement mentionné en M0.2 n'est pas implémenté
- * ici : sans modèle Event, il n'y a rien à surcharger. À construire quand
- * T-010 existera.
+ * Le rôle spécifique par événement (M0.2) est porté par le rôle
+ * Collaborator : aucune capacité à l'échelle de l'organisation, seulement
+ * celles de sa CollaboratorPermission, et uniquement quand la requête porte
+ * sur un événement partagé avec lui (CurrentEvent).
  */
 final class OrganizationPolicy
 {
@@ -157,6 +160,10 @@ final class OrganizationPolicy
             return false;
         }
 
+        if ($role === MembershipRole::Collaborator) {
+            return $this->checkCollaborator($user, $organization, $ability);
+        }
+
         if (in_array($ability, self::EDITOR_CONFIGURABLE_ABILITIES, true)) {
             if ($role === MembershipRole::Owner || $role === MembershipRole::Admin) {
                 return true;
@@ -174,5 +181,18 @@ final class OrganizationPolicy
         }
 
         return in_array($role, self::ABILITIES[$ability] ?? [], true);
+    }
+
+    private function checkCollaborator(User $user, Organization $organization, string $ability): bool
+    {
+        $eventId = app(CurrentEvent::class)->id();
+
+        if ($eventId === null) {
+            return false;
+        }
+
+        $permission = app(CollaboratorAccess::class)->permissionFor($user, $organization->id, $eventId);
+
+        return in_array($ability, $permission->abilities(), true);
     }
 }

@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Domain\Event\Models\Event;
+use App\Domain\Organization\Models\CollaboratorPermission;
 use App\Domain\Organization\Models\Membership;
+use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Organization\Models\Organization;
+use App\Domain\Organization\Services\CollaboratorAccess;
+use App\Models\User;
+use App\Support\MultiTenancy\CurrentEvent;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Closure;
 use Illuminate\Http\Request;
@@ -24,12 +29,15 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * Un événement introuvable dans aucune des organisations de l'utilisateur
  * renvoie 404, jamais 403 : ce choix évite de révéler à un utilisateur non
- * habilité qu'un identifiant d'événement existe ailleurs.
+ * habilité qu'un identifiant d'événement existe ailleurs. Même règle pour un
+ * collaborateur et un événement qui ne lui est pas partagé.
  */
 final class ResolveApiCheckInEvent
 {
     public function __construct(
         private readonly CurrentOrganization $currentOrganization,
+        private readonly CurrentEvent $currentEvent,
+        private readonly CollaboratorAccess $collaboratorAccess,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -37,17 +45,19 @@ final class ResolveApiCheckInEvent
         $eventId = (int) $request->route('event');
         $user = $request->user();
 
-        abort_if($user === null, 401);
+        abort_if(! $user instanceof User, 401);
 
-        $organizationIds = Membership::query()->where('user_id', $user->id)->pluck('organization_id');
+        $this->currentEvent->clear();
 
-        foreach ($organizationIds as $organizationId) {
-            $this->currentOrganization->set($organizationId);
+        $memberships = Membership::query()->where('user_id', $user->id)->get(['organization_id', 'role']);
+
+        foreach ($memberships as $membership) {
+            $this->currentOrganization->set($membership->organization_id);
 
             $event = Event::query()->find($eventId);
 
-            if ($event !== null) {
-                $organization = Organization::query()->findOrFail($organizationId);
+            if ($event !== null && $this->reachesEvent($user, $membership, $event)) {
+                $organization = Organization::query()->findOrFail($membership->organization_id);
 
                 Gate::forUser($user)->authorize('checkIn', $organization);
 
@@ -60,5 +70,24 @@ final class ResolveApiCheckInEvent
         }
 
         abort(404);
+    }
+
+    /**
+     * Pose aussi CurrentEvent pour un collaborateur : OrganizationPolicy borne
+     * ses capacités à la permission qu'il a sur cet événement.
+     */
+    private function reachesEvent(User $user, Membership $membership, Event $event): bool
+    {
+        if ($membership->role !== MembershipRole::Collaborator) {
+            return true;
+        }
+
+        if ($this->collaboratorAccess->permissionFor($user, $membership->organization_id, $event->id) === CollaboratorPermission::None) {
+            return false;
+        }
+
+        $this->currentEvent->set($event->id);
+
+        return true;
     }
 }

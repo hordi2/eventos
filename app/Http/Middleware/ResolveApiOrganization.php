@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Domain\Organization\Models\Membership;
+use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Organization\Models\Organization;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Closure;
@@ -35,7 +36,13 @@ final class ResolveApiOrganization
 
         abort_if($user === null, 401);
 
-        $organizationId = Membership::query()->where('user_id', $user->id)->value('organization_id');
+        // Son propre espace d'abord : un espace où l'on n'est que
+        // collaborateur n'accorde jamais manageIntegrations.
+        $organizationId = Membership::query()
+            ->where('user_id', $user->id)
+            ->orderByRaw('role = ?', [MembershipRole::Collaborator->value])
+            ->orderBy('id')
+            ->value('organization_id');
 
         abort_if($organizationId === null, 403, "Votre compte n'appartient à aucune organisation.");
 

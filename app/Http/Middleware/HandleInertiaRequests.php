@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Domain\Event\Models\Event;
+use App\Domain\Organization\Models\Membership;
 use App\Domain\Organization\Models\Organization;
+use App\Domain\Organization\Services\CollaboratorAccess;
+use App\Models\User;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -52,6 +55,7 @@ class HandleInertiaRequests extends Middleware
             // sans quoi CurrentOrganization ne serait pas encore positionné.
             'nav' => fn (): ?array => $this->buildNav($request),
             'settingsAccess' => fn (): array => $this->buildSettingsAccess($request),
+            'organizations' => fn (): array => $this->buildOrganizations($request),
             'flash' => [
                 'status' => fn (): ?string => $request->session()->get('status'),
                 'plainToken' => fn (): ?string => $request->session()->get('plainToken'),
@@ -68,7 +72,7 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
         $organizationId = app(CurrentOrganization::class)->id();
 
-        if ($user === null || $organizationId === null) {
+        if (! $user instanceof User || $organizationId === null) {
             return null;
         }
 
@@ -82,19 +86,40 @@ class HandleInertiaRequests extends Middleware
         // Contacts, Communications et Paramètres restent atteignables depuis
         // le menu utilisateur et les pages Paramètres elles-mêmes, pas
         // depuis ce niveau de navigation.
-        $events = Event::query()->orderByDesc('start_at')->get(['id', 'title'])
-            ->map(fn (Event $event): array => ['label' => $event->title, 'href' => route('events.edit', $event)])
-            ->all();
-
         return [
             [
                 'label' => 'Mes événements',
                 'items' => [
                     ['label' => 'Tous les événements', 'href' => route('dashboard')],
-                    ...$events,
+                    ...$this->navEvents($user, $organization->id),
                 ],
             ],
         ];
+    }
+
+    /**
+     * Un collaborateur ne voit que les événements partagés avec lui, chacun
+     * ouvert sur la page que sa permission autorise.
+     *
+     * @return list<array{label: string, href: string}>
+     */
+    private function navEvents(User $user, int $organizationId): array
+    {
+        $collaboratorAccess = app(CollaboratorAccess::class);
+
+        if (! $collaboratorAccess->isCollaborator($user, $organizationId)) {
+            return Event::query()->orderByDesc('start_at')->get(['id', 'title'])
+                ->map(fn (Event $event): array => ['label' => $event->title, 'href' => route('events.edit', $event)])
+                ->values()
+                ->all();
+        }
+
+        $sharedEvents = $collaboratorAccess->sharedEvents($user, $organizationId);
+
+        return Event::query()->whereIn('id', array_keys($sharedEvents))->orderByDesc('start_at')->get(['id', 'title'])
+            ->map(fn (Event $event): array => ['label' => $event->title, 'href' => $sharedEvents[$event->id]->eventUrl($event->id)])
+            ->values()
+            ->all();
     }
 
     /**
@@ -120,6 +145,7 @@ class HandleInertiaRequests extends Middleware
                 'security' => false,
                 'whiteLabel' => false,
                 'referral' => false,
+                'eventSharing' => false,
             ];
         }
 
@@ -133,6 +159,38 @@ class HandleInertiaRequests extends Middleware
             'security' => $gate->allows('manageSecurity', $organization),
             'whiteLabel' => $gate->allows('manageBranding', $organization),
             'referral' => $gate->allows('manageBilling', $organization),
+            'eventSharing' => $gate->allows('inviteMembers', $organization),
         ];
+    }
+
+    /**
+     * Sélecteur d'espace de travail du menu utilisateur : sans lui, un
+     * organisateur invité sur les événements d'une autre organisation
+     * n'aurait aucun moyen d'y accéder.
+     *
+     * @return list<array{id: int, name: string, current: bool}>
+     */
+    private function buildOrganizations(Request $request): array
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return [];
+        }
+
+        $currentOrganizationId = app(CurrentOrganization::class)->id();
+
+        return Membership::query()
+            ->where('user_id', $user->id)
+            ->with('organization:id,name')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Membership $membership): array => [
+                'id' => $membership->organization_id,
+                'name' => $membership->organization->name,
+                'current' => $membership->organization_id === $currentOrganizationId,
+            ])
+            ->values()
+            ->all();
     }
 }

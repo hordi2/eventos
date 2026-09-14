@@ -1,9 +1,11 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import OrganizerLayout from '../Layouts/OrganizerLayout';
+import { type SharedProps } from '../types';
 
 interface EventSummary {
     id: number;
+    href: string;
     title: string;
     banner_url: string | null;
     lifecycle_status: 'draft' | 'published' | 'live' | 'ended' | 'archived';
@@ -32,7 +34,7 @@ function EventCard({ event }: { event: EventSummary }) {
 
     return (
         <Link
-            href={`/events/${event.id}/edit`}
+            href={event.href}
             className="block overflow-hidden rounded-card border border-line bg-bg transition hover:border-ink"
         >
             <div className="relative flex h-40 items-center justify-center overflow-hidden bg-bg-deep">
@@ -80,6 +82,7 @@ function EventCard({ event }: { event: EventSummary }) {
 }
 
 export default function Dashboard({ events, canCreateEvents }: Props) {
+    const { flash } = usePage<SharedProps>().props;
     const [tab, setTab] = useState<'current' | 'past'>('current');
     const [search, setSearch] = useState('');
 
@@ -98,6 +101,12 @@ export default function Dashboard({ events, canCreateEvents }: Props) {
     return (
         <OrganizerLayout title="Tableau de bord">
             <Head title="Tableau de bord" />
+
+            {flash.status === 'collaborator-invitation-accepted' && (
+                <div className="mb-8 rounded-card bg-success-bg p-4 text-sm text-success ring-1 ring-success/30">
+                    Invitation acceptée : voici les événements partagés avec vous.
+                </div>
+            )}
 
             <div className="mb-8 flex flex-wrap items-center gap-4">
                 <div className="relative flex-1">

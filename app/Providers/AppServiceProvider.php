@@ -28,6 +28,7 @@ use App\Listeners\Webhooks\DispatchWaitlistWebhooks;
 use App\Support\Capacity\Events\WaitlistEntryPromoted;
 use App\Support\Messaging\TwilioWhatsappProvider;
 use App\Support\Messaging\WhatsappProvider;
+use App\Support\MultiTenancy\CurrentEvent;
 use App\Support\MultiTenancy\CurrentOrganization;
 use App\Support\Payments\CardCheckoutProvider;
 use App\Support\Payments\FlutterwaveMobileMoneyProvider;
@@ -48,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(CurrentOrganization::class);
+        $this->app->singleton(CurrentEvent::class);
         $this->app->bind(WhatsappProvider::class, TwilioWhatsappProvider::class);
         $this->app->bind(CardCheckoutProvider::class, StripeCheckoutProvider::class);
         $this->app->bind(MobileMoneyProvider::class, FlutterwaveMobileMoneyProvider::class);

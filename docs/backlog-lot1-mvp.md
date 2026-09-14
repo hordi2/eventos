@@ -1580,6 +1580,56 @@ les points d'entrée ci-dessus, revue par Zapier). Sans cette étape, la
 connexion passe par « Webhooks by Zapier » (Catch Hook), qui fonctionne
 déjà. n8n ne demande aucune publication : le nœud Webhook suffit.
 
+### Partage d'événements (collaborateurs)
+
+Demandé par l'utilisateur à partir de deux captures RSVPify (page vide
+« Event Sharing », fenêtre « Add Collaborator or Event Staff »). Règles
+tranchées avec lui avant de coder : Administrateur = tous les droits sur
+l'événement, suppression et remboursements compris ; un compte créé depuis
+une invitation n'a pas d'organisation propre ; ouvert à tous les plans ;
+Propriétaire et Admin invitent (`inviteMembers`, matrice M0.3).
+
+- **Page** Paramètres → Partage d'événements (`/settings/event-sharing`,
+  lien du menu utilisateur visible avec `inviteMembers`) : état vide, fenêtre
+  d'ajout (e-mail, recherche d'événement, permission par événement : Aucun
+  accès / Lecture seule + check-in / Administrateur, « Enregistrer » grisé
+  sans aucun accès), liste avec statut, Modifier, Renvoyer l'invitation,
+  Retirer.
+- **Données** : `collaborators` (empreinte SHA-256 du jeton, expiration
+  7 jours, suppression logique, RLS) et `collaborator_event_permissions`
+  (« Aucun accès » stocké en `none`, jamais de DELETE, RLS). Nouveau rôle
+  d'adhésion `collaborator`, créé à l'acceptation.
+- **Droits, refus par défaut** : `RestrictCollaboratorToSharedEvents`, appelé
+  par `ResolveCurrentOrganization`, refuse à un collaborateur toute page
+  organisateur sauf ses événements partagés (routes enfants formulaire,
+  type de billet, tarif, automatisation et participant comprises, rattachées
+  à leur événement), le tableau de bord, l'aide, la communauté, Mon compte
+  et Sécurité. Sur un événement partagé, `CurrentEvent` est posé et
+  `OrganizationPolicy` borne les capacités à la permission : aucun contrôle
+  d'accès existant n'a été modifié. Événement non partagé : 404. Duplication
+  interdite, elle créerait un nouvel événement dans l'organisation.
+- Tableau de bord et menu « Mes événements » filtrés : la lecture seule
+  ouvre le tableau de bord de l'événement, Administrateur l'éditeur. L'API
+  de check-in mobile est ouverte au collaborateur sur son seul événement.
+- **Invitation** : e-mail avec lien `/invitations/{organisation}/{jeton}`,
+  usage unique, 7 jours, renvoi = nouveau jeton. Page d'acceptation :
+  création de compte (e-mail vérifié d'office, le lien le prouve), connexion
+  puis acceptation, ou refus si la session ouverte est celle d'un autre
+  compte.
+- **Sélecteur « Espaces de travail »** dans le menu utilisateur dès deux
+  adhésions : indispensable pour qu'un organisateur invité ailleurs voie les
+  événements partagés. À la connexion, son propre espace passe avant ceux où
+  l'on n'est que collaborateur.
+- Journal d'audit : `collaborator.invited`, `.permissions_updated`,
+  `.invitation_resent`, `.removed`, `.accepted` — jamais l'adresse e-mail en
+  clair.
+
+**Hors périmètre, à décider** : un compte créé depuis une invitation ne peut
+pas encore créer sa propre organisation ; une personne invitée sans compte
+qui passe par « Continuer avec Google » reçoit une organisation comme une
+inscription normale ; la page publique `/partage-evenements` reste dans le
+pied de page mais n'est plus liée au menu utilisateur.
+
 ---
 
 *Backlog v1.0 — à réviser à chaque fin de sprint.*
