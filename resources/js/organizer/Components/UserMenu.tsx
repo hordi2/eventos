@@ -8,6 +8,8 @@ interface UserMenuProps {
     canManageBilling: boolean;
     canShareEvents: boolean;
     organizations: OrganizationChoice[];
+    // Masqué dans la barre d'un événement, où le fil d'Ariane a besoin de la place.
+    showName?: boolean;
 }
 
 function GiftIcon() {
@@ -28,7 +30,7 @@ function GiftIcon() {
  * Menu du compte, commun à la mise en page organisateur et à celle d'un
  * événement : mise à niveau, espaces de travail, liens du compte.
  */
-export default function UserMenu({ name, canManageBilling, canShareEvents, organizations }: UserMenuProps) {
+export default function UserMenu({ name, canManageBilling, canShareEvents, organizations, showName = true }: UserMenuProps) {
     const [open, setOpen] = useState(false);
     const ref = useCloseOnClickOutside(open, () => setOpen(false));
 
@@ -56,7 +58,11 @@ export default function UserMenu({ name, canManageBilling, canShareEvents, organ
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bg-deep font-serif text-sm text-ink italic">
                     {name.charAt(0).toUpperCase()}
                 </span>
-                <span className="hidden font-label text-xs tracking-[0.1em] whitespace-nowrap text-ink-soft uppercase md:inline">{name}</span>
+                {showName ? (
+                    <span className="hidden font-label text-xs tracking-[0.1em] whitespace-nowrap text-ink-soft uppercase md:inline">{name}</span>
+                ) : (
+                    <span className="sr-only">{name}</span>
+                )}
                 <svg viewBox="0 0 10 6" className={`h-1.5 w-2.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} fill="none">
                     <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>

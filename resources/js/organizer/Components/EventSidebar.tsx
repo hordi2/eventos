@@ -30,7 +30,7 @@ function buildSections(nav: EventNav): SidebarSection[] {
         {
             title: 'Tableau de bord',
             items: [
-                { label: "Liste de contrôle de l'événement", icon: 'checklist', linkKey: 'checklist' },
+                { label: 'Liste de contrôle', icon: 'checklist', linkKey: 'checklist' },
                 {
                     label: 'Réponses des invités',
                     icon: 'chart',

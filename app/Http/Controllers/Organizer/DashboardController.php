@@ -37,7 +37,7 @@ final class DashboardController extends Controller
 
         return Inertia::render('Dashboard', [
             'events' => $gate->allows('updateEvents', $organization)
-                ? $this->allEvents($organization)
+                ? $this->withChecklistLinks($this->getOrganizationEventSummaries->handle($organization))
                 : $this->sharedEvents($user, $organization),
             'canCreateEvents' => $gate->allows('createEvents', $organization),
         ]);
@@ -46,28 +46,28 @@ final class DashboardController extends Controller
     /**
      * @return list<array<string, mixed>>
      */
-    private function allEvents(Organization $organization): array
-    {
-        return array_map(
-            fn (array $summary): array => [...$summary, 'href' => route('events.edit', $summary['id'])],
-            $this->getOrganizationEventSummaries->handle($organization),
-        );
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
     private function sharedEvents(User $user, Organization $organization): array
     {
-        $sharedEvents = $this->collaboratorAccess->sharedEvents($user, $organization->id);
+        $sharedEventIds = array_keys($this->collaboratorAccess->sharedEvents($user, $organization->id));
 
-        if ($sharedEvents === []) {
+        if ($sharedEventIds === []) {
             return [];
         }
 
+        return $this->withChecklistLinks($this->getOrganizationEventSummaries->handle($organization, $sharedEventIds));
+    }
+
+    /**
+     * Chaque carte ouvre la liste de contrôle, page d'arrivée d'un événement.
+     *
+     * @param  list<array<string, mixed>>  $summaries
+     * @return list<array<string, mixed>>
+     */
+    private function withChecklistLinks(array $summaries): array
+    {
         return array_map(
-            fn (array $summary): array => [...$summary, 'href' => $sharedEvents[$summary['id']]->eventUrl($summary['id'])],
-            $this->getOrganizationEventSummaries->handle($organization, array_keys($sharedEvents)),
+            fn (array $summary): array => [...$summary, 'href' => route('events.show', $summary['id'])],
+            $summaries,
         );
     }
 }

@@ -113,7 +113,7 @@ it('ne liste que les événements partagés dans le tableau de bord et le menu',
         ->where('events.0.id', $event->id)
         ->where('canCreateEvents', false)
         ->has('nav.0.items', 2)
-        ->where('nav.0.items.1.href', route('events.dashboard.index', $event->id))
+        ->where('nav.0.items.1.href', route('events.show', $event->id))
         ->where('settingsAccess.eventSharing', false));
 });
 

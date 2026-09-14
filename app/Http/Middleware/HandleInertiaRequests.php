@@ -100,26 +100,23 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * Un collaborateur ne voit que les événements partagés avec lui, chacun
-     * ouvert sur la page que sa permission autorise.
+     * Chaque événement s'ouvre sur sa liste de contrôle, accessible à tous
+     * les rôles ; un collaborateur ne voit que les événements partagés avec
+     * lui.
      *
      * @return list<array{label: string, href: string}>
      */
     private function navEvents(User $user, int $organizationId): array
     {
         $collaboratorAccess = app(CollaboratorAccess::class);
+        $query = Event::query()->orderByDesc('start_at');
 
-        if (! $collaboratorAccess->isCollaborator($user, $organizationId)) {
-            return Event::query()->orderByDesc('start_at')->get(['id', 'title'])
-                ->map(fn (Event $event): array => ['label' => $event->title, 'href' => route('events.edit', $event)])
-                ->values()
-                ->all();
+        if ($collaboratorAccess->isCollaborator($user, $organizationId)) {
+            $query->whereIn('id', array_keys($collaboratorAccess->sharedEvents($user, $organizationId)));
         }
 
-        $sharedEvents = $collaboratorAccess->sharedEvents($user, $organizationId);
-
-        return Event::query()->whereIn('id', array_keys($sharedEvents))->orderByDesc('start_at')->get(['id', 'title'])
-            ->map(fn (Event $event): array => ['label' => $event->title, 'href' => $sharedEvents[$event->id]->eventUrl($event->id)])
+        return $query->get(['id', 'title'])
+            ->map(fn (Event $event): array => ['label' => $event->title, 'href' => route('events.show', $event->id)])
             ->values()
             ->all();
     }

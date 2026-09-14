@@ -71,7 +71,7 @@ it('crée le compte depuis l\'invitation, sans organisation propre, et ouvre les
     $this->get('/dashboard')->assertInertia(fn ($page) => $page
         ->has('events', 1)
         ->where('events.0.id', $event->id)
-        ->where('events.0.href', route('events.dashboard.index', $event->id)));
+        ->where('events.0.href', route('events.show', $event->id)));
 });
 
 it('demande à une personne qui a déjà un compte de se connecter', function (): void {

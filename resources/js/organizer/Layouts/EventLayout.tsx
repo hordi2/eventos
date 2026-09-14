@@ -55,24 +55,31 @@ export default function EventLayout({ title, eyebrow, children }: PropsWithChild
                             <EventIcon name="menu" />
                         </button>
 
-                        <nav aria-label="Fil d'Ariane" className="flex min-w-0 flex-1 items-center gap-2 text-sm text-ink-soft">
+                        {/* Le titre de la page ne se tronque jamais : c'est le titre de
+                            l'événement qui cède la place, et l'organisation n'apparaît
+                            que sur les très grands écrans. */}
+                        <nav aria-label="Fil d'Ariane" className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-sm text-ink-soft">
                             <Link href="/dashboard" aria-label="Tableau de bord" className="shrink-0 hover:text-ink">
                                 <EventIcon name="home" className="h-4 w-4" />
                             </Link>
-                            <span aria-hidden="true">/</span>
-                            <span className="hidden truncate md:inline">{eventNav.organizationName}</span>
-                            <span aria-hidden="true" className="hidden md:inline">
+                            <span aria-hidden="true" className="shrink-0">
+                                /
+                            </span>
+                            <span className="hidden max-w-[10rem] truncate 2xl:inline">{eventNav.organizationName}</span>
+                            <span aria-hidden="true" className="hidden shrink-0 2xl:inline">
                                 /
                             </span>
                             {eventNav.links.checklist ? (
-                                <Link href={eventNav.links.checklist} className="max-w-[12rem] truncate hover:text-ink">
+                                <Link href={eventNav.links.checklist} className="min-w-[3rem] truncate hover:text-ink">
                                     {eventNav.title}
                                 </Link>
                             ) : (
-                                <span className="max-w-[12rem] truncate">{eventNav.title}</span>
+                                <span className="min-w-[3rem] truncate">{eventNav.title}</span>
                             )}
-                            <span aria-hidden="true">/</span>
-                            <span className="truncate text-ink">{title}</span>
+                            <span aria-hidden="true" className="shrink-0">
+                                /
+                            </span>
+                            <span className="shrink-0 whitespace-nowrap text-ink">{title}</span>
                         </nav>
 
                         <div className="flex items-center gap-3">
@@ -94,6 +101,7 @@ export default function EventLayout({ title, eyebrow, children }: PropsWithChild
                                     canManageBilling={settingsAccess.billing}
                                     canShareEvents={settingsAccess.eventSharing}
                                     organizations={organizations}
+                                    showName={false}
                                 />
                             )}
                         </div>

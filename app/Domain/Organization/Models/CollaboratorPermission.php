@@ -56,15 +56,4 @@ enum CollaboratorPermission: string
             ],
         };
     }
-
-    /**
-     * Page d'arrivée d'un événement partagé : l'éditeur n'est pas ouvert à
-     * la lecture seule, qui y recevrait un 403.
-     */
-    public function eventUrl(int $eventId): string
-    {
-        return $this === self::Administrator
-            ? route('events.edit', $eventId)
-            : route('events.dashboard.index', $eventId);
-    }
 }
