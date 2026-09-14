@@ -5,6 +5,8 @@ import Button from '../../Components/Button';
 import Checkbox from '../../Components/Checkbox';
 import InputError from '../../Components/InputError';
 import InputLabel from '../../Components/InputLabel';
+import IntegrationGuides from '../../Components/IntegrationGuides';
+import { type N8nState } from '../../Components/N8nConnection';
 import TextInput from '../../Components/TextInput';
 import SettingsLayout from '../../Layouts/SettingsLayout';
 import { type SharedProps } from '../../types';
@@ -34,15 +36,20 @@ interface Props {
     tokens: ApiToken[];
     webhooks: WebhookRow[];
     availableEvents: EventOption[];
+    apiBaseUrl: string;
+    n8n: N8nState;
 }
 
 function formatDate(value: string | null): string {
     return value ? new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : 'jamais';
 }
 
-export default function Integrations({ tokens, webhooks, availableEvents }: Props) {
+export default function Integrations({ tokens, webhooks, availableEvents, apiBaseUrl, n8n }: Props) {
     const { flash } = usePage<SharedProps>().props;
     const [showTokenSecret, setShowTokenSecret] = useState(true);
+    // Renseigné quand la clé affichée vient d'être créée depuis le bloc
+    // Zapier/n8n : elle y est déjà montrée, inutile de la répéter ici.
+    const [connectionTool, setConnectionTool] = useState<string | null>(null);
     const [showWebhookSecret, setShowWebhookSecret] = useState(true);
 
     const tokenForm = useForm({ name: '' });
@@ -111,6 +118,14 @@ export default function Integrations({ tokens, webhooks, availableEvents }: Prop
                 </div>
             </div>
 
+            <IntegrationGuides
+                apiBaseUrl={apiBaseUrl}
+                n8n={n8n}
+                availableEvents={availableEvents}
+                connectionTool={connectionTool}
+                onConnectionToolChange={setConnectionTool}
+            />
+
             <section className="mb-14">
                 <h2 className="mb-1 font-serif text-xl italic">Clés API</h2>
                 <p className="mb-6 max-w-2xl text-sm text-ink-soft">
@@ -118,7 +133,7 @@ export default function Integrations({ tokens, webhooks, availableEvents }: Prop
                     propres scripts ou intégrations — jamais partagées telles quelles dans un outil tiers non maîtrisé.
                 </p>
 
-                {flash.plainToken && showTokenSecret && (
+                {flash.plainToken && showTokenSecret && connectionTool === null && (
                     <div className="mb-6 rounded-card border border-accent/30 bg-accent/5 p-4">
                         <p className="mb-2 text-sm font-medium">
                             Copiez cette clé maintenant — elle ne sera plus jamais affichée en clair.

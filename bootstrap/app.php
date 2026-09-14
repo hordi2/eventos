@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Middleware\AuthorizeOrganizationAbility;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ResolveApiCheckInEvent;
+use App\Http\Middleware\ResolveApiOrganization;
 use App\Http\Middleware\ResolveCurrentOrganization;
 use App\Http\Middleware\ResolveGuestEvent;
 use Illuminate\Foundation\Application;
@@ -39,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'can-organization' => AuthorizeOrganizationAbility::class,
             'resolve-guest-event' => ResolveGuestEvent::class,
             'resolve-api-check-in-event' => ResolveApiCheckInEvent::class,
+            'resolve-api-organization' => ResolveApiOrganization::class,
         ]);
 
         // Un webhook de prestataire (Postmark, T-043) ne porte jamais de

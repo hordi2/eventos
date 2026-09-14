@@ -10,6 +10,8 @@ use App\Http\Requests\Organizer\Settings\StoreApiTokenRequest;
 use App\Http\Requests\Organizer\Settings\StoreWebhookRequest;
 use App\Http\Requests\Organizer\Settings\UpdateWebhookRequest;
 use App\Models\User;
+use App\Support\Integrations\N8nClient;
+use App\Support\Integrations\N8nConnectionException;
 use App\Support\MultiTenancy\CurrentOrganization;
 use App\Support\Webhooks\Actions\CreateWebhook;
 use App\Support\Webhooks\Actions\DeleteWebhook;
@@ -23,6 +25,10 @@ use Inertia\Response;
 
 final class IntegrationController extends Controller
 {
+    public function __construct(
+        private readonly N8nClient $n8n,
+    ) {}
+
     public function index(Request $request): Response
     {
         /** @var User $user */
@@ -47,7 +53,48 @@ final class IntegrationController extends Controller
                 fn (WebhookEvent $event): array => ['value' => $event->value, 'label' => $event->label()],
                 WebhookEvent::cases(),
             ),
+            // Guides Zapier/n8n : l'URL de base est calculée côté serveur
+            // pour que l'organisateur puisse copier-coller sans deviner le
+            // domaine de son instance.
+            'apiBaseUrl' => url('/api/v1'),
+            'n8n' => $this->n8nState($request),
         ]);
+    }
+
+    /**
+     * État de la connexion n8n, workflows compris quand elle est établie.
+     * L'instance appartient au client : si elle ne répond plus (arrêtée,
+     * clé révoquée), on affiche le message d'erreur plutôt que de casser
+     * toute la page Intégrations.
+     *
+     * @return array{connected: bool, base_url: ?string, workflows: list<array{id: string, name: string, active: bool, webhook_url: ?string}>, error: ?string}
+     */
+    private function n8nState(Request $request): array
+    {
+        $organizationId = app(CurrentOrganization::class)->id();
+        $organization = $organizationId !== null ? Organization::query()->find($organizationId) : null;
+
+        if ($organization?->n8n_base_url === null || $organization->n8n_api_key === null) {
+            return ['connected' => false, 'base_url' => null, 'workflows' => [], 'error' => null];
+        }
+
+        try {
+            $workflows = $this->n8n->workflows($organization->n8n_base_url, $organization->n8n_api_key);
+        } catch (N8nConnectionException $exception) {
+            return [
+                'connected' => true,
+                'base_url' => $organization->n8n_base_url,
+                'workflows' => [],
+                'error' => $exception->getMessage(),
+            ];
+        }
+
+        return [
+            'connected' => true,
+            'base_url' => $organization->n8n_base_url,
+            'workflows' => $workflows,
+            'error' => null,
+        ];
     }
 
     public function storeToken(StoreApiTokenRequest $request): RedirectResponse

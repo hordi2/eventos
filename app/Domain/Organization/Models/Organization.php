@@ -41,7 +41,15 @@ final class Organization extends Model
         'referral_code',
         'referred_by_organization_id',
         'referral_rewarded_at',
+        'n8n_base_url',
+        'n8n_api_key',
+        'n8n_connected_at',
     ];
+
+    /**
+     * @var list<string>
+     */
+    protected $hidden = ['n8n_api_key'];
 
     /**
      * @return array<string, string>
@@ -57,6 +65,8 @@ final class Organization extends Model
             'dunning_stage' => 'integer',
             'require_mfa_for_members' => 'boolean',
             'referral_rewarded_at' => 'immutable_datetime',
+            'n8n_api_key' => 'encrypted',
+            'n8n_connected_at' => 'immutable_datetime',
         ];
     }
 

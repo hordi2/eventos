@@ -39,6 +39,7 @@ use App\Http\Controllers\Organizer\OrganizationBrandingController;
 use App\Http\Controllers\Organizer\PageController;
 use App\Http\Controllers\Organizer\SeatingController;
 use App\Http\Controllers\Organizer\Settings\IntegrationController;
+use App\Http\Controllers\Organizer\Settings\N8nConnectionController;
 use App\Http\Controllers\Organizer\Settings\NotificationController;
 use App\Http\Controllers\Organizer\Settings\ProfileController;
 use App\Http\Controllers\Organizer\Settings\ReferralController;
@@ -187,6 +188,10 @@ Route::middleware('auth')->group(function (): void {
             Route::get('/', [IntegrationController::class, 'index'])->name('index');
             Route::post('tokens', [IntegrationController::class, 'storeToken'])->name('tokens.store');
             Route::delete('tokens/{token}', [IntegrationController::class, 'destroyToken'])->name('tokens.destroy');
+            Route::post('n8n', [N8nConnectionController::class, 'store'])->name('n8n.store');
+            Route::delete('n8n', [N8nConnectionController::class, 'destroy'])->name('n8n.destroy');
+            Route::post('n8n/workflows', [N8nConnectionController::class, 'connectWorkflow'])->name('n8n.workflows.store');
+
             Route::post('webhooks', [IntegrationController::class, 'storeWebhook'])->name('webhooks.store');
             Route::patch('webhooks/{webhook}', [IntegrationController::class, 'updateWebhook'])->name('webhooks.update');
             Route::delete('webhooks/{webhook}', [IntegrationController::class, 'destroyWebhook'])->name('webhooks.destroy');

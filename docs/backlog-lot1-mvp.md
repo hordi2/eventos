@@ -1493,6 +1493,70 @@ série de captures des sept onglets Mon compte de RSVPify :
   sortants). Le badge « Offre à durée limitée » du parrainage devient
   « Offre permanente », faute d'échéance réelle.
 
+### Intégration Zapier et n8n
+
+Demandé par l'utilisateur. Les deux outils se branchent sur les webhooks
+sortants existants ; le chantier ajoute ce qui manquait pour que la
+connexion soit franche des deux côtés.
+
+- **API REST Hooks** (`/api/v1/hooks`) : `POST` pour s'abonner,
+  `DELETE {id}` pour se désabonner, `GET sample?event=…` pour la charge
+  utile d'exemple dont Zapier et n8n ont besoin afin de proposer les
+  champs à mapper. C'est le contrat qu'attend la plateforme Zapier quand
+  un utilisateur active ou désactive un Zap.
+- Les abonnements créés par API sont de **vrais `Webhook`** : mêmes
+  livraisons signées (HMAC-SHA256), et visibles/révocables depuis
+  Paramètres → Intégrations comme ceux créés à la main.
+- `target_url` est restreinte à **https** : la charge utile contient des
+  données personnelles d'invités (nom, e-mail).
+- Nouveau middleware `resolve-api-organization` : les points d'entrée
+  d'abonnement ne portent aucun identifiant d'événement, contrairement à
+  `resolve-api-check-in-event`. L'organisation est donc résolue via la
+  première adhésion du porteur de la clé, et `manageIntegrations` est
+  vérifiée. **Limite documentée dans l'interface** : une clé pilote une
+  seule organisation, il en faut une par organisation.
+- `WebhookSamplePayload` est volontairement aligné sur ce qu'émettent les
+  listeners réels — un exemple divergent produirait des mappings cassés
+  chez l'utilisateur sans erreur visible côté Itaza.
+- **Interface de connexion par clé API** (demande utilisateur) : un bouton
+  « Créer la clé de connexion » par outil génère une clé nommée
+  (« Connexion Zapier », « Connexion n8n ») et l'affiche une seule fois,
+  avec les étapes exactes pour la coller dans l'outil. La clé n'est pas
+  répétée dans la section « Clés API » plus bas quand elle vient d'être
+  créée depuis ce bloc.
+- **Point d'entrée de test `GET /api/v1/me`** : indispensable, Zapier et
+  n8n valident la clé au moment de la connexion et affichent à qui elle
+  appartient. Renvoie le compte et l'organisation ; une clé invalide
+  ressort en 401, ce que les deux outils savent interpréter.
+- Page Intégrations : guides pas à pas Zapier et n8n, et documentation de
+  l'API d'abonnement avec l'URL de base calculée côté serveur.
+
+**Connexion par la clé de l'outil (n8n)** — demande utilisateur : coller
+dans Itaza la clé API de l'outil, et non l'inverse. Vérifié dans la
+documentation des deux produits avant de coder :
+
+- **n8n : possible**, et construit. n8n expose une API publique
+  authentifiée par une clé longue durée en en-tête `X-N8N-API-KEY`
+  (docs.n8n.io/api/authentication). L'organisateur colle l'adresse de son
+  instance et sa clé ; Itaza la valide auprès de l'instance **avant** de
+  l'enregistrer, liste ensuite ses workflows, reconstruit l'URL du nœud
+  Webhook de chacun et crée le webhook sortant d'un clic — plus aucune URL
+  à recopier. Clé chiffrée au repos (cast `encrypted`, jamais en clair en
+  base : un test le vérifie), instance en https uniquement puisque la clé
+  voyage dans chaque en-tête.
+- **Zapier : impossible par ce chemin.** Zapier ne délivre pas de clé API
+  à ses utilisateurs finaux permettant à une application tierce d'écrire
+  dans leur compte : la Workflow API « n'est pas accessible aux
+  utilisateurs finaux ni aux applications sans intégration publiée » et
+  suppose une app listée + OAuth 2.0. Pour Zapier, la connexion reste donc
+  la clé Itaza côté Zapier et l'URL de Catch Hook côté Itaza.
+
+**Reste à faire côté utilisateur, hors code** : publier l'app Zapier sur
+le compte développeur Zapier (création de l'app, déclencheurs pointant sur
+les points d'entrée ci-dessus, revue par Zapier). Sans cette étape, la
+connexion passe par « Webhooks by Zapier » (Catch Hook), qui fonctionne
+déjà. n8n ne demande aucune publication : le nœud Webhook suffit.
+
 ---
 
 *Backlog v1.0 — à réviser à chaque fin de sprint.*
