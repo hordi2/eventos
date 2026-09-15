@@ -36,6 +36,9 @@ final class Registration extends Model
         'event_id',
         'form_version_id',
         'contact_id',
+        // Inscription à un événement secondaire, créée par l'inscription
+        // principale (SyncSubEventRegistrations, T-013).
+        'parent_registration_id',
         'status',
         'reservation_key',
         'email',
@@ -82,6 +85,16 @@ final class Registration extends Model
     public function attendees(): HasMany
     {
         return $this->hasMany(Attendee::class);
+    }
+
+    /**
+     * Inscriptions aux événements secondaires choisis (T-013).
+     *
+     * @return HasMany<Registration, $this>
+     */
+    public function subEventRegistrations(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_registration_id');
     }
 
     /**

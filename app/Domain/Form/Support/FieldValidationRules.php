@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Form\Support;
 
+use App\Domain\Form\Actions\SyncSubEventRegistrations;
 use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\FormField;
 use Illuminate\Validation\Rule;
@@ -63,6 +64,10 @@ final class FieldValidationRules
             FieldType::Url, FieldType::SocialProfile => [$field->key => ['string', 'max:2048', 'url:http,https']],
             FieldType::Quantity => [$field->key => ['integer', 'min:'.(int) ($config['min'] ?? 0), 'max:'.(int) ($config['max'] ?? 99)]],
             FieldType::PostalAddress => $this->postalAddressRules($field),
+            FieldType::SubEvents => [
+                $field->key => ['array'],
+                "{$field->key}.*" => ['integer', Rule::in(SyncSubEventRegistrations::offeredIds($config))],
+            ],
         };
     }
 

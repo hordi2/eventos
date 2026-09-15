@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Form\Support;
 
+use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\FormField;
 use App\Domain\Form\Models\FormVersion;
 
@@ -18,9 +19,14 @@ final class AskScope
 
     public const EACH_ATTENDEE = 'each_attendee';
 
+    /**
+     * Le choix des événements secondaires vaut pour tout le groupe : il ne
+     * se pose jamais à chaque personne.
+     */
     public static function isPerPerson(FormField $field): bool
     {
-        return (($field->config ?? [])['ask_scope'] ?? self::ONCE) === self::EACH_ATTENDEE;
+        return $field->type !== FieldType::SubEvents
+            && (($field->config ?? [])['ask_scope'] ?? self::ONCE) === self::EACH_ATTENDEE;
     }
 
     /**

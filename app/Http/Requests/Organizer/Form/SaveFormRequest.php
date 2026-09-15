@@ -45,6 +45,11 @@ final class SaveFormRequest extends FormRequest
             'fields.*.config.show_if' => ['nullable', Rule::in(['always', 'attending', 'not_attending'])],
             // « Poser la question » : une fois, ou à chaque personne (T-032).
             'fields.*.config.ask_scope' => ['nullable', Rule::in([AskScope::ONCE, AskScope::EACH_ATTENDEE])],
+            // Bloc « Événements secondaires » : l'appartenance des sessions à
+            // l'événement et leurs titres sont repris du serveur
+            // (ResolveSubEventFieldConfig), jamais du navigateur.
+            'fields.*.config.sub_events' => ['nullable', 'array'],
+            'fields.*.config.sub_events.*.id' => ['required', 'integer'],
             'fields.*.config.tag_ids' => ['nullable', 'array'],
             'fields.*.config.tag_ids.*' => [
                 'integer',

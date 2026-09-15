@@ -8,6 +8,7 @@ use App\Domain\Form\Data\AttendeeIdentity;
 use App\Domain\Form\Data\CompanionData;
 use App\Domain\Form\Data\EventEditPolicy;
 use App\Domain\Form\Data\FormVisibilityContext;
+use App\Domain\Form\Data\SubEventContext;
 use App\Domain\Form\Events\RegistrationUpdated;
 use App\Domain\Form\Models\FormField;
 use App\Domain\Form\Models\FormVersion;
@@ -45,11 +46,13 @@ final class UpdateRegistration
         private readonly ReleaseCapacity $releaseCapacity,
         private readonly SnapshotRegistration $snapshotRegistration,
         private readonly ValidateCompanions $validateCompanions,
+        private readonly SyncSubEventRegistrations $syncSubEventRegistrations,
     ) {}
 
     /**
      * @param  array<string, mixed>  $answers
      * @param  list<CompanionData>  $companions  accompagnants déjà inscrits (attendeeId renseigné) : noms et réponses à jour
+     * @param  list<SubEventContext>|null  $subEvents  événements secondaires de l'événement ; null : sessions laissées telles quelles
      */
     public function handle(
         Registration $registration,
@@ -58,6 +61,7 @@ final class UpdateRegistration
         array $answers,
         ?FormVisibilityContext $visibilityContext = null,
         array $companions = [],
+        ?array $subEvents = null,
     ): Registration {
         if ($policy->isLocked()) {
             throw RegistrationEditLockedException::locked();
@@ -71,7 +75,13 @@ final class UpdateRegistration
         $companions = $this->knownCompanions($registration, $companions);
         $this->validateCompanions->handle($version, $answers, $companions, $visibilityContext);
 
-        DB::transaction(function () use ($registration, $version, $identity, $answers, $visibility, $companions, $visibilityContext): void {
+        $selectedSubEvents = $subEvents !== null ? $this->syncSubEventRegistrations->selected($version, $answers, $visibility, $subEvents) : null;
+
+        if ($selectedSubEvents !== null) {
+            $this->syncSubEventRegistrations->assertNoScheduleConflict($version, $selectedSubEvents);
+        }
+
+        DB::transaction(function () use ($registration, $version, $identity, $answers, $visibility, $companions, $visibilityContext, $selectedSubEvents): void {
             $this->snapshotRegistration->handle($registration);
 
             $email = mb_strtolower(trim($identity->email));
@@ -97,6 +107,10 @@ final class UpdateRegistration
 
             foreach ($companions as $companion) {
                 $this->updateCompanion($registration, $version, $answers, $companion, $visibilityContext);
+            }
+
+            if ($selectedSubEvents !== null) {
+                $this->syncSubEventRegistrations->handle($registration->fresh(), $selectedSubEvents);
             }
         });
 

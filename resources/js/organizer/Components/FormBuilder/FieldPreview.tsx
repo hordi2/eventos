@@ -131,6 +131,28 @@ export default function FieldPreview({ field, required, value, onChange }: Field
                         ))}
                     </select>
                 );
+            case 'sub_events':
+                return (
+                    <div className="space-y-2 text-sm">
+                        {(field.config.sub_events ?? []).map((subEvent) => (
+                            <label key={subEvent.id} className="flex cursor-pointer items-center gap-2 rounded-control border border-black/15 px-3 py-2">
+                                <input
+                                    type="checkbox"
+                                    checked={selected.includes(String(subEvent.id))}
+                                    onChange={(event) =>
+                                        onChange(
+                                            event.target.checked
+                                                ? [...selected, String(subEvent.id)]
+                                                : selected.filter((item) => item !== String(subEvent.id)),
+                                        )
+                                    }
+                                />
+                                {subEvent.title}
+                            </label>
+                        ))}
+                        {(field.config.sub_events ?? []).length === 0 && <p className="opacity-60">Aucune session proposée pour l'instant.</p>}
+                    </div>
+                );
             case 'postal_address':
                 return (
                     <div className="space-y-2">

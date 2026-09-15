@@ -12,7 +12,7 @@ import PremiumBadge from './PremiumBadge';
 import RuleEditor from './RuleEditor';
 import SidePanel from './SidePanel';
 import SoonBadge from './SoonBadge';
-import { type BuilderField, type FieldConfig, type FieldTypeOption, type RuleData, type ShowIf, type TagOption } from './types';
+import { type BuilderField, type FieldConfig, type FieldTypeOption, type RuleData, type ShowIf, type SubEventOption, type TagOption } from './types';
 
 interface QuestionDrawerProps {
     field: BuilderField;
@@ -27,6 +27,8 @@ interface QuestionDrawerProps {
     freshKey: boolean;
     // Accompagnants autorisés : la question peut alors être posée à chacun.
     companionsEnabled: boolean;
+    subEvents: SubEventOption[];
+    subEventsUrl: string;
     onSave: (field: BuilderField, rule: RuleData | null) => void;
     onCancel: () => void;
     onRemove: () => void;
@@ -63,6 +65,8 @@ export default function QuestionDrawer({
     errors,
     freshKey,
     companionsEnabled,
+    subEvents,
+    subEventsUrl,
     onSave,
     onCancel,
     onRemove,
@@ -81,6 +85,8 @@ export default function QuestionDrawer({
     const hasOptions = TYPES_WITH_OPTIONS.includes(draft.type);
     const showIf: ShowIf = draft.config.show_if ?? 'attending';
     const askScope = draft.config.ask_scope ?? 'once';
+    const isSubEvents = draft.type === 'sub_events';
+    const offeredSubEvents = (draft.config.sub_events ?? []).map((subEvent) => subEvent.id);
     const tagIds = draft.config.tag_ids ?? [];
     const sources = fields.filter((item) => item.uid !== field.uid && item.type !== 'informational_text');
 
@@ -95,6 +101,15 @@ export default function QuestionDrawer({
     function toggleTag(id: number) {
         const next = tagIds.includes(id) ? tagIds.filter((tagId) => tagId !== id) : [...tagIds, id];
         updateConfig({ tag_ids: next.length > 0 ? next : undefined });
+    }
+
+    function toggleSubEvent(subEvent: SubEventOption) {
+        const current = draft.config.sub_events ?? [];
+        const next = current.some((item) => item.id === subEvent.id)
+            ? current.filter((item) => item.id !== subEvent.id)
+            : [...current, { id: subEvent.id, title: subEvent.title }];
+
+        updateConfig({ sub_events: next });
     }
 
     function toggleTagFilter(enabled: boolean) {
@@ -128,6 +143,12 @@ export default function QuestionDrawer({
 
         if (hasOptions && options.length === 0) {
             setLocalError('Ajoutez au moins une option.');
+
+            return;
+        }
+
+        if (isSubEvents && offeredSubEvents.length === 0) {
+            setLocalError('Choisissez au moins une session à proposer.');
 
             return;
         }
@@ -209,6 +230,33 @@ export default function QuestionDrawer({
 
             {hasOptions && <OptionsEditor options={draft.options} withQuota onChange={(options) => update({ options })} error={errors['options.0.label']} />}
 
+            {isSubEvents && (
+                <fieldset>
+                    <legend className={PANEL_SECTION_TITLE}>Sessions proposées</legend>
+                    {subEvents.length === 0 ? (
+                        <p className="text-sm text-ink-soft">Aucun événement secondaire pour l'instant.</p>
+                    ) : (
+                        <div className="space-y-3">
+                            {subEvents.map((subEvent) => (
+                                <label key={subEvent.id} className="flex items-start gap-2 text-sm text-ink">
+                                    <Checkbox className="mt-0.5" checked={offeredSubEvents.includes(subEvent.id)} onChange={() => toggleSubEvent(subEvent)} />
+                                    <span>
+                                        <span className="block font-medium">{subEvent.title}</span>
+                                        <span className="block text-xs text-ink-soft">{subEvent.schedule}</span>
+                                    </span>
+                                </label>
+                            ))}
+                        </div>
+                    )}
+                    <p className="mt-3 text-xs text-ink-soft">
+                        Chaque session cochée par l'invité l'inscrit, avec ses accompagnants, sur sa capacité et sa liste d'attente propres.
+                    </p>
+                    <a href={subEventsUrl} className="mt-2 inline-block text-sm font-medium text-ink underline">
+                        Gérer les événements secondaires
+                    </a>
+                </fieldset>
+            )}
+
             {(draft.type === 'short_text' || draft.type === 'long_text') && (
                 <div>
                     <InputLabel htmlFor="block_max_length">Nombre maximal de caractères</InputLabel>
@@ -276,7 +324,7 @@ export default function QuestionDrawer({
                 </div>
             )}
 
-            {!isInformational && (
+            {!isInformational && !isSubEvents && (
                 <fieldset>
                     <legend className={PANEL_SECTION_TITLE}>Poser la question</legend>
                     <div className="space-y-2 text-sm">

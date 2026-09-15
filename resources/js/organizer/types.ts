@@ -21,6 +21,7 @@ export interface OrganizationChoice {
 export type EventNavLinkKey =
     | 'checklist'
     | 'responses'
+    | 'subEvents'
     | 'guests'
     | 'form'
     | 'website'

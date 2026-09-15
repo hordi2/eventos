@@ -17,6 +17,9 @@
     @case('postal_address')
         {{ \App\Domain\Form\Support\PostalAddress::format((array) $raw) }}
         @break
+    @case('sub_events')
+        {{ app(\App\Domain\Form\Actions\FormatFieldAnswerForExport::class)->handle($field, (array) $raw) }}
+        @break
     @default
         {{ is_array($raw) ? implode(', ', $raw) : $raw }}
 @endswitch

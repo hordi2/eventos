@@ -2,9 +2,19 @@ export type ShowIf = 'always' | 'attending' | 'not_attending';
 
 export type AskScopeValue = 'once' | 'each_attendee';
 
+export interface SubEventRef {
+    id: number;
+    title: string;
+}
+
+export interface SubEventOption extends SubEventRef {
+    schedule: string;
+}
+
 export interface FieldConfig {
     show_if?: ShowIf;
     ask_scope?: AskScopeValue;
+    sub_events?: SubEventRef[];
     tag_ids?: number[];
     max_length?: number;
     min?: number;

@@ -27,6 +27,7 @@ use App\Domain\Form\Models\RegistrationDraft;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Form\OptionFullException;
 use App\Domain\Form\RegistrationClosedException;
+use App\Domain\Form\SubEventFullException;
 use App\Domain\Form\Support\AskScope;
 use App\Domain\Form\Support\EvaluateFormVisibility;
 use App\Domain\Form\Support\FormSettings;
@@ -40,7 +41,9 @@ use App\Http\Requests\Guest\UpdateRegistrationRequest;
 use App\Http\Requests\Guest\VerifyEventPasswordRequest;
 use App\Support\Capacity\Actions\GetRemainingCapacity;
 use App\Support\Page\GetEventPage;
+use App\Support\Registration\BuildGuestSubEventChoices;
 use App\Support\Registration\BuildGuestVisibilityContext;
+use App\Support\Registration\BuildSubEventContexts;
 use App\Support\Registration\RenderAttendeeQrCodes;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
@@ -185,6 +188,7 @@ final class RegistrationController extends Controller
             'version' => $version,
             'visibility' => app(EvaluateFormVisibility::class)->handle($version, $this->holderAnswers($draft), $this->visibilityContext($draft)),
             'companions' => $this->draftCompanions($draft, $version),
+            'subEventChoices' => app(BuildGuestSubEventChoices::class)->handle($eventModel),
             ...$this->presentation($eventModel),
         ]);
     }
@@ -242,7 +246,7 @@ final class RegistrationController extends Controller
                 $this->visibilityContext($draft),
                 $companions,
             );
-        } catch (RegistrationClosedException|EventFullException|OptionFullException $e) {
+        } catch (RegistrationClosedException|EventFullException|OptionFullException|SubEventFullException $e) {
             return back()->withErrors(['submission' => $e->getMessage()]);
         }
 
@@ -309,6 +313,7 @@ final class RegistrationController extends Controller
             'visibility' => app(EvaluateFormVisibility::class)->handle($version, $answers, $context),
             'answers' => $answers,
             'companions' => $this->registrationCompanions($registrationModel, $version, $answers, $context),
+            'subEventChoices' => app(BuildGuestSubEventChoices::class)->handle($eventModel),
             ...$this->presentation($eventModel),
         ]);
     }
@@ -354,8 +359,9 @@ final class RegistrationController extends Controller
                 Arr::except($data, CompanionData::INPUT_KEY),
                 $this->registrationVisibilityContext($registration),
                 $companions,
+                app(BuildSubEventContexts::class)->handle($event),
             );
-        } catch (OptionFullException $e) {
+        } catch (OptionFullException|SubEventFullException $e) {
             return back()->withErrors(['submission' => $e->getMessage()]);
         }
 
@@ -581,6 +587,7 @@ final class RegistrationController extends Controller
             timezone: $event->timezone,
             registrationClosedMessage: $event->registration_closed_message,
             organizationMonthlyRegistrationQuota: $quotas->registrationsPerMonth,
+            subEvents: app(BuildSubEventContexts::class)->handle($event),
         );
     }
 }

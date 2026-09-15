@@ -49,6 +49,7 @@ final class SubmitRegistration
         private readonly ReserveCapacity $reserveCapacity,
         private readonly IsRegistrationWindowOpen $isRegistrationWindowOpen,
         private readonly ValidateCompanions $validateCompanions,
+        private readonly SyncSubEventRegistrations $syncSubEventRegistrations,
     ) {}
 
     /**
@@ -99,7 +100,10 @@ final class SubmitRegistration
         Validator::make($answers, $rules)->validate();
         $this->validateCompanions->handle($formVersion, $answers, $companions, $visibilityContext);
 
-        $registration = DB::transaction(function () use ($context, $formVersion, $identity, $email, $answers, $metadata, $idempotencyKey, $visibility, $declined, $companions, $visibilityContext): Registration {
+        $subEvents = $declined ? [] : $this->syncSubEventRegistrations->selected($formVersion, $answers, $visibility, $context->subEvents);
+        $this->syncSubEventRegistrations->assertNoScheduleConflict($formVersion, $subEvents);
+
+        $registration = DB::transaction(function () use ($context, $formVersion, $identity, $email, $answers, $metadata, $idempotencyKey, $visibility, $declined, $companions, $visibilityContext, $subEvents): Registration {
             // Une place par personne : le titulaire et chacun de ses accompagnants.
             $status = $declined ? RegistrationStatus::Declined : $this->reserveEventPlace($context, $idempotencyKey, 1 + count($companions));
 
@@ -150,6 +154,8 @@ final class SubmitRegistration
                 $this->writeAnswers($context, $formVersion, $registration, $companionAnswers, $companionVisibility, $metadata->ipAddress, $idempotencyKey, true, $attendee->id);
             }
 
+            $this->syncSubEventRegistrations->handle($registration, $subEvents);
+
             return $registration;
         });
 
@@ -192,8 +198,10 @@ final class SubmitRegistration
             return false;
         }
 
+        // Une session d'événement secondaire n'est pas une inscription de plus.
         $count = Registration::query()
             ->where('organization_id', $context->organizationId)
+            ->whereNull('parent_registration_id')
             ->where('status', '!=', RegistrationStatus::Declined->value)
             ->where('created_at', '>=', CarbonImmutable::now()->startOfMonth())
             ->count();

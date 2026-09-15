@@ -27,6 +27,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\Form\SaveFormRequest;
 use App\Models\User;
 use App\Support\MultiTenancy\CurrentOrganization;
+use App\Support\Registration\ResolveSubEventFieldConfig;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -44,14 +45,15 @@ final class FormController extends Controller
         return Inertia::render('Forms/Builder', [
             'event' => $this->presentEvent($event),
             'form' => null,
-            ...$this->builderOptions(),
+            ...$this->builderOptions($event),
         ]);
     }
 
-    public function store(SaveFormRequest $request, int $event, CreateForm $action, UpdateFormSettings $updateFormSettings): RedirectResponse
+    public function store(SaveFormRequest $request, int $event, CreateForm $action, UpdateFormSettings $updateFormSettings, ResolveSubEventFieldConfig $resolveSubEventFieldConfig): RedirectResponse
     {
         $eventModel = $this->findEvent($event);
         $data = $request->validated();
+        $data['fields'] = $resolveSubEventFieldConfig->handle($eventModel->id, $data['fields']);
 
         try {
             $form = $action->handle($this->currentOrganization(), $eventModel->id, $request->user(), $data);
@@ -72,17 +74,20 @@ final class FormController extends Controller
 
         Gate::authorize('update', $form);
 
+        $event = Event::query()->findOrFail($form->event_id);
+
         return Inertia::render('Forms/Builder', [
-            'event' => $this->presentEvent(Event::query()->findOrFail($form->event_id)),
+            'event' => $this->presentEvent($event),
             'form' => $this->presentForm($form),
-            ...$this->builderOptions(),
+            ...$this->builderOptions($event),
         ]);
     }
 
-    public function update(SaveFormRequest $request, int $form, UpdateFormSettings $updateFormSettings): RedirectResponse
+    public function update(SaveFormRequest $request, int $form, UpdateFormSettings $updateFormSettings, ResolveSubEventFieldConfig $resolveSubEventFieldConfig): RedirectResponse
     {
         $formModel = $this->findForm($form);
         $data = $request->validated();
+        $data['fields'] = $resolveSubEventFieldConfig->handle($formModel->event_id, $data['fields']);
 
         try {
             $this->writeVersion($formModel, $request->user(), $data);
@@ -158,11 +163,12 @@ final class FormController extends Controller
     /**
      * Ce dont le constructeur à blocs a besoin en plus du formulaire : types
      * de questions (avec leur marque premium), polices du thème, tags pour le
-     * critère « Seulement pour les invités portant le tag… ».
+     * critère « Seulement pour les invités portant le tag… » et sessions pour
+     * le bloc « Événements secondaires ».
      *
      * @return array<string, mixed>
      */
-    private function builderOptions(): array
+    private function builderOptions(Event $event): array
     {
         return [
             'fieldTypes' => array_map(
@@ -180,6 +186,15 @@ final class FormController extends Controller
                 ->all(),
             'isFreePlan' => app(GetEffectivePlan::class)->handle($this->currentOrganization()) === PlanTier::Free,
             'defaultSettings' => FormSettings::resolve(null),
+            'subEvents' => $event->subEvents()->orderBy('start_at')->get()
+                ->map(fn (Event $subEvent): array => [
+                    'id' => $subEvent->id,
+                    'title' => $subEvent->title,
+                    'schedule' => $subEvent->start_at->setTimezone($subEvent->timezone)->translatedFormat('j F \à H\hi'),
+                ])
+                ->values()
+                ->all(),
+            'subEventsUrl' => route('events.sub-events.index', $event->id),
         ];
     }
 

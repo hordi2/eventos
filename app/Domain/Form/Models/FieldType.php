@@ -31,6 +31,9 @@ enum FieldType: string
     case SocialProfile = 'social_profile';
     case Quantity = 'quantity';
     case PostalAddress = 'postal_address';
+    // Choix des événements secondaires (T-013) : config.sub_events liste les
+    // sessions proposées, avec leur titre au moment de la publication.
+    case SubEvents = 'sub_events';
 
     public function supportsOptions(): bool
     {
@@ -72,6 +75,7 @@ enum FieldType: string
             self::SocialProfile => 'Profil de réseau social',
             self::Quantity => 'Quantité',
             self::PostalAddress => 'Adresse postale',
+            self::SubEvents => 'Événements secondaires',
         };
     }
 }

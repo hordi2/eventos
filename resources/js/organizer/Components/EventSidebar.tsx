@@ -36,7 +36,7 @@ function buildSections(nav: EventNav): SidebarSection[] {
                     icon: 'chart',
                     children: [
                         { label: 'Toutes les réponses', linkKey: 'responses' },
-                        { label: 'Événements secondaires', soon: true },
+                        { label: 'Événements secondaires', linkKey: 'subEvents' },
                         { label: 'Questions personnalisées', linkKey: 'form' },
                         { label: 'Préférences alimentaires', soon: true },
                         { label: 'Dons et cadeaux', soon: true },

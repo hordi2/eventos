@@ -80,6 +80,8 @@ final class BuildEventNavigation
         return [
             'checklist' => $link($gate->allows('viewGuests', $organization), route('events.show', $event->id)),
             'responses' => $link($gate->allows('viewGuests', $organization), route('events.dashboard.index', $event->id)),
+            // Un seul niveau de hiérarchie : une session n'a pas ses propres sessions.
+            'subEvents' => $link($canUpdate && ! $event->isSubEvent(), route('events.sub-events.index', $event->id)),
             'guests' => $link($gate->allows('viewGuests', $organization), route('events.segments.index', $event->id)),
             'form' => $formId !== null
                 ? $link($canUpdate, route('forms.edit', $formId))

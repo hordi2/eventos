@@ -177,6 +177,14 @@ Un événement contient N sous-événements avec capacité, horaires et lieu pro
 - [ ] Capacité gérée séparément de l'événement parent
 - [ ] Suppression d'un sous-événement avec inscriptions → refus ou archivage
 
+> **Événements secondaires, étape D du formulaire (livrée)** :
+> - **Écran « Événements secondaires »** dans le menu de l'événement : sessions avec horaires (fuseau de l'événement principal), capacité, liste d'attente, places tenues et conflits d'horaires signalés. Une session qui a des inscrits ne peut pas être supprimée.
+> - **Bloc « Événements secondaires »** du constructeur : l'organisateur choisit les sessions proposées. Leurs titres sont repris du serveur et figés avec la version publiée.
+> - **Côté invité** : les sessions s'affichent avec les places restantes, et deux sessions simultanées sont refusées dès l'étape des réponses.
+> - **Inscription par session** : chaque session cochée crée une inscription rattachée (`parent_registration_id`) sur le sous-événement. Elle a sa capacité propre (une place par personne du groupe), sa liste d'attente, sa liste d'accueil et son check-in. Le QR principal y est reconnu.
+> - **Mise à jour** : la modification et l'annulation mettent les sessions à jour.
+> - **Tableau de bord** : les sessions n'y apparaissent plus comme des événements à part.
+
 ---
 
 ### T-014 · Duplication d'événement · S

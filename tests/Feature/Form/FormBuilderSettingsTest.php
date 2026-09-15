@@ -96,6 +96,31 @@ it('refuse une logique conditionnelle circulaire sans toucher aux questions enre
     expect($form->fresh()->latestVersion()->fields->pluck('key')->all())->toBe(['nom']);
 });
 
+it('ne garde dans le bloc « Événements secondaires » que les sessions de l\'événement, avec leur vrai titre', function (): void {
+    [$organization, $admin, $form] = formWithBuilderSettings();
+    $session = Event::factory()->for($organization)->create(['parent_event_id' => $form->event_id, 'title' => 'Dîner de gala']);
+    $otherEvent = Event::factory()->for($organization)->create(['title' => 'Autre événement']);
+
+    $this->actingAs($admin)->patch("/forms/{$form->id}", [
+        'name' => 'Inscription',
+        'fields' => [[
+            'key' => 'sessions',
+            'type' => 'sub_events',
+            'label' => 'Vos sessions',
+            'config' => ['sub_events' => [
+                ['id' => $session->id, 'title' => 'Titre modifié dans le navigateur'],
+                ['id' => $otherEvent->id, 'title' => 'Autre événement'],
+            ]],
+        ]],
+    ])->assertRedirect(route('forms.edit', $form));
+
+    expect($form->fresh()->latestVersion()->fields->first()->config['sub_events'])->toBe([['id' => $session->id, 'title' => 'Dîner de gala']]);
+
+    $this->actingAs($admin)->get("/forms/{$form->id}/edit")->assertInertia(fn ($page) => $page
+        ->has('subEvents', 1)
+        ->where('subEvents.0.title', 'Dîner de gala'));
+});
+
 it('enregistre le nombre maximal d\'accompagnants et une question posée à chaque personne', function (): void {
     [, $admin, $form] = formWithBuilderSettings();
 

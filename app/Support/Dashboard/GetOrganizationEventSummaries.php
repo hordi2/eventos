@@ -30,7 +30,9 @@ final class GetOrganizationEventSummaries
      */
     public function handle(Organization $organization, ?array $onlyEventIds = null): array
     {
-        $query = Event::query()->orderByDesc('start_at');
+        // Un événement secondaire se gère depuis son événement principal,
+        // jamais comme un événement de plus dans le tableau de bord.
+        $query = Event::query()->whereNull('parent_event_id')->orderByDesc('start_at');
 
         if ($onlyEventIds !== null) {
             $query->whereIn('id', $onlyEventIds);

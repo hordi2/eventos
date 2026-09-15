@@ -205,6 +205,27 @@
             @endforeach
             @break
 
+        @case('sub_events')
+            @php($chosenSubEvents = array_map('intval', (array) old($oldKey, $value ?? [])))
+            <div class="space-y-2" id="{{ $inputId }}">
+                @foreach (\App\Domain\Form\Actions\SyncSubEventRegistrations::offeredIds($config) as $subEventId)
+                    @php($choice = ($subEventChoices ?? [])[$subEventId] ?? null)
+                    @continue($choice === null)
+                    @php($isChosen = in_array($subEventId, $chosenSubEvents, true))
+                    <label class="flex items-start gap-3 rounded-control border border-line bg-bg px-4 py-3 text-ink {{ $choice['closed'] && ! $isChosen ? 'opacity-60' : '' }}">
+                        <input type="checkbox" name="{{ $inputName }}[]" value="{{ $subEventId }}" class="mt-1" @checked($isChosen) @disabled($choice['closed'] && ! $isChosen)>
+                        <span>
+                            <span class="block font-medium">{{ $choice['title'] }}</span>
+                            <span class="block text-sm text-ink-soft">{{ $choice['schedule'] }}</span>
+                            @if ($choice['availability'] !== null)
+                                <span class="block text-xs text-ink-soft">{{ $choice['availability'] }}</span>
+                            @endif
+                        </span>
+                    </label>
+                @endforeach
+            </div>
+            @break
+
         @default
             <input
                 type="text"

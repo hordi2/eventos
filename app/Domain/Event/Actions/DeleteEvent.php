@@ -19,13 +19,10 @@ final class DeleteEvent
             throw CannotDeleteEventException::hasSubEvents();
         }
 
-        // À faire dès que le module Inscriptions existera (T-030) : si ce
-        // sous-événement a encore des inscriptions actives, refuser la
-        // suppression ou exiger une confirmation explicite plutôt que de
-        // supprimer silencieusement (critère d'acceptation M1.3). Impossible
-        // à vérifier avant que le modèle Registration n'existe. La
-        // suppression logique ci-dessous reste réversible en attendant
-        // (règle 4.5 du CLAUDE.md).
+        // Les inscriptions actives d'un sous-événement sont vérifiées avant
+        // cette action par App\Support\Events\DeleteSubEvent (critère M1.3) :
+        // Domain/Event ne lit jamais les modèles de Domain/Form (section 3 du
+        // CLAUDE.md). La suppression reste logique et réversible (règle 4.5).
 
         $event->delete();
     }

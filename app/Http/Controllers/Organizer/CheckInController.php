@@ -20,6 +20,7 @@ use App\Http\Requests\Organizer\CheckIn\RecordCheckInRequest;
 use App\Http\Requests\Organizer\CheckIn\ScanTicketRequest;
 use App\Support\CheckIn\GetEventGuestList;
 use App\Support\CheckIn\GuestExistsForEvent;
+use App\Support\CheckIn\ResolveAttendeeForEvent;
 use App\Support\CheckIn\ResolveScannedGuest;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -129,6 +130,7 @@ final class CheckInController extends Controller
         int $event,
         ScanTicketRequest $request,
         ResolveScannedGuest $resolveScannedGuest,
+        ResolveAttendeeForEvent $resolveAttendeeForEvent,
         RecordCheckIn $recordCheckIn,
         GuestExistsForEvent $guestExistsForEvent,
         GetEventGuestList $getEventGuestList,
@@ -142,7 +144,9 @@ final class CheckInController extends Controller
             return response()->json(['error' => $exception->getMessage()], 422);
         }
 
-        $attendeeId = $scanned['type'] === 'attendee' ? $scanned['id'] : null;
+        // À l'entrée d'un événement secondaire, le QR principal désigne la
+        // même personne dans l'inscription de cette session (T-013).
+        $attendeeId = $scanned['type'] === 'attendee' ? $resolveAttendeeForEvent->handle($event->id, $scanned['id']) : null;
         $ticketId = $scanned['type'] === 'ticket' ? $scanned['id'] : null;
 
         if (! $guestExistsForEvent->handle($event->id, $attendeeId, $ticketId)) {
@@ -160,7 +164,7 @@ final class CheckInController extends Controller
             checkedInBy: $request->user()?->id,
         );
 
-        $guest = $getEventGuestList->findOne($event, $scanned['type'], $scanned['id']);
+        $guest = $getEventGuestList->findOne($event, $scanned['type'], $attendeeId ?? $scanned['id']);
 
         return response()->json([
             'status' => $checkIn->status->value,

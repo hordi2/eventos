@@ -16,6 +16,7 @@ import {
     PALETTE_DRAG_TYPE,
     type PaletteEntry,
     resetTheme,
+    subEventsBlueprint,
     toBuilderField,
     uniqueKey,
 } from '../../Components/FormBuilder/logic';
@@ -36,6 +37,7 @@ import {
     type ScreenKey,
     type Selection,
     type Simulation,
+    type SubEventOption,
     type TagOption,
     type ThemeSettings,
 } from '../../Components/FormBuilder/types';
@@ -50,16 +52,19 @@ interface BuilderPageProps {
     tags: TagOption[];
     isFreePlan: boolean;
     defaultSettings: FormSettings;
+    subEvents: SubEventOption[];
+    subEventsUrl: string;
 }
 
 interface Notice {
     message: string;
     undo?: () => void;
+    link?: { href: string; label: string };
 }
 
 const AUTOSAVE_DELAY_MS = 1200;
 
-export default function FormBuilder({ event, form, fieldTypes, fonts, tags, isFreePlan, defaultSettings }: BuilderPageProps) {
+export default function FormBuilder({ event, form, fieldTypes, fonts, tags, isFreePlan, defaultSettings, subEvents, subEventsUrl }: BuilderPageProps) {
     const { errors: pageErrors, settingsAccess } = usePage<SharedProps & { errors: Record<string, string> }>().props;
 
     const [name, setName] = useState(form?.name ?? `Inscription — ${event.title}`);
@@ -250,6 +255,17 @@ export default function FormBuilder({ event, form, fieldTypes, fonts, tags, isFr
                 break;
             case 'custom':
                 setTypeModalAt(index);
+                break;
+            case 'subEvents':
+                if (subEvents.length === 0) {
+                    setNotice({
+                        message: "Créez d'abord vos événements secondaires, puis ajoutez ce bloc.",
+                        link: { href: subEventsUrl, label: 'Créer des sessions' },
+                    });
+                    break;
+                }
+
+                insertField(createField(subEventsBlueprint(subEvents), fields), index);
                 break;
             case 'screen':
                 openScreen(action.screen);
@@ -455,6 +471,8 @@ export default function FormBuilder({ event, form, fieldTypes, fonts, tags, isFr
                 errors={fieldErrors(fields.indexOf(selectedField))}
                 freshKey={freshUidsRef.current.has(selectedField.uid)}
                 companionsEnabled={settings.rsvp.max_companions > 0}
+                subEvents={subEvents}
+                subEventsUrl={subEventsUrl}
                 onSave={saveField}
                 onCancel={() => {
                     freshUidsRef.current.delete(selectedField.uid);
@@ -556,6 +574,11 @@ export default function FormBuilder({ event, form, fieldTypes, fonts, tags, isFr
             {notice && (
                 <div role="status" className="fixed right-6 bottom-6 z-40 flex max-w-md items-center gap-4 rounded-card bg-ink px-5 py-4 text-sm text-bg shadow-xl">
                     <span className="min-w-0 flex-1">{notice.message}</span>
+                    {notice.link && (
+                        <a href={notice.link.href} className="shrink-0 font-medium underline">
+                            {notice.link.label}
+                        </a>
+                    )}
                     {notice.undo && (
                         <button type="button" onClick={notice.undo} className="shrink-0 font-medium underline">
                             Annuler

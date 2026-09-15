@@ -31,7 +31,28 @@ final class FormatFieldAnswerForExport
             FieldType::Dropdown => $this->optionLabel($field, (string) $normalizedValue),
             FieldType::DateTime, FieldType::Url, FieldType::SocialProfile, FieldType::Quantity => (string) $normalizedValue,
             FieldType::PostalAddress => PostalAddress::format((array) $normalizedValue),
+            FieldType::SubEvents => $this->subEventTitles($field, (array) $normalizedValue),
         };
+    }
+
+    /**
+     * Titres des sessions tels que publiés avec la version du formulaire
+     * (config.sub_events) : une réponse garde son sens même si une session
+     * est renommée ensuite (§4.7 du CLAUDE.md).
+     *
+     * @param  array<int|string, mixed>  $ids
+     */
+    private function subEventTitles(FormField $field, array $ids): string
+    {
+        $titles = [];
+
+        foreach ((array) (($field->config ?? [])['sub_events'] ?? []) as $subEvent) {
+            if (is_array($subEvent)) {
+                $titles[(int) ($subEvent['id'] ?? 0)] = (string) ($subEvent['title'] ?? '');
+            }
+        }
+
+        return implode(', ', array_map(fn (mixed $id): string => $titles[(int) $id] ?? (string) $id, $ids));
     }
 
     private function optionLabel(FormField $field, string $value): string

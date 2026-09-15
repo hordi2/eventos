@@ -15,6 +15,9 @@ use Carbon\CarbonImmutable;
  */
 final class EventRegistrationContext
 {
+    /**
+     * @param  list<SubEventContext>  $subEvents  événements secondaires proposables (T-013)
+     */
     public function __construct(
         public readonly int $eventId,
         public readonly int $organizationId,
@@ -29,5 +32,6 @@ final class EventRegistrationContext
         // ce contexte (section 3 du CLAUDE.md) : l'appelant le résout via
         // GetOrganizationUsage avant de construire ce contexte.
         public readonly ?int $organizationMonthlyRegistrationQuota = null,
+        public readonly array $subEvents = [],
     ) {}
 }

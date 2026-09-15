@@ -44,6 +44,7 @@ final class NormalizeFieldAnswer
             FieldType::Url, FieldType::SocialProfile => trim((string) $value),
             FieldType::Quantity => (int) $value,
             FieldType::PostalAddress => $this->normalizeAddress($value),
+            FieldType::SubEvents => array_values(array_unique(array_map(intval(...), (array) $value))),
         };
     }
 

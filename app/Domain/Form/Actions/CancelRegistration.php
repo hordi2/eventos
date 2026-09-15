@@ -26,6 +26,7 @@ final class CancelRegistration
     public function __construct(
         private readonly ReleaseCapacity $releaseCapacity,
         private readonly SnapshotRegistration $snapshotRegistration,
+        private readonly SyncSubEventRegistrations $syncSubEventRegistrations,
     ) {}
 
     public function handle(Registration $registration, EventEditPolicy $policy, ?string $reason = null): Registration
@@ -51,6 +52,9 @@ final class CancelRegistration
                 });
 
             $registration->attendees()->update(['qr_jti' => null]);
+
+            // Les sessions d'événements secondaires suivent l'inscription principale.
+            $this->syncSubEventRegistrations->handle($registration, []);
         });
 
         RegistrationCancelled::dispatch($registration->fresh());

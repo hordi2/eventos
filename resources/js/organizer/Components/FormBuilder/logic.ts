@@ -14,6 +14,7 @@ import {
     type ScreenKey,
     type ShowIf,
     type Simulation,
+    type SubEventOption,
     type ThemeColorKey,
     type ThemeSettings,
 } from './types';
@@ -21,7 +22,7 @@ import {
 export const TYPES_WITH_OPTIONS = ['single_choice', 'multiple_choice', 'meal_choice', 'dropdown'];
 
 // Types déjà proposés par leur propre élément de la palette.
-export const HIDDEN_FROM_CUSTOM = ['informational_text', 'meal_choice'];
+export const HIDDEN_FROM_CUSTOM = ['informational_text', 'meal_choice', 'sub_events'];
 
 export const PALETTE_DRAG_TYPE = 'application/x-itaza-palette';
 
@@ -73,6 +74,7 @@ export const TYPE_DESCRIPTIONS: Record<string, string> = {
     social_profile: 'Un profil LinkedIn, Instagram, Facebook…',
     quantity: 'Une quantité bornée : places, tickets, chambres…',
     postal_address: 'Une adresse complète : rue, ville, pays.',
+    sub_events: "Les sessions auxquelles l'invité et ses accompagnants participent.",
 };
 
 export const SCREEN_META: Record<ScreenKey, { title: string; icon: BuilderIconName }> = {
@@ -107,6 +109,7 @@ export interface BlockBlueprint {
 export type PaletteAction =
     | { kind: 'field'; blueprint: BlockBlueprint }
     | { kind: 'custom' }
+    | { kind: 'subEvents' }
     | { kind: 'screen'; screen: ScreenKey }
     | { kind: 'soon' };
 
@@ -144,7 +147,7 @@ export const PALETTE: PaletteEntry[] = [
         action: { kind: 'field', blueprint: { type: 'informational_text', label: 'Ajoutez ici votre texte.', config: { show_if: 'always' } } },
     },
     { id: 'custom', label: 'Question personnalisée', icon: 'question', premium: true, action: { kind: 'custom' } },
-    { id: 'sub_event', label: 'Événement secondaire', icon: 'subEvent', action: { kind: 'soon' } },
+    { id: 'sub_event', label: 'Événements secondaires', icon: 'subEvent', action: { kind: 'subEvents' } },
     { id: 'donation', label: 'Don en espèces ou en nature', icon: 'donation', action: { kind: 'soon' } },
     {
         id: 'note',
@@ -251,6 +254,18 @@ export function createField(blueprint: BlockBlueprint, fields: FieldData[]): Bui
 
 export function blueprintForType(type: string): BlockBlueprint {
     return { type, label: 'Nouvelle question' };
+}
+
+/**
+ * Bloc « Événements secondaires » : propose d'emblée toutes les sessions,
+ * que l'organisateur peut ensuite restreindre dans les réglages du bloc.
+ */
+export function subEventsBlueprint(subEvents: SubEventOption[]): BlockBlueprint {
+    return {
+        type: 'sub_events',
+        label: 'À quelles sessions participerez-vous ?',
+        config: { sub_events: subEvents.map(({ id, title }) => ({ id, title })) },
+    };
 }
 
 export function duplicateField(field: BuilderField, fields: FieldData[]): BuilderField {
