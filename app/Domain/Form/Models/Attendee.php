@@ -13,9 +13,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Le participant réel (§7.1 du CDC), distinct de la Registration qui porte
- * la soumission. Une Registration simple (T-030) crée toujours exactement
- * un Attendee, is_primary — l'inscription de groupe (T-032) en ajoutera
- * d'autres, chacun avec sa propre identité.
+ * la soumission. Une Registration crée toujours un Attendee is_primary (le
+ * titulaire), puis un Attendee par accompagnant (T-032), rangés par
+ * position, chacun avec sa propre identité et son propre QR (qr_jti).
  */
 final class Attendee extends Model
 {
@@ -32,6 +32,8 @@ final class Attendee extends Model
         'last_name',
         'email',
         'is_primary',
+        'position',
+        'qr_jti',
         'checked_in_at',
     ];
 

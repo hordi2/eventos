@@ -5,7 +5,6 @@ import TextInput from '../TextInput';
 import Toggle from '../Toggle';
 import { SCREEN_META } from './logic';
 import SidePanel from './SidePanel';
-import SoonBadge from './SoonBadge';
 import { type FormSettings, type RsvpSettings, type ScreenKey, type ScreenTexts, type WelcomeSettings } from './types';
 
 interface ScreenDrawerProps {
@@ -108,9 +107,19 @@ export default function ScreenDrawer({ screen, settings, eventTitle, onSave, onC
                             onChange={(event) => setRsvp({ decline_label: event.target.value })}
                         />
                     </div>
-                    <div className="flex items-center justify-between gap-4 text-sm text-ink-soft">
-                        <span>Nombre de personnes qui accompagnent l'invité</span>
-                        <SoonBadge />
+                    <div>
+                        <InputLabel htmlFor="rsvp_companions">Accompagnants maximum par invité</InputLabel>
+                        <TextInput
+                            id="rsvp_companions"
+                            type="number"
+                            min={0}
+                            max={20}
+                            value={draft.rsvp.max_companions}
+                            onChange={(event) => setRsvp({ max_companions: Math.max(0, Math.min(20, Math.trunc(Number(event.target.value) || 0))) })}
+                        />
+                        <p className="mt-2 text-xs text-ink-soft">
+                            0 : chaque invité s'inscrit seul. Au-delà, il ajoute ses accompagnants par leur nom ; chacun compte pour une place et reçoit son QR code.
+                        </p>
                     </div>
                 </>
             )}

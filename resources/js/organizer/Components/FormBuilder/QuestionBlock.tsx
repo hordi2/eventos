@@ -17,6 +17,7 @@ interface QuestionBlockProps {
     tagNames: string[];
     hasRule: boolean;
     declineEnabled: boolean;
+    companionsEnabled: boolean;
     value: unknown;
     onValueChange: (value: unknown) => void;
     onOpen: () => void;
@@ -45,6 +46,7 @@ export default function QuestionBlock({
     tagNames,
     hasRule,
     declineEnabled,
+    companionsEnabled,
     value,
     onValueChange,
     onOpen,
@@ -63,6 +65,10 @@ export default function QuestionBlock({
 
     if (declineEnabled && showIf !== 'always') {
         chips.push(showIf === 'attending' ? 'Invités présents' : 'Invités qui ne viennent pas');
+    }
+
+    if (companionsEnabled && field.config.ask_scope === 'each_attendee') {
+        chips.push('À chaque personne');
     }
 
     if (tagNames.length > 0) {

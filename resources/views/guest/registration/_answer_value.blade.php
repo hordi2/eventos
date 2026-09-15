@@ -1,0 +1,22 @@
+{{-- Valeur d'une réponse du brouillon, lisible : libellé d'option, Oui/Non, adresse sur une ligne. --}}
+@switch($field->type->value)
+    @case('single_choice')
+    @case('meal_choice')
+    @case('dropdown')
+        {{ $field->options->firstWhere('value', $raw)?->label ?? $raw }}
+        @break
+    @case('multiple_choice')
+        {{ $field->options->whereIn('value', (array) $raw)->pluck('label')->implode(', ') }}
+        @break
+    @case('yes_no')
+        {{ $raw === '1' || $raw === 1 ? 'Oui' : 'Non' }}
+        @break
+    @case('consent')
+        Accepté
+        @break
+    @case('postal_address')
+        {{ \App\Domain\Form\Support\PostalAddress::format((array) $raw) }}
+        @break
+    @default
+        {{ is_array($raw) ? implode(', ', $raw) : $raw }}
+@endswitch

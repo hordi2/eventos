@@ -12,7 +12,14 @@
         <form method="POST" action="{{ route('guest.registration.answers.store', [request()->route('organization'), request()->route('event'), $draft->resume_token]) }}" novalidate>
             @csrf
 
-            @php($hasVisibleQuestion = collect($visibility)->contains(fn (array $state): bool => $state['visible']))
+            @php
+                $companionSections = collect($companions)->map(fn (array $companion) => [
+                    ...$companion,
+                    'fields' => $version->fields->filter(fn ($field) => \App\Domain\Form\Support\AskScope::isPerPerson($field) && $companion['visibility'][$field->key]['visible']),
+                ]);
+                $hasVisibleQuestion = collect($visibility)->contains(fn (array $state): bool => $state['visible'])
+                    || $companionSections->contains(fn (array $section): bool => $section['fields']->isNotEmpty());
+            @endphp
 
             @unless ($hasVisibleQuestion)
                 <p class="mb-8 text-ink-soft">Aucune question supplémentaire : vous pouvez continuer.</p>
@@ -22,6 +29,21 @@
                 @if ($visibility[$field->key]['visible'])
                     @include('guest.registration._field', ['field' => $field, 'value' => data_get($draft->answers, $field->key)])
                 @endif
+            @endforeach
+
+            {{-- Questions posées à chaque personne : une section par accompagnant (T-032). --}}
+            @foreach ($companionSections as $index => $section)
+                @continue($section['fields']->isEmpty())
+                <section class="mb-8 rounded-card border border-line p-4">
+                    <h2 class="mb-4 text-lg">Pour {{ $section['name'] }}</h2>
+                    @foreach ($section['fields'] as $field)
+                        @include('guest.registration._field', [
+                            'field' => $field,
+                            'value' => $section['answers'][$field->key] ?? null,
+                            'namePrefix' => "_companions[{$index}][answers]",
+                        ])
+                    @endforeach
+                </section>
             @endforeach
 
             <button type="submit" class="form-button min-h-11 w-full rounded-pill px-8 py-3 font-medium">Continuer</button>

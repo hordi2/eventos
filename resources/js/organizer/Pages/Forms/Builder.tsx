@@ -454,6 +454,7 @@ export default function FormBuilder({ event, form, fieldTypes, fonts, tags, isFr
                 isFreePlan={isFreePlan}
                 errors={fieldErrors(fields.indexOf(selectedField))}
                 freshKey={freshUidsRef.current.has(selectedField.uid)}
+                companionsEnabled={settings.rsvp.max_companions > 0}
                 onSave={saveField}
                 onCancel={() => {
                     freshUidsRef.current.delete(selectedField.uid);

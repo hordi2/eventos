@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Organizer\Form;
 
+use App\Domain\Form\Data\CompanionData;
 use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\RuleAction;
+use App\Domain\Form\Support\AskScope;
 use App\Domain\Form\Support\FormSettings;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Foundation\Http\FormRequest;
@@ -32,7 +34,7 @@ final class SaveFormRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
 
             'fields' => ['present', 'array'],
-            'fields.*.key' => ['nullable', 'string', 'max:255'],
+            'fields.*.key' => ['nullable', 'string', 'max:255', Rule::notIn([CompanionData::INPUT_KEY])],
             'fields.*.type' => ['required', Rule::enum(FieldType::class)],
             'fields.*.label' => ['required', 'string', 'max:255'],
             'fields.*.help_text' => ['nullable', 'string'],
@@ -41,6 +43,8 @@ final class SaveFormRequest extends FormRequest
             // Réglages « Demander si » et « Seulement pour les invités portant
             // le tag… » du panneau d'un bloc (EvaluateFormVisibility).
             'fields.*.config.show_if' => ['nullable', Rule::in(['always', 'attending', 'not_attending'])],
+            // « Poser la question » : une fois, ou à chaque personne (T-032).
+            'fields.*.config.ask_scope' => ['nullable', Rule::in([AskScope::ONCE, AskScope::EACH_ATTENDEE])],
             'fields.*.config.tag_ids' => ['nullable', 'array'],
             'fields.*.config.tag_ids.*' => [
                 'integer',

@@ -48,6 +48,35 @@
                 @endif
             @endforeach
 
+            {{-- Accompagnants (T-032) : leur nombre ne change pas ici, seulement leurs noms et réponses. --}}
+            @foreach ($companions as $index => $companion)
+                <section class="mb-8 rounded-card border border-line p-4">
+                    <h2 class="mb-4 text-lg">Accompagnant {{ $index + 1 }}</h2>
+                    <div class="mb-6 grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="companion_{{ $index }}_first_name" class="mb-1.5 block text-sm font-medium text-ink">Prénom *</label>
+                            <input type="text" id="companion_{{ $index }}_first_name" name="_companions[{{ $index }}][first_name]" value="{{ old("_companions.{$index}.first_name", $companion['firstName']) }}" required class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                            @error("_companions.{$index}.first_name")
+                                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <label for="companion_{{ $index }}_last_name" class="mb-1.5 block text-sm font-medium text-ink">Nom</label>
+                            <input type="text" id="companion_{{ $index }}_last_name" name="_companions[{{ $index }}][last_name]" value="{{ old("_companions.{$index}.last_name", $companion['lastName']) }}" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                        </div>
+                    </div>
+                    @foreach ($version->fields as $field)
+                        @if (\App\Domain\Form\Support\AskScope::isPerPerson($field) && $companion['visibility'][$field->key]['visible'])
+                            @include('guest.registration._field', [
+                                'field' => $field,
+                                'value' => $companion['answers'][$field->key] ?? null,
+                                'namePrefix' => "_companions[{$index}][answers]",
+                            ])
+                        @endif
+                    @endforeach
+                </section>
+            @endforeach
+
             <button type="submit" class="form-button min-h-11 w-full rounded-pill px-8 py-3 font-medium">Enregistrer les modifications</button>
         </form>
     </div>

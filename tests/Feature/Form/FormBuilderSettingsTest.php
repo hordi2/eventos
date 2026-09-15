@@ -96,6 +96,25 @@ it('refuse une logique conditionnelle circulaire sans toucher aux questions enre
     expect($form->fresh()->latestVersion()->fields->pluck('key')->all())->toBe(['nom']);
 });
 
+it('enregistre le nombre maximal d\'accompagnants et une question posée à chaque personne', function (): void {
+    [, $admin, $form] = formWithBuilderSettings();
+
+    $this->actingAs($admin)->patch("/forms/{$form->id}", [
+        'name' => 'Inscription',
+        'fields' => [['key' => 'menu', 'type' => 'short_text', 'label' => 'Menu', 'config' => ['ask_scope' => 'each_attendee']]],
+        'settings' => ['rsvp' => ['max_companions' => 3]],
+    ])->assertRedirect(route('forms.edit', $form));
+
+    expect($form->fresh()->settings['rsvp']['max_companions'])->toBe(3);
+    expect($form->fresh()->latestVersion()->fields->first()->config['ask_scope'])->toBe('each_attendee');
+
+    $this->actingAs($admin)->patch("/forms/{$form->id}", [
+        'name' => 'Inscription',
+        'fields' => [['key' => '_companions', 'type' => 'short_text', 'label' => 'Menu', 'config' => ['ask_scope' => 'tout le monde']]],
+        'settings' => ['rsvp' => ['max_companions' => 50]],
+    ])->assertSessionHasErrors(['fields.0.key', 'fields.0.config.ask_scope', 'settings.rsvp.max_companions']);
+});
+
 it('refuse une couleur de thème invalide, une police inconnue et un public de question inconnu', function (): void {
     [, $admin, $form] = formWithBuilderSettings();
 

@@ -18,6 +18,24 @@
             <p class="mb-8 whitespace-pre-line text-ink-soft">{{ $settings['confirmation']['message'] !== '' ? $settings['confirmation']['message'] : "Merci, votre inscription à {$event->title} est enregistrée." }}</p>
         @endif
 
+        {{-- Un QR d'entrée par personne, titulaire puis accompagnants (T-032). --}}
+        @if ($qrCodes !== [])
+            <section class="mb-10">
+                <h2 class="mb-2 text-lg">{{ count($qrCodes) > 1 ? "Vos QR codes d'entrée" : "Votre QR code d'entrée" }}</h2>
+                <p class="mb-6 text-sm text-ink-soft">
+                    {{ count($qrCodes) > 1 ? "Chaque personne présente le sien à l'accueil, sur téléphone ou imprimé." : "Présentez-le à l'accueil, sur votre téléphone ou imprimé." }}
+                </p>
+                <div class="grid gap-4 {{ count($qrCodes) > 1 ? 'grid-cols-2' : 'mx-auto max-w-[220px]' }}">
+                    @foreach ($qrCodes as $qrCode)
+                        <figure class="rounded-card border border-line bg-bg p-3">
+                            <img src="{{ $qrCode['image'] }}" alt="QR code d'entrée de {{ $qrCode['name'] !== '' ? $qrCode['name'] : 'l\'invité' }}" width="200" height="200" class="mx-auto h-auto w-full max-w-[200px]">
+                            <figcaption class="mt-2 text-sm font-medium text-ink">{{ $qrCode['name'] !== '' ? $qrCode['name'] : 'Invité' }}</figcaption>
+                        </figure>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
         <p class="mb-8 text-sm text-ink-soft">
             {{ $registration->status->value === 'declined' ? 'Réponse enregistrée' : 'Inscription enregistrée' }} avec l'adresse {{ $registration->email }}.
         </p>

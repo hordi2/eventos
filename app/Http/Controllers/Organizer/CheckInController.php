@@ -8,9 +8,9 @@ use App\Domain\CheckIn\Actions\RecordCheckIn;
 use App\Domain\CheckIn\Data\GuestData;
 use App\Domain\CheckIn\Models\CheckInDirection;
 use App\Domain\Event\Models\Event;
+use App\Domain\Form\InvalidAttendeeQrTokenException;
 use App\Domain\Ticketing\Actions\AddWalkInGuest;
 use App\Domain\Ticketing\Actions\DetermineActivePriceTier;
-use App\Domain\Ticketing\Actions\VerifyTicketQrToken;
 use App\Domain\Ticketing\InvalidQrTokenException;
 use App\Domain\Ticketing\Models\TicketType;
 use App\Domain\Ticketing\TicketsUnavailableException;
@@ -20,6 +20,7 @@ use App\Http\Requests\Organizer\CheckIn\RecordCheckInRequest;
 use App\Http\Requests\Organizer\CheckIn\ScanTicketRequest;
 use App\Support\CheckIn\GetEventGuestList;
 use App\Support\CheckIn\GuestExistsForEvent;
+use App\Support\CheckIn\ResolveScannedGuest;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
@@ -120,10 +121,14 @@ final class CheckInController extends Controller
         ]);
     }
 
+    /**
+     * Accepte le QR d'un billet payé comme celui d'une personne inscrite
+     * par le formulaire, accompagnants compris (T-032).
+     */
     public function scan(
         int $event,
         ScanTicketRequest $request,
-        VerifyTicketQrToken $verifyTicketQrToken,
+        ResolveScannedGuest $resolveScannedGuest,
         RecordCheckIn $recordCheckIn,
         GuestExistsForEvent $guestExistsForEvent,
         GetEventGuestList $getEventGuestList,
@@ -132,27 +137,30 @@ final class CheckInController extends Controller
         Gate::authorize('checkIn', $event->organization);
 
         try {
-            $ticket = $verifyTicketQrToken->handle($request->string('token')->toString());
-        } catch (InvalidQrTokenException $exception) {
+            $scanned = $resolveScannedGuest->handle($request->string('token')->toString());
+        } catch (InvalidQrTokenException|InvalidAttendeeQrTokenException $exception) {
             return response()->json(['error' => $exception->getMessage()], 422);
         }
 
-        if (! $guestExistsForEvent->handle($event->id, null, $ticket->id)) {
-            return response()->json(['error' => "Ce billet n'appartient pas à cet événement."], 422);
+        $attendeeId = $scanned['type'] === 'attendee' ? $scanned['id'] : null;
+        $ticketId = $scanned['type'] === 'ticket' ? $scanned['id'] : null;
+
+        if (! $guestExistsForEvent->handle($event->id, $attendeeId, $ticketId)) {
+            return response()->json(['error' => "Ce QR code n'appartient pas à cet événement."], 422);
         }
 
         $checkIn = $recordCheckIn->handle(
             organizationId: $event->organization_id,
             eventId: $event->id,
-            attendeeId: null,
-            ticketId: $ticket->id,
+            attendeeId: $attendeeId,
+            ticketId: $ticketId,
             deviceLocalId: (string) Str::uuid(),
             direction: CheckInDirection::CheckIn,
             recordedAt: CarbonImmutable::now(),
             checkedInBy: $request->user()?->id,
         );
 
-        $guest = $getEventGuestList->findOne($event, 'ticket', $ticket->id);
+        $guest = $getEventGuestList->findOne($event, $scanned['type'], $scanned['id']);
 
         return response()->json([
             'status' => $checkIn->status->value,

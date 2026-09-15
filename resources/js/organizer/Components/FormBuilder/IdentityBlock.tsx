@@ -41,6 +41,20 @@ export default function IdentityBlock({ eventTitle, rsvp, phoneRequired, simulat
                     <input type="tel" aria-label="Téléphone (aperçu)" readOnly tabIndex={-1} placeholder="+243 8xx xxx xxx" className={PREVIEW_INPUT} />
                 </div>
 
+                {rsvp.max_companions > 0 && (
+                    <div>
+                        <p className="mb-1.5 text-sm font-medium">Vos accompagnants</p>
+                        <p className="mb-2 text-xs opacity-60">
+                            Jusqu'à {rsvp.max_companions} {rsvp.max_companions > 1 ? 'personnes' : 'personne'}, chacune avec son QR code.
+                        </p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <input type="text" aria-label="Prénom de l'accompagnant (aperçu)" readOnly tabIndex={-1} placeholder="Prénom" className={PREVIEW_INPUT} />
+                            <input type="text" aria-label="Nom de l'accompagnant (aperçu)" readOnly tabIndex={-1} placeholder="Nom" className={PREVIEW_INPUT} />
+                        </div>
+                        <p className="mt-2 text-sm font-medium underline opacity-80">+ Ajouter un accompagnant</p>
+                    </div>
+                )}
+
                 {rsvp.decline_enabled && (
                     <fieldset>
                         <legend className="mb-2 text-sm font-medium">Votre réponse *</legend>

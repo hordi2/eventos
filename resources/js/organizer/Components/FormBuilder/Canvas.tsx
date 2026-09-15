@@ -153,6 +153,7 @@ export default function Canvas(props: CanvasProps) {
                                         tagNames={tags.filter((tag) => tagIds.includes(tag.id)).map((tag) => tag.name)}
                                         hasRule={rules.some((rule) => rule.target_field_key === field.key)}
                                         declineEnabled={settings.rsvp.decline_enabled}
+                                        companionsEnabled={settings.rsvp.max_companions > 0}
                                         value={answers[field.key]}
                                         onValueChange={(value) => props.onAnswerChange(field.key, value)}
                                         onOpen={() => props.onSelect({ kind: 'field', uid: field.uid })}

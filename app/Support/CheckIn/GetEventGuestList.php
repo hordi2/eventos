@@ -51,12 +51,21 @@ final class GetEventGuestList
     }
 
     /**
+     * Chaque personne attendue : le titulaire et ses accompagnants (T-032),
+     * ces derniers présentés « avec » le titulaire pour l'accueil. Chercher
+     * le nom, l'e-mail ou le téléphone du titulaire retrouve tout son groupe.
+     *
      * @return list<GuestData>
      */
     private function attendees(Event $event, ?string $search, ?int $onlyId = null): array
     {
         $query = DB::table('attendees')
             ->join('registrations', 'registrations.id', '=', 'attendees.registration_id')
+            ->leftJoin('attendees as holders', function ($join): void {
+                $join->on('holders.registration_id', '=', 'attendees.registration_id')
+                    ->where('holders.is_primary', true)
+                    ->whereNull('holders.deleted_at');
+            })
             ->leftJoin('check_ins', function ($join): void {
                 $join->on('check_ins.attendee_id', '=', 'attendees.id')
                     ->where('check_ins.direction', 'check_in')
@@ -65,7 +74,6 @@ final class GetEventGuestList
             ->where('registrations.organization_id', $event->organization_id)
             ->where('registrations.event_id', $event->id)
             ->where('registrations.status', RegistrationStatus::Confirmed->value)
-            ->where('attendees.is_primary', true)
             ->whereNull('attendees.deleted_at')
             ->whereNull('registrations.deleted_at');
 
@@ -78,29 +86,48 @@ final class GetEventGuestList
                 $query->where('attendees.first_name', 'ilike', "%{$search}%")
                     ->orWhere('attendees.last_name', 'ilike', "%{$search}%")
                     ->orWhere('attendees.email', 'ilike', "%{$search}%")
+                    ->orWhere('registrations.email', 'ilike', "%{$search}%")
                     ->orWhere('registrations.phone_e164', 'ilike', "%{$search}%");
             });
         }
 
         return $query
+            ->orderBy('registrations.id')
+            ->orderBy('attendees.position')
             ->get([
                 'attendees.id',
                 'attendees.first_name',
                 'attendees.last_name',
                 'attendees.email',
+                'attendees.is_primary',
+                'holders.first_name as holder_first_name',
+                'holders.last_name as holder_last_name',
                 'registrations.phone_e164',
                 'check_ins.recorded_at as checked_in_at',
             ])
             ->map(fn (object $row): GuestData => new GuestData(
                 guestType: 'attendee',
                 id: (int) $row->id,
-                name: trim("{$row->first_name} {$row->last_name}"),
+                name: $this->attendeeName($row),
                 email: $row->email,
                 phone: $row->phone_e164,
                 checkedIn: $row->checked_in_at !== null,
                 checkedInAt: $row->checked_in_at,
             ))
             ->all();
+    }
+
+    private function attendeeName(object $row): string
+    {
+        $name = trim("{$row->first_name} {$row->last_name}");
+
+        if ((bool) $row->is_primary) {
+            return $name;
+        }
+
+        $holder = trim("{$row->holder_first_name} {$row->holder_last_name}");
+
+        return $holder !== '' ? "{$name} (avec {$holder})" : $name;
     }
 
     /**

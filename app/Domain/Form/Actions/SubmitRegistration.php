@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Form\Actions;
 
 use App\Domain\Form\Data\AttendeeIdentity;
+use App\Domain\Form\Data\CompanionData;
 use App\Domain\Form\Data\EventRegistrationContext;
 use App\Domain\Form\Data\FormVisibilityContext;
 use App\Domain\Form\Data\RegistrationSubmissionMetadata;
@@ -19,9 +20,12 @@ use App\Domain\Form\Models\RegistrationAnswer;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Form\OptionFullException;
 use App\Domain\Form\RegistrationClosedException;
+use App\Domain\Form\Support\AskScope;
 use App\Domain\Form\Support\BuildFormValidationRules;
 use App\Domain\Form\Support\EvaluateFormVisibility;
 use App\Domain\Form\Support\IsRegistrationWindowOpen;
+use App\Domain\Form\Support\OptionReservationKey;
+use App\Domain\Form\Support\ValidateCompanions;
 use App\Support\Capacity\Actions\ReserveCapacity;
 use App\Support\Capacity\Data\ReservationOutcome;
 use App\Support\MultiTenancy\CurrentOrganization;
@@ -44,11 +48,13 @@ final class SubmitRegistration
         private readonly NormalizeFieldAnswer $normalizeFieldAnswer,
         private readonly ReserveCapacity $reserveCapacity,
         private readonly IsRegistrationWindowOpen $isRegistrationWindowOpen,
+        private readonly ValidateCompanions $validateCompanions,
     ) {}
 
     /**
      * @param  array<string, mixed>  $answers
      * @param  FormVisibilityContext|null  $visibilityContext  réponse de l'invité (vient ou non) et tags de son contact
+     * @param  list<CompanionData>  $companions  personnes qui accompagnent le titulaire (T-032)
      */
     public function handle(
         EventRegistrationContext $context,
@@ -58,6 +64,7 @@ final class SubmitRegistration
         RegistrationSubmissionMetadata $metadata,
         string $idempotencyKey,
         ?FormVisibilityContext $visibilityContext = null,
+        array $companions = [],
     ): SubmitRegistrationResult {
         app(CurrentOrganization::class)->set($context->organizationId);
         $formVersion->loadMissing(['fields.options', 'conditionalRules.targetField']);
@@ -83,15 +90,18 @@ final class SubmitRegistration
 
         // « Je ne peux pas venir » : la réponse est gardée comme refus et ne
         // tient aucune place, ni dans la capacité de l'événement ni dans le
-        // quota d'une option (décision produit).
+        // quota d'une option (décision produit). Un refus ne vient avec personne.
         $declined = $visibilityContext !== null && ! $visibilityContext->attending;
+        $companions = $declined ? [] : $companions;
 
         $visibility = $this->evaluateFormVisibility->handle($formVersion, $answers, $visibilityContext);
         $rules = $this->buildFormValidationRules->handle($formVersion, $answers, $visibilityContext);
         Validator::make($answers, $rules)->validate();
+        $this->validateCompanions->handle($formVersion, $answers, $companions, $visibilityContext);
 
-        $registration = DB::transaction(function () use ($context, $formVersion, $identity, $email, $answers, $metadata, $idempotencyKey, $visibility, $declined): Registration {
-            $status = $declined ? RegistrationStatus::Declined : $this->reserveEventPlace($context, $idempotencyKey);
+        $registration = DB::transaction(function () use ($context, $formVersion, $identity, $email, $answers, $metadata, $idempotencyKey, $visibility, $declined, $companions, $visibilityContext): Registration {
+            // Une place par personne : le titulaire et chacun de ses accompagnants.
+            $status = $declined ? RegistrationStatus::Declined : $this->reserveEventPlace($context, $idempotencyKey, 1 + count($companions));
 
             $registration = Registration::query()->create([
                 'organization_id' => $context->organizationId,
@@ -119,9 +129,26 @@ final class SubmitRegistration
                 'last_name' => $identity->lastName,
                 'email' => $email,
                 'is_primary' => true,
+                'position' => 0,
             ]);
 
             $this->writeAnswers($context, $formVersion, $registration, $answers, $visibility, $metadata->ipAddress, $idempotencyKey, ! $declined);
+
+            foreach ($companions as $index => $companion) {
+                $attendee = Attendee::query()->create([
+                    'organization_id' => $context->organizationId,
+                    'registration_id' => $registration->id,
+                    'first_name' => trim($companion->firstName),
+                    'last_name' => $companion->lastName !== null ? trim($companion->lastName) : null,
+                    'is_primary' => false,
+                    'position' => $index + 1,
+                ]);
+
+                $companionAnswers = AskScope::answersFor($formVersion, $answers, $companion->answers);
+                $companionVisibility = $this->evaluateFormVisibility->handle($formVersion, $companionAnswers, $visibilityContext);
+
+                $this->writeAnswers($context, $formVersion, $registration, $companionAnswers, $companionVisibility, $metadata->ipAddress, $idempotencyKey, true, $attendee->id);
+            }
 
             return $registration;
         });
@@ -131,7 +158,7 @@ final class SubmitRegistration
         return SubmitRegistrationResult::created($registration);
     }
 
-    private function reserveEventPlace(EventRegistrationContext $context, string $idempotencyKey): RegistrationStatus
+    private function reserveEventPlace(EventRegistrationContext $context, string $idempotencyKey, int $people): RegistrationStatus
     {
         $outcome = $this->reserveCapacity->handle(
             organizationId: $context->organizationId,
@@ -139,6 +166,7 @@ final class SubmitRegistration
             holderId: (string) $context->eventId,
             capacityLimit: $context->capacity,
             reservationKey: $idempotencyKey,
+            quantity: $people,
             allowWaitlist: $context->allowWaitlist,
         );
 
@@ -181,6 +209,9 @@ final class SubmitRegistration
     }
 
     /**
+     * Réponses du titulaire ($attendeeId null) ou d'un accompagnant, qui ne
+     * répond qu'aux questions posées à chaque personne.
+     *
      * @param  array<string, mixed>  $answers
      * @param  array<string, array{visible: bool, required: bool}>  $visibility
      */
@@ -193,8 +224,13 @@ final class SubmitRegistration
         ?string $ip,
         string $idempotencyKey,
         bool $reserveOptions,
+        ?int $attendeeId = null,
     ): void {
         foreach ($formVersion->fields as $field) {
+            if ($attendeeId !== null && ! AskScope::isPerPerson($field)) {
+                continue;
+            }
+
             if (! $visibility[$field->key]['visible'] || ! array_key_exists($field->key, $answers)) {
                 continue;
             }
@@ -215,17 +251,18 @@ final class SubmitRegistration
             RegistrationAnswer::query()->create([
                 'organization_id' => $context->organizationId,
                 'registration_id' => $registration->id,
+                'attendee_id' => $attendeeId,
                 'form_field_id' => $field->id,
                 'value' => $normalized,
             ]);
 
             if ($reserveOptions && $field->type->supportsOptions()) {
-                $this->reserveSelectedOptions($context, $field, $rawValue, $idempotencyKey);
+                $this->reserveSelectedOptions($context, $field, $rawValue, $idempotencyKey, $attendeeId);
             }
         }
     }
 
-    private function reserveSelectedOptions(EventRegistrationContext $context, FormField $field, mixed $rawValue, string $idempotencyKey): void
+    private function reserveSelectedOptions(EventRegistrationContext $context, FormField $field, mixed $rawValue, string $idempotencyKey, ?int $attendeeId): void
     {
         $selectedValues = is_array($rawValue) ? $rawValue : [$rawValue];
 
@@ -241,7 +278,7 @@ final class SubmitRegistration
                 holderType: 'form_field_option',
                 holderId: (string) $option->id,
                 capacityLimit: $option->quota,
-                reservationKey: "{$idempotencyKey}:option:{$option->id}",
+                reservationKey: OptionReservationKey::for($idempotencyKey, $option->id, $attendeeId),
                 allowWaitlist: false,
             );
 

@@ -24,14 +24,19 @@ final class BuildFormValidationRules
 
     /**
      * @param  array<string, mixed>  $answers
+     * @param  bool  $perPersonOnly  règles d'un accompagnant : seulement les questions posées à chaque personne (T-032)
      * @return array<string, list<mixed>>
      */
-    public function handle(FormVersion $version, array $answers, ?FormVisibilityContext $context = null): array
+    public function handle(FormVersion $version, array $answers, ?FormVisibilityContext $context = null, bool $perPersonOnly = false): array
     {
         $visibility = $this->evaluateFormVisibility->handle($version, $answers, $context);
         $rules = [];
 
         foreach ($version->fields as $field) {
+            if ($perPersonOnly && ! AskScope::isPerPerson($field)) {
+                continue;
+            }
+
             $state = $visibility[$field->key];
 
             if (! $state['visible']) {

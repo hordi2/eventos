@@ -54,6 +54,8 @@ final class BuildExportRows
                 'phone' => 'Téléphone',
                 'status' => 'Statut',
                 'submitted_at' => 'Date de soumission',
+                'people' => 'Nombre de personnes',
+                'companions' => 'Accompagnants',
             ],
             ExportType::Orders => [
                 'buyer_name' => 'Acheteur',
@@ -128,10 +130,13 @@ final class BuildExportRows
      */
     private function registrationsRows(Event $event, array $columnKeys): Generator
     {
+        // lazy() plutôt que cursor() : charge les accompagnants par paquets
+        // au lieu d'une requête par inscription.
         $registrations = Registration::query()
             ->where('organization_id', $event->organization_id)
             ->where('event_id', $event->id)
-            ->cursor();
+            ->with('companions')
+            ->lazy();
 
         foreach ($registrations as $registration) {
             yield $this->pick([
@@ -141,6 +146,10 @@ final class BuildExportRows
                 'phone' => (string) $registration->phone_e164,
                 'status' => $this->registrationStatusLabel($registration->status->value),
                 'submitted_at' => $registration->created_at?->toDateTimeString() ?? '',
+                'people' => (string) (1 + $registration->companions->count()),
+                'companions' => $registration->companions
+                    ->map(fn ($companion): string => trim("{$companion->first_name} {$companion->last_name}"))
+                    ->implode(', '),
             ], $columnKeys);
         }
     }

@@ -13,10 +13,13 @@
             <p class="mb-6 rounded-control border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ $message }}</p>
         @enderror
 
+        @php($identityUrl = route('guest.registration.identity.show', [request()->route('organization'), request()->route('event'), $draft->resume_token]))
+        @php($answersUrl = route('guest.registration.answers.show', [request()->route('organization'), request()->route('event'), $draft->resume_token]))
+
         <div class="mb-6 rounded-card border border-line p-4">
             <div class="mb-3 flex items-center justify-between">
                 <h2 class="font-label text-xs tracking-[0.1em] text-ink-soft uppercase">Identité</h2>
-                <a href="{{ route('guest.registration.identity.show', [request()->route('organization'), request()->route('event'), $draft->resume_token]) }}" class="text-xs text-accent underline">Modifier</a>
+                <a href="{{ $identityUrl }}" class="text-xs text-accent underline">Modifier</a>
             </div>
             <p class="text-sm text-ink">{{ trim(($draft->identity['first_name'] ?? '').' '.($draft->identity['last_name'] ?? '')) ?: '—' }}</p>
             <p class="text-sm text-ink-soft">{{ $draft->identity['email'] ?? '' }}</p>
@@ -29,17 +32,17 @@
             <div class="mb-6 rounded-card border border-line p-4">
                 <div class="mb-3 flex items-center justify-between">
                     <h2 class="font-label text-xs tracking-[0.1em] text-ink-soft uppercase">Votre réponse</h2>
-                    <a href="{{ route('guest.registration.identity.show', [request()->route('organization'), request()->route('event'), $draft->resume_token]) }}" class="text-xs text-accent underline">Modifier</a>
+                    <a href="{{ $identityUrl }}" class="text-xs text-accent underline">Modifier</a>
                 </div>
                 <p class="text-sm text-ink">{{ $attending ? $settings['rsvp']['attending_label'] : $settings['rsvp']['decline_label'] }}</p>
             </div>
         @endif
 
         @if ($version->fields->isNotEmpty())
-            <div class="mb-8 rounded-card border border-line p-4">
+            <div class="mb-6 rounded-card border border-line p-4">
                 <div class="mb-3 flex items-center justify-between">
                     <h2 class="font-label text-xs tracking-[0.1em] text-ink-soft uppercase">Réponses</h2>
-                    <a href="{{ route('guest.registration.answers.show', [request()->route('organization'), request()->route('event'), $draft->resume_token]) }}" class="text-xs text-accent underline">Modifier</a>
+                    <a href="{{ $answersUrl }}" class="text-xs text-accent underline">Modifier</a>
                 </div>
                 @foreach ($version->fields as $field)
                     @continue(! $visibility[$field->key]['visible'] || $field->type->value === 'informational_text')
@@ -47,29 +50,27 @@
                     @continue($raw === null || $raw === '')
                     <div class="mb-3 last:mb-0">
                         <p class="text-xs text-ink-soft">{{ $field->label }}</p>
-                        <p class="text-sm text-ink">
-                            @switch($field->type->value)
-                                @case('single_choice')
-                                @case('meal_choice')
-                                @case('dropdown')
-                                    {{ $field->options->firstWhere('value', $raw)?->label ?? $raw }}
-                                    @break
-                                @case('multiple_choice')
-                                    {{ $field->options->whereIn('value', (array) $raw)->pluck('label')->implode(', ') }}
-                                    @break
-                                @case('yes_no')
-                                    {{ $raw === '1' || $raw === 1 ? 'Oui' : 'Non' }}
-                                    @break
-                                @case('consent')
-                                    Accepté
-                                    @break
-                                @case('postal_address')
-                                    {{ \App\Domain\Form\Support\PostalAddress::format((array) $raw) }}
-                                    @break
-                                @default
-                                    {{ $raw }}
-                            @endswitch
-                        </p>
+                        <p class="text-sm text-ink">@include('guest.registration._answer_value', ['field' => $field, 'raw' => $raw])</p>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
+        @if ($companions !== [])
+            <div class="mb-8 rounded-card border border-line p-4">
+                <div class="mb-3 flex items-center justify-between">
+                    <h2 class="font-label text-xs tracking-[0.1em] text-ink-soft uppercase">Vos accompagnants</h2>
+                    <a href="{{ $identityUrl }}" class="text-xs text-accent underline">Modifier</a>
+                </div>
+                @foreach ($companions as $companion)
+                    <div class="mb-4 last:mb-0">
+                        <p class="text-sm font-medium text-ink">{{ $companion['name'] }}</p>
+                        @foreach ($version->fields as $field)
+                            @continue(! \App\Domain\Form\Support\AskScope::isPerPerson($field) || ! $companion['visibility'][$field->key]['visible'])
+                            @php($raw = $companion['answers'][$field->key] ?? null)
+                            @continue($raw === null || $raw === '')
+                            <p class="text-sm text-ink-soft">{{ $field->label }} : @include('guest.registration._answer_value', ['field' => $field, 'raw' => $raw])</p>
+                        @endforeach
                     </div>
                 @endforeach
             </div>

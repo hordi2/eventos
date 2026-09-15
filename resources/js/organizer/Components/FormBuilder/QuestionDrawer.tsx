@@ -25,6 +25,8 @@ interface QuestionDrawerProps {
     errors: Record<string, string>;
     // Bloc tout juste ajouté : sa clé sera tirée du texte à l'enregistrement.
     freshKey: boolean;
+    // Accompagnants autorisés : la question peut alors être posée à chacun.
+    companionsEnabled: boolean;
     onSave: (field: BuilderField, rule: RuleData | null) => void;
     onCancel: () => void;
     onRemove: () => void;
@@ -50,7 +52,21 @@ function toNumber(value: string): number | undefined {
  * Réglages d'une question. Les modifications restent un brouillon local
  * jusqu'à « Enregistrer », comme dans un tiroir de propriétés classique.
  */
-export default function QuestionDrawer({ field, fields, rule, fieldTypes, tags, declineEnabled, isFreePlan, errors, freshKey, onSave, onCancel, onRemove }: QuestionDrawerProps) {
+export default function QuestionDrawer({
+    field,
+    fields,
+    rule,
+    fieldTypes,
+    tags,
+    declineEnabled,
+    isFreePlan,
+    errors,
+    freshKey,
+    companionsEnabled,
+    onSave,
+    onCancel,
+    onRemove,
+}: QuestionDrawerProps) {
     const [draft, setDraft] = useState<BuilderField>(() => ({
         ...field,
         config: { ...field.config },
@@ -64,6 +80,7 @@ export default function QuestionDrawer({ field, fields, rule, fieldTypes, tags, 
     const isInformational = draft.type === 'informational_text';
     const hasOptions = TYPES_WITH_OPTIONS.includes(draft.type);
     const showIf: ShowIf = draft.config.show_if ?? 'attending';
+    const askScope = draft.config.ask_scope ?? 'once';
     const tagIds = draft.config.tag_ids ?? [];
     const sources = fields.filter((item) => item.uid !== field.uid && item.type !== 'informational_text');
 
@@ -264,15 +281,23 @@ export default function QuestionDrawer({ field, fields, rule, fieldTypes, tags, 
                     <legend className={PANEL_SECTION_TITLE}>Poser la question</legend>
                     <div className="space-y-2 text-sm">
                         <label className="flex items-center gap-2 text-ink">
-                            <input type="radio" name="ask_scope" checked readOnly />
+                            <input type="radio" name="ask_scope" checked={askScope === 'once'} onChange={() => updateConfig({ ask_scope: undefined })} />
                             Une fois par réponse
                         </label>
-                        <label className="flex items-center gap-2 text-ink-soft">
-                            <input type="radio" name="ask_scope" disabled />
-                            À chaque personne du groupe
-                            <SoonBadge />
+                        <label className={`flex items-center gap-2 ${companionsEnabled ? 'text-ink' : 'text-ink-soft'}`}>
+                            <input
+                                type="radio"
+                                name="ask_scope"
+                                disabled={!companionsEnabled}
+                                checked={askScope === 'each_attendee'}
+                                onChange={() => updateConfig({ ask_scope: 'each_attendee' })}
+                            />
+                            À chaque personne (l'invité et ses accompagnants)
                         </label>
                     </div>
+                    {!companionsEnabled && (
+                        <p className="mt-2 text-xs text-ink-soft">Autorisez des accompagnants dans « Coordonnées et réponse » pour poser une question à chacun.</p>
+                    )}
                 </fieldset>
             )}
 

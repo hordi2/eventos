@@ -21,6 +21,9 @@ final class RegistrationAnswer extends Model
     protected $fillable = [
         'organization_id',
         'registration_id',
+        // Null pour le titulaire ; renseigné pour la réponse d'un accompagnant
+        // à une question posée « à chaque personne » (T-032).
+        'attendee_id',
         'form_field_id',
         'value',
     ];
@@ -43,6 +46,14 @@ final class RegistrationAnswer extends Model
     public function registration(): BelongsTo
     {
         return $this->belongsTo(Registration::class);
+    }
+
+    /**
+     * @return BelongsTo<Attendee, $this>
+     */
+    public function attendee(): BelongsTo
+    {
+        return $this->belongsTo(Attendee::class);
     }
 
     /**

@@ -10,14 +10,16 @@ use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationAnswer;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Form\RegistrationEditLockedException;
+use App\Domain\Form\Support\OptionReservationKey;
 use App\Support\Capacity\Actions\ReleaseCapacity;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Annulation par l'invité (M2.4, T-033) : libère la place tenue sur
+ * Annulation par l'invité (M2.4, T-033) : libère les places tenues sur
  * l'événement — ce qui promeut automatiquement le premier de la liste
- * d'attente (T-024) — et tous les quotas d'option encore tenus.
+ * d'attente (T-024) —, tous les quotas d'option encore tenus, titulaire et
+ * accompagnants compris, et révoque les QR de chaque personne.
  */
 final class CancelRegistration
 {
@@ -43,10 +45,12 @@ final class CancelRegistration
 
             $this->releaseCapacity->handle('event', (string) $registration->event_id, $registration->reservation_key);
 
-            $registration->answers()->with('formField.options')->get()
+            $registration->allAnswers()->with('formField.options')->get()
                 ->each(function (RegistrationAnswer $answer) use ($registration): void {
                     $this->releaseSelectedOptions($registration, $answer);
                 });
+
+            $registration->attendees()->update(['qr_jti' => null]);
         });
 
         RegistrationCancelled::dispatch($registration->fresh());
@@ -63,12 +67,13 @@ final class CancelRegistration
         }
 
         $selected = is_array($answer->value) ? $answer->value : [$answer->value];
+        $attendeeId = $answer->attendee_id !== null ? (int) $answer->attendee_id : null;
 
         foreach ($selected as $value) {
             $option = $field->options->firstWhere('value', $value);
 
             if ($option !== null && $option->quota !== null) {
-                $this->releaseCapacity->handle('form_field_option', (string) $option->id, "{$registration->reservation_key}:option:{$option->id}");
+                $this->releaseCapacity->handle('form_field_option', (string) $option->id, OptionReservationKey::for($registration->reservation_key, $option->id, $attendeeId));
             }
         }
     }

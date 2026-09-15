@@ -85,9 +85,30 @@ final class Registration extends Model
     }
 
     /**
+     * Accompagnants du titulaire (T-032), dans l'ordre de saisie.
+     *
+     * @return HasMany<Attendee, $this>
+     */
+    public function companions(): HasMany
+    {
+        return $this->hasMany(Attendee::class)->where('is_primary', false)->orderBy('position');
+    }
+
+    /**
+     * Réponses du titulaire. Celles de ses accompagnants portent un
+     * attendee_id et se lisent via allAnswers().
+     *
      * @return HasMany<RegistrationAnswer, $this>
      */
     public function answers(): HasMany
+    {
+        return $this->hasMany(RegistrationAnswer::class)->whereNull('attendee_id');
+    }
+
+    /**
+     * @return HasMany<RegistrationAnswer, $this>
+     */
+    public function allAnswers(): HasMany
     {
         return $this->hasMany(RegistrationAnswer::class);
     }

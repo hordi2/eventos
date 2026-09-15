@@ -1,7 +1,10 @@
 export type ShowIf = 'always' | 'attending' | 'not_attending';
 
+export type AskScopeValue = 'once' | 'each_attendee';
+
 export interface FieldConfig {
     show_if?: ShowIf;
+    ask_scope?: AskScopeValue;
     tag_ids?: number[];
     max_length?: number;
     min?: number;
@@ -58,6 +61,7 @@ export interface RsvpSettings {
     decline_enabled: boolean;
     attending_label: string;
     decline_label: string;
+    max_companions: number;
 }
 
 export interface ScreenTexts {

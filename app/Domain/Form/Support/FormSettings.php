@@ -42,6 +42,12 @@ final class FormSettings
         'background' => 'background_image_path',
     ];
 
+    /**
+     * Nombre maximal d'accompagnants qu'un organisateur peut autoriser par
+     * inscription (T-032).
+     */
+    public const MAX_COMPANIONS = 20;
+
     private const COLOR_PATTERN = '/^#[0-9a-fA-F]{6}$/';
 
     /**
@@ -58,6 +64,8 @@ final class FormSettings
             'decline_enabled' => false,
             'attending_label' => 'Je serai présent(e)',
             'decline_label' => 'Je ne peux pas venir',
+            // 0 : l'invité s'inscrit seul, comme avant les accompagnants.
+            'max_companions' => 0,
         ],
         'confirmation' => [
             'title' => '',
@@ -128,6 +136,7 @@ final class FormSettings
             "{$prefix}.rsvp.decline_enabled" => ['sometimes', 'boolean'],
             "{$prefix}.rsvp.attending_label" => ['nullable', 'string', 'max:80'],
             "{$prefix}.rsvp.decline_label" => ['nullable', 'string', 'max:80'],
+            "{$prefix}.rsvp.max_companions" => ['sometimes', 'integer', 'min:0', 'max:'.self::MAX_COMPANIONS],
             "{$prefix}.confirmation.title" => ['nullable', 'string', 'max:120'],
             "{$prefix}.confirmation.message" => ['nullable', 'string', 'max:2000'],
             "{$prefix}.decline_screen.title" => ['nullable', 'string', 'max:120'],

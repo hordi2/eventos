@@ -332,6 +332,15 @@ réponses (menu, présence par sous-événement). Gestion des +1 et +X.
 - [ ] Le décompte de capacité compte chaque personne, pas chaque soumission
 - [ ] +1 anonyme et +X nommés, tous deux fonctionnels
 
+> **Accompagnants nommés, étape C du formulaire (livrée)** :
+> - **Réglage** « Accompagnants maximum par invité » (0 à 20, 0 par défaut). L'invité ajoute ses accompagnants par prénom et nom ; cela fonctionne aussi sans JavaScript.
+> - **Capacité** : chaque personne compte pour une place, liste d'attente comprise, et chaque option à quota est réservée par personne.
+> - **Questions** « posées à chaque personne » (réglage du bloc) : une réponse par accompagnant, avec la même validation et la même logique conditionnelle que pour le titulaire.
+> - **QR** : un QR signé et révocable par personne (§4.6) sur l'écran de confirmation. Le scan de l'accueil accepte ces QR comme ceux des billets, et une annulation les révoque.
+> - **Accueil et export** : liste de check-in avec « (avec {titulaire}) » ; export avec le nombre de personnes et les accompagnants.
+> - **Modification** : noms et réponses des accompagnants modifiables par le lien de l'invité ; leur nombre ne change pas.
+> - **Non livré** : le +1 anonyme, écarté au profit des +X nommés (décision produit).
+
 ---
 
 ### T-033 · Modification et annulation par l'invité · M

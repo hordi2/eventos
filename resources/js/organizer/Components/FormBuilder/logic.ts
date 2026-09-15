@@ -398,7 +398,7 @@ export function resetTheme(theme: ThemeSettings): ThemeSettings {
 export function normalizeSettings(settings: FormSettings): FormSettings {
     return {
         welcome: { ...settings.welcome },
-        rsvp: { ...settings.rsvp },
+        rsvp: { ...settings.rsvp, max_companions: Number(settings.rsvp.max_companions ?? 0) },
         confirmation: { ...settings.confirmation },
         decline_screen: { ...settings.decline_screen },
         theme: { ...settings.theme },
