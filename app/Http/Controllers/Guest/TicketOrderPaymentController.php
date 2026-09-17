@@ -95,6 +95,10 @@ final class TicketOrderPaymentController extends Controller
      * ticket) : une balise meta-refresh recharge cette même page toutes
      * les quelques secondes plutôt que du JavaScript de polling — plus
      * léger, et fonctionne même si le JS est désactivé.
+     *
+     * Failed est terminal, comme Expired : FailOrderPayment a déjà libéré
+     * la capacité, et show() renvoie ici tout ce qui n'est plus pending —
+     * renvoyer vers show() ferait boucler les deux pages.
      */
     public function status(Request $request, string $organization, string $event, string $order): View|RedirectResponse
     {
@@ -102,8 +106,7 @@ final class TicketOrderPaymentController extends Controller
 
         return match ($orderModel->status) {
             OrderStatus::Paid, OrderStatus::Refunded, OrderStatus::PaymentOnSite => redirect()->route('guest.ticketing.payment.confirmation', [$organization, $event, $order]),
-            OrderStatus::Failed => redirect()->route('guest.ticketing.payment.show', [$organization, $event, $order])
-                ->withErrors(['payment' => 'Le paiement a échoué. Vous pouvez réessayer.']),
+            OrderStatus::Failed => view('guest.ticketing.failed', ['event' => $this->event($request), 'order' => $orderModel->load(['items', 'donations'])]),
             OrderStatus::Expired => view('guest.ticketing.expired', ['event' => $this->event($request), 'order' => $orderModel]),
             OrderStatus::Pending => view('guest.ticketing.waiting', ['event' => $this->event($request), 'order' => $orderModel]),
         };
