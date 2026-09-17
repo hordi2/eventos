@@ -34,7 +34,7 @@ final class ExportController extends Controller
             'types' => array_map(fn (ExportType $type): array => [
                 'value' => $type->value,
                 'label' => $type->label(),
-                'columns' => $buildExportRows->columns($type),
+                'columns' => $buildExportRows->columns($type, $event),
             ], ExportType::cases()),
             'segments' => array_map(fn (EventSegment $segment): array => [
                 'value' => $segment->value,

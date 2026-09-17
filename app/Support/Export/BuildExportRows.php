@@ -7,10 +7,14 @@ namespace App\Support\Export;
 use App\Domain\Analytics\Models\ExportType;
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Event\Models\Event;
+use App\Domain\Form\Models\FieldType;
+use App\Domain\Form\Models\Form;
+use App\Domain\Form\Models\FormField;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Ticketing\Models\Order;
 use App\Domain\Ticketing\Models\OrderStatus;
 use App\Support\CheckIn\GetEventGuestList;
+use App\Support\Registration\CollectRegistrationAnswers;
 use App\Support\Segments\ComputeEventSegmentContacts;
 use App\Support\Segments\EventSegment;
 use Generator;
@@ -29,17 +33,21 @@ use Illuminate\Support\Facades\DB;
  */
 final class BuildExportRows
 {
+    private const QUESTION_PREFIX = 'question:';
+
     public function __construct(
         private readonly ComputeEventSegmentContacts $computeEventSegmentContacts,
         private readonly GetEventGuestList $getEventGuestList,
+        private readonly CollectRegistrationAnswers $collectRegistrationAnswers,
     ) {}
 
     /**
+     * @param  Event|null  $event  ajoute une colonne par question du formulaire à l'export des inscriptions
      * @return array<string, string>
      */
-    public function columns(ExportType $type): array
+    public function columns(ExportType $type, ?Event $event = null): array
     {
-        return match ($type) {
+        $columns = match ($type) {
             ExportType::Contacts => [
                 'first_name' => 'Prénom',
                 'last_name' => 'Nom',
@@ -72,6 +80,42 @@ final class BuildExportRows
                 'checked_in_at' => "Heure d'arrivée",
             ],
         };
+
+        if ($type === ExportType::Registrations && $event !== null) {
+            foreach ($this->questionColumns($event) as $key => $label) {
+                $columns[$key] = $label;
+            }
+        }
+
+        return $columns;
+    }
+
+    /**
+     * Une colonne par question du formulaire, préfixée pour ne jamais
+     * entrer en collision avec les colonnes fixes ci-dessus.
+     *
+     * @return array<string, string>
+     */
+    private function questionColumns(Event $event): array
+    {
+        $form = Form::query()->where('event_id', $event->id)->first();
+
+        if ($form === null) {
+            return [];
+        }
+
+        $version = $form->currentVersion ?? $form->latestVersion();
+
+        if ($version === null) {
+            return [];
+        }
+
+        $version->loadMissing('fields');
+
+        return $version->fields
+            ->reject(fn (FormField $field): bool => $field->type === FieldType::InformationalText)
+            ->mapWithKeys(fn (FormField $field): array => [self::QUESTION_PREFIX.$field->key => $field->label])
+            ->all();
     }
 
     /**
@@ -135,11 +179,20 @@ final class BuildExportRows
         $registrations = Registration::query()
             ->where('organization_id', $event->organization_id)
             ->where('event_id', $event->id)
-            ->with('companions')
+            ->with(['companions', 'allAnswers.formField', 'allAnswers.attendee'])
             ->lazy();
 
         foreach ($registrations as $registration) {
+            // Une réponse par question, accompagnants compris (même lecture
+            // que l'écran « Réponses aux questions »).
+            $answers = [];
+
+            foreach ($this->collectRegistrationAnswers->handle($registration->allAnswers, ' ; ') as $key => $value) {
+                $answers[self::QUESTION_PREFIX.$key] = $value;
+            }
+
             yield $this->pick([
+                ...$answers,
                 'first_name' => (string) $registration->first_name,
                 'last_name' => (string) $registration->last_name,
                 'email' => (string) $registration->email,

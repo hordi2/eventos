@@ -29,10 +29,12 @@ use App\Http\Controllers\Organizer\ContactController;
 use App\Http\Controllers\Organizer\ContactImportController;
 use App\Http\Controllers\Organizer\DashboardController;
 use App\Http\Controllers\Organizer\EmailTemplateController;
+use App\Http\Controllers\Organizer\EventAnswerController;
 use App\Http\Controllers\Organizer\EventChecklistController;
 use App\Http\Controllers\Organizer\EventController;
 use App\Http\Controllers\Organizer\EventDashboardController;
 use App\Http\Controllers\Organizer\EventPublicationController;
+use App\Http\Controllers\Organizer\EventReportController;
 use App\Http\Controllers\Organizer\EventSegmentController;
 use App\Http\Controllers\Organizer\ExportController;
 use App\Http\Controllers\Organizer\FormController;
@@ -256,6 +258,13 @@ Route::middleware('auth')->group(function (): void {
         Route::post('events/{event}/sub-events', [SubEventController::class, 'store'])->name('events.sub-events.store');
         Route::patch('events/{event}/sub-events/{subEvent}', [SubEventController::class, 'update'])->name('events.sub-events.update');
         Route::delete('events/{event}/sub-events/{subEvent}', [SubEventController::class, 'destroy'])->name('events.sub-events.destroy');
+
+        // Ce que les invités ont répondu, question par question puis invité par invité.
+        Route::get('events/{event}/answers', [EventAnswerController::class, 'index'])->name('events.answers.index');
+
+        // Rapports tirés des réponses : repas à commander, dons reçus ou promis.
+        Route::get('events/{event}/meals', [EventReportController::class, 'meals'])->name('events.meals.index');
+        Route::get('events/{event}/donations', [EventReportController::class, 'donations'])->name('events.donations.index');
 
         // Fichiers joints des invités : liste, téléchargement journalisé, nouvelle analyse.
         Route::get('events/{event}/files', [RegistrationFileController::class, 'index'])->name('events.files.index');

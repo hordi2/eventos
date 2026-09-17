@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Event\Models\Event;
+use App\Domain\Event\Models\EventType;
 use App\Domain\Form\Actions\CreateForm;
 use App\Domain\Form\Actions\PublishFormVersion;
 use App\Domain\Form\Models\Attendee;
@@ -13,6 +14,7 @@ use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormField;
 use App\Domain\Form\Models\FormVersion;
 use App\Domain\Form\Models\Registration;
+use App\Domain\Form\Models\RegistrationDraft;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Organization\Models\Collaborator;
 use App\Domain\Organization\Models\CollaboratorEventPermission;
@@ -287,4 +289,69 @@ function makePaidTicket(Organization $organization, Event $event): Ticket
     app(CurrentOrganization::class)->clear();
 
     return $ticket;
+}
+
+/**
+ * Événement publié dont le formulaire pose un menu à chaque personne
+ * (poisson limité à 10 parts), un don et un mot libre, avec un accompagnant
+ * autorisé : fixture de l'écran « Réponses aux questions » et des rapports.
+ *
+ * @return array{organization: Organization, event: Event, admin: User, base: string}
+ */
+function makeAnswersReadyEvent(): array
+{
+    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent([
+        [
+            'key' => 'menu',
+            'type' => 'meal_choice',
+            'label' => 'Choix du menu',
+            'is_required' => true,
+            'config' => ['ask_scope' => 'each_attendee'],
+            'options' => [
+                ['value' => 'poisson', 'label' => 'Poisson braisé', 'quota' => 10],
+                ['value' => 'poulet', 'label' => 'Poulet mayo'],
+            ],
+        ],
+        [
+            'key' => 'don',
+            'type' => 'donation',
+            'label' => 'Un don pour le projet ?',
+            'config' => ['show_if' => 'always', 'currency' => 'XAF', 'amounts' => [5000], 'allow_custom' => false],
+        ],
+        ['key' => 'mot', 'type' => 'short_text', 'label' => 'Un mot pour les hôtes'],
+    ], ['type' => EventType::Conference]);
+
+    app(CurrentOrganization::class)->set($organization);
+    Form::query()->where('event_id', $event->id)->firstOrFail()->update(['settings' => ['rsvp' => ['max_companions' => 1]]]);
+    $admin = User::factory()->create();
+    Membership::factory()->for($organization)->for($admin)->create(['role' => MembershipRole::Admin]);
+    app(CurrentOrganization::class)->clear();
+
+    return ['organization' => $organization, 'event' => $event, 'admin' => $admin, 'base' => "/r/{$organization->slug}/{$event->slug}"];
+}
+
+/**
+ * Inscrit Marie avec son accompagnant Paul sur cette fixture : leurs menus,
+ * un don de 5 000 FCFA et un mot pour les hôtes.
+ */
+function registerGuestWithAnswers(TestCase $test, Event $event, string $base): void
+{
+    $test->get("{$base}/commencer");
+    $token = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->latest('id')->firstOrFail()->resume_token;
+
+    $test->post("{$base}/{$token}/identite", [
+        'email' => 'marie@example.com',
+        'first_name' => 'Marie',
+        'last_name' => 'Lusala',
+        '_companions' => [['first_name' => 'Paul', 'last_name' => 'Kalala']],
+    ]);
+
+    $test->post("{$base}/{$token}/reponses", [
+        'menu' => 'poisson',
+        'don' => ['choice' => '5000'],
+        'mot' => "Merci pour l'invitation",
+        '_companions' => [['answers' => ['menu' => 'poulet']]],
+    ])->assertSessionHasNoErrors();
+
+    $test->post("{$base}/{$token}/recap");
 }

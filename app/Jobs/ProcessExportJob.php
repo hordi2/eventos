@@ -59,7 +59,7 @@ final class ProcessExportJob implements ShouldQueue
 
         try {
             $segment = $export->segment !== null ? EventSegment::from($export->segment) : null;
-            $columns = $buildExportRows->columns($export->type);
+            $columns = $buildExportRows->columns($export->type, $event);
             $columnKeys = $export->columns;
 
             $stream = fopen('php://temp', 'r+');

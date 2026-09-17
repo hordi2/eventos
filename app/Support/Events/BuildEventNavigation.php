@@ -84,7 +84,11 @@ final class BuildEventNavigation
             'responses' => $link($gate->allows('viewGuests', $organization), route('events.dashboard.index', $event->id)),
             // Un seul niveau de hiérarchie : une session n'a pas ses propres sessions.
             'subEvents' => $link($canUpdate && ! $event->isSubEvent(), route('events.sub-events.index', $event->id)),
-            'files' => $link($gate->allows('viewGuests', $organization) && $this->asksForFiles($formId), route('events.files.index', $event->id)),
+            'answers' => $link($gate->allows('viewGuests', $organization), route('events.answers.index', $event->id)),
+            'files' => $link($gate->allows('viewGuests', $organization) && $this->asksFor($formId, FieldType::FileUpload), route('events.files.index', $event->id)),
+            // Rapports : proposés seulement quand le formulaire pose la question.
+            'meals' => $link($gate->allows('viewGuests', $organization) && $this->asksFor($formId, FieldType::MealChoice), route('events.meals.index', $event->id)),
+            'donations' => $link($gate->allows('viewGuests', $organization) && $this->asksFor($formId, FieldType::Donation), route('events.donations.index', $event->id)),
             'guests' => $link($gate->allows('viewGuests', $organization), route('events.segments.index', $event->id)),
             'form' => $formId !== null
                 ? $link($canUpdate, route('forms.edit', $formId))
@@ -104,13 +108,14 @@ final class BuildEventNavigation
     }
 
     /**
-     * « Fichiers reçus » n'a de sens que pour un formulaire qui pose, ou a
-     * posé dans l'une de ses versions, une question « Fichier joint ».
+     * « Fichiers reçus », « Préférences alimentaires » et « Dons et cadeaux »
+     * n'ont de sens que pour un formulaire qui pose, ou a posé dans l'une de
+     * ses versions, la question correspondante.
      */
-    private function asksForFiles(mixed $formId): bool
+    private function asksFor(mixed $formId, FieldType $type): bool
     {
         return $formId !== null && FormField::query()
-            ->where('type', FieldType::FileUpload)
+            ->where('type', $type)
             ->whereHas('formVersion', fn ($query) => $query->where('form_id', $formId))
             ->exists();
     }

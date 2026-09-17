@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Organizer\Export;
 
 use App\Domain\Analytics\Models\ExportType;
+use App\Domain\Event\Models\Event;
 use App\Support\Export\BuildExportRows;
 use App\Support\Segments\EventSegment;
 use Illuminate\Foundation\Http\FormRequest;
@@ -23,7 +24,10 @@ final class StoreExportRequest extends FormRequest
     public function rules(): array
     {
         $type = ExportType::tryFrom((string) $this->input('type'));
-        $validColumns = $type !== null ? array_keys(app(BuildExportRows::class)->columns($type)) : [];
+        // Les colonnes des questions du formulaire dépendent de l'événement
+        // (BuildExportRows::columns) : sans lui, elles seraient refusées.
+        $event = Event::query()->find($this->route('event'));
+        $validColumns = $type !== null ? array_keys(app(BuildExportRows::class)->columns($type, $event)) : [];
 
         return [
             'type' => ['required', Rule::enum(ExportType::class)],

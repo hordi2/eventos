@@ -260,6 +260,22 @@ multiple, oui/non, consentement, menu/repas, texte informatif.
 > ≥ 12M, `post_max_size` ≥ 64M, réglés dans l'image Docker) ; un envoi qui
 > dépasse `post_max_size` renvoie une page d'erreur au lieu d'un message dans
 > le formulaire.
+>
+> **Lot 2, étape G (livrée) — voir les réponses côté organisateur** : jusque-là
+> les réponses n'étaient visibles nulle part (le tableau de bord ne montre que
+> des compteurs). Nouvel écran « Réponses aux questions » : répartition des
+> choix avec quotas restants, nombre de donateurs et total des dons, sessions
+> choisies, aperçu des réponses libres, lien vers « Fichiers reçus » ; puis la
+> liste des invités (50 plus récentes) avec leurs réponses, celles des
+> accompagnants précédées de leur prénom. Les deux entrées du menu encore
+> marquées « bientôt » sont livrées : « Préférences alimentaires » (une ligne
+> par personne attendue, accompagnants compris, quotas restants) et « Dons et
+> cadeaux » (dons du formulaire et des billets, état de paiement, totaux reçus
+> et promis). Chaque écran n'apparaît dans le menu que si le formulaire pose la
+> question correspondante ; tous exigent `viewGuests`.
+> Limites connues : agrégation en mémoire, à revoir en agrégats SQL au-delà de
+> quelques milliers d'inscriptions par événement ; la liste par invité n'est
+> pas paginée (renvoi vers l'export au-delà de 50).
 
 ---
 
@@ -837,6 +853,11 @@ ne demandent ni PDF/JSON ni planification — pas de dépendance ajoutée pour
 un vrai format .xlsx binaire, le CSV avec BOM UTF-8 s'ouvre correctement
 dans Excel. Le filtre par segment ne s'applique qu'au type « invités » :
 c'est le seul des quatre où un segment RSVP a un sens direct.
+
+**Complément (lot 2, étape G)** : l'export des inscriptions propose une
+colonne par question du formulaire (clés préfixées `question:`), avec la même
+lecture que l'écran des réponses — réponses des accompagnants précédées de
+leur prénom (`App\Support\Registration\CollectRegistrationAnswers`).
 
 ---
 
