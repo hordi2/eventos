@@ -23,7 +23,47 @@
 
     @switch($field->type->value)
         @case('informational_text')
-            <p class="text-base text-ink">{{ $field->label }}</p>
+            <p class="text-base whitespace-pre-line text-ink">{{ $field->label }}</p>
+
+            @if (! empty($config['image_path']))
+                {{-- Image redimensionnée à l'envoi ; dimensions posées pour
+                     éviter que la page ne saute pendant le chargement. --}}
+                <img
+                    src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($config['image_path']) }}"
+                    alt="{{ $config['image_alt'] ?? '' }}"
+                    @if (! empty($config['image_width'])) width="{{ $config['image_width'] }}" @endif
+                    @if (! empty($config['image_height'])) height="{{ $config['image_height'] }}" @endif
+                    loading="lazy"
+                    class="mt-3 h-auto w-full rounded-card"
+                >
+            @endif
+
+            @php($video = \App\Domain\Form\Support\VideoEmbed::from($config['video_url'] ?? null))
+            @if ($video !== null)
+                {{-- Le lecteur n'arrive qu'au clic : la page reste légère et
+                     rien ne part chez l'hébergeur avant ce clic. --}}
+                <div x-data="{ playing: false }" class="mt-3 overflow-hidden rounded-card border border-line">
+                    <template x-if="playing">
+                        <div class="aspect-video w-full">
+                            <iframe
+                                src="{{ $video->embedUrl }}"
+                                title="{{ $field->label }}"
+                                loading="lazy"
+                                allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
+                                allowfullscreen
+                                class="h-full w-full"
+                            ></iframe>
+                        </div>
+                    </template>
+                    <button type="button" x-show="! playing" @click="playing = true" class="flex min-h-11 w-full items-center gap-3 px-4 py-3 text-left">
+                        <span aria-hidden="true" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-bg">▶</span>
+                        <span>
+                            <span class="block text-sm font-medium text-ink">Lire la vidéo</span>
+                            <span class="block text-xs text-ink-soft">{{ $video->provider }} · se charge seulement quand vous cliquez</span>
+                        </span>
+                    </button>
+                </div>
+            @endif
             @break
 
         @case('long_text')

@@ -292,6 +292,22 @@ function makePaidTicket(Organization $organization, Event $event): Ticket
 }
 
 /**
+ * @param  array<int, array<string, mixed>>  $fields
+ * @return array{0: Organization, 1: User, 2: Form}
+ */
+function formWithBuilderSettings(array $fields = []): array
+{
+    [$organization, $admin] = organizationWithContactRole(MembershipRole::Admin);
+    $event = Event::factory()->for($organization)->create();
+    $form = app(CreateForm::class)->handle($organization, $event->id, $admin, [
+        'name' => 'Inscription',
+        'fields' => $fields === [] ? [['key' => 'nom', 'type' => 'short_text', 'label' => 'Nom']] : $fields,
+    ]);
+
+    return [$organization, $admin, $form];
+}
+
+/**
  * Événement publié dont le formulaire pose un menu à chaque personne
  * (poisson limité à 10 parts), un don et un mot libre, avec un accompagnant
  * autorisé : fixture de l'écran « Réponses aux questions » et des rapports.

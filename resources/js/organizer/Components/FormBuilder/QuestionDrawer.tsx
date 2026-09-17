@@ -6,6 +6,7 @@ import Select from '../Select';
 import Textarea from '../Textarea';
 import TextInput from '../TextInput';
 import Toggle from '../Toggle';
+import BlockMediaFields from './BlockMediaFields';
 import DonationSettings from './DonationSettings';
 import FileUploadSettings, { DEFAULT_FILE_TYPES } from './FileUploadSettings';
 import { GROUP_WIDE_TYPES, PANEL_SECTION_TITLE, SHOW_IF_LABELS, TYPES_WITH_OPTIONS, withOptionValues } from './logic';
@@ -13,7 +14,6 @@ import OptionsEditor from './OptionsEditor';
 import PremiumBadge from './PremiumBadge';
 import RuleEditor from './RuleEditor';
 import SidePanel from './SidePanel';
-import SoonBadge from './SoonBadge';
 import {
     type BuilderField,
     type CurrencyOption,
@@ -29,6 +29,9 @@ import {
 interface QuestionDrawerProps {
     field: BuilderField;
     fields: BuilderField[];
+    // Nul tant que la première modification n'a pas créé le formulaire :
+    // aucune image ne peut alors être envoyée.
+    formId: number | null;
     rule: RuleData | null;
     fieldTypes: FieldTypeOption[];
     tags: TagOption[];
@@ -72,6 +75,7 @@ function toNumber(value: string): number | undefined {
 export default function QuestionDrawer({
     field,
     fields,
+    formId,
     rule,
     fieldTypes,
     tags,
@@ -231,20 +235,13 @@ export default function QuestionDrawer({
 
             {isInformational ? (
                 <div className="space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                        <span className="rounded-pill bg-ink px-3 py-1 text-xs font-medium text-bg">Texte</span>
-                        <span className="flex items-center gap-1.5 rounded-pill px-3 py-1 text-xs text-ink-soft ring-1 ring-line">
-                            Image <SoonBadge />
-                        </span>
-                        <span className="flex items-center gap-1.5 rounded-pill px-3 py-1 text-xs text-ink-soft ring-1 ring-line">
-                            Vidéo <SoonBadge />
-                        </span>
-                    </div>
                     <div>
                         <InputLabel htmlFor="block_text">Texte</InputLabel>
                         <Textarea id="block_text" value={draft.label} maxLength={255} onChange={(event) => update({ label: event.target.value })} />
                         <InputError message={errors.label} />
                     </div>
+                    <BlockMediaFields config={draft.config} formId={formId} onChange={updateConfig} />
+                    <InputError message={errors['config.video_url']} />
                 </div>
             ) : (
                 <div className="space-y-5">

@@ -29,6 +29,14 @@ export interface FieldConfig {
     // Bloc « Fichier joint ».
     file_types?: string[];
     max_size_mb?: number;
+    // Bloc « Texte, image, vidéo » : image_url n'est jamais enregistrée,
+    // le serveur la recalcule depuis image_path.
+    image_path?: string;
+    image_url?: string;
+    image_alt?: string;
+    image_width?: number;
+    image_height?: number;
+    video_url?: string;
     [key: string]: unknown;
 }
 

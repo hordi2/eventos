@@ -23,6 +23,14 @@ export default function FieldPreview({ field, required, value, onChange }: Field
             <div>
                 <p className="text-base whitespace-pre-line">{field.label}</p>
                 {field.help_text && <p className="mt-2 text-sm opacity-70">{field.help_text}</p>}
+                {field.config.image_url && <img src={field.config.image_url} alt={field.config.image_alt ?? ''} className="mt-3 h-auto w-full rounded-card" />}
+                {field.config.video_url && (
+                    <p className="mt-3 flex items-center gap-2 rounded-card border border-black/15 px-4 py-3 text-sm">
+                        <span aria-hidden="true">▶</span>
+                        Lire la vidéo
+                        <span className="text-xs opacity-70">· se charge seulement au clic</span>
+                    </p>
+                )}
             </div>
         );
     }

@@ -524,7 +524,8 @@ export function buildPayload(name: string, fields: BuilderField[], rules: RuleDa
 
     const payload = {
         name,
-        fields: fields.map(({ uid, ...field }) => field),
+        // image_url est recalculée par le serveur : l'envoyer serait refusé.
+        fields: fields.map(({ uid, config, ...field }) => ({ ...field, config: { ...config, image_url: undefined } })),
         rules: rules
             .filter((rule) => rule.condition.field_key !== '')
             .map((rule) => ({

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 use App\Domain\Contact\Models\Tag;
 use App\Domain\Event\Models\Event;
-use App\Domain\Form\Actions\CreateForm;
-use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormVersionStatus;
 use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Organization\Models\Organization;
@@ -14,22 +12,6 @@ use App\Models\User;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-
-/**
- * @param  array<int, array<string, mixed>>  $fields
- * @return array{0: Organization, 1: User, 2: Form}
- */
-function formWithBuilderSettings(array $fields = []): array
-{
-    [$organization, $admin] = organizationWithContactRole(MembershipRole::Admin);
-    $event = Event::factory()->for($organization)->create();
-    $form = app(CreateForm::class)->handle($organization, $event->id, $admin, [
-        'name' => 'Inscription',
-        'fields' => $fields === [] ? [['key' => 'nom', 'type' => 'short_text', 'label' => 'Nom']] : $fields,
-    ]);
-
-    return [$organization, $admin, $form];
-}
 
 it('enregistre les écrans, le thème et le public des questions avec le formulaire', function (): void {
     [, $admin, $form] = formWithBuilderSettings();

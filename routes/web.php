@@ -37,6 +37,7 @@ use App\Http\Controllers\Organizer\EventPublicationController;
 use App\Http\Controllers\Organizer\EventReportController;
 use App\Http\Controllers\Organizer\EventSegmentController;
 use App\Http\Controllers\Organizer\ExportController;
+use App\Http\Controllers\Organizer\FormBlockImageController;
 use App\Http\Controllers\Organizer\FormController;
 use App\Http\Controllers\Organizer\FormThemeImageController;
 use App\Http\Controllers\Organizer\HelpController;
@@ -285,6 +286,10 @@ Route::middleware('auth')->group(function (): void {
         Route::delete('forms/{form}/theme/{kind}', [FormThemeImageController::class, 'destroy'])
             ->whereIn('kind', ['logo', 'background'])
             ->name('forms.theme-images.destroy');
+
+        // Image d'un bloc « Texte, image, vidéo », redimensionnée à l'envoi.
+        Route::post('forms/{form}/block-image', [FormBlockImageController::class, 'store'])->name('forms.block-images.store');
+        Route::delete('forms/{form}/block-image', [FormBlockImageController::class, 'destroy'])->name('forms.block-images.destroy');
 
         Route::get('contacts', [ContactController::class, 'index'])->name('contacts.index');
         Route::get('contacts/create', [ContactController::class, 'create'])->name('contacts.create');

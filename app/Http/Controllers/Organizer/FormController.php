@@ -253,13 +253,21 @@ final class FormController extends Controller
      */
     private function presentField(FormField $field): array
     {
+        $config = $field->config ?? [];
+
+        // L'aperçu du constructeur a besoin de l'adresse de l'image ; la
+        // configuration enregistrée, elle, ne garde que son chemin.
+        if (is_string($config['image_path'] ?? null)) {
+            $config['image_url'] = Storage::disk('public')->url($config['image_path']);
+        }
+
         return [
             'key' => $field->key,
             'type' => $field->type->value,
             'label' => $field->label,
             'help_text' => $field->help_text,
             'is_required' => $field->is_required,
-            'config' => $field->config ?? [],
+            'config' => $config,
             'options' => $field->options->map(fn ($option): array => [
                 'value' => $option->value,
                 'label' => $option->label,

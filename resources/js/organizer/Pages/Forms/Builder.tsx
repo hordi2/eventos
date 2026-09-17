@@ -487,6 +487,7 @@ export default function FormBuilder({
                 key={selectedField.uid}
                 field={selectedField}
                 fields={fields}
+                formId={formId}
                 rule={rules.find((rule) => rule.target_field_key === selectedField.key) ?? null}
                 fieldTypes={fieldTypes}
                 tags={tags}

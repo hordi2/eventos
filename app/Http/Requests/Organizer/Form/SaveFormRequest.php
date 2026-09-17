@@ -11,6 +11,7 @@ use App\Domain\Form\Support\AskScope;
 use App\Domain\Form\Support\DonationAnswer;
 use App\Domain\Form\Support\FileUploadAnswer;
 use App\Domain\Form\Support\FormSettings;
+use App\Domain\Form\Support\VideoEmbed;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -64,6 +65,15 @@ final class SaveFormRequest extends FormRequest
             'fields.*.config.file_types' => ['nullable', 'array', 'min:1'],
             'fields.*.config.file_types.*' => [Rule::in(array_keys(FileUploadAnswer::TYPES))],
             'fields.*.config.max_size_mb' => ['nullable', 'integer', 'min:1', 'max:'.FileUploadAnswer::MAX_SIZE_MB],
+            // Bloc « Texte, image, vidéo » : l'image est envoyée à part
+            // (FormBlockImageController), la configuration n'en garde que le
+            // chemin ; son adresse publique est recalculée à l'affichage.
+            'fields.*.config.image_path' => ['nullable', 'string', 'max:255', 'starts_with:form-blocks/', 'not_regex:/\.\./'],
+            'fields.*.config.image_alt' => ['nullable', 'string', 'max:255'],
+            'fields.*.config.image_width' => ['nullable', 'integer', 'min:1'],
+            'fields.*.config.image_height' => ['nullable', 'integer', 'min:1'],
+            'fields.*.config.image_url' => ['prohibited'],
+            'fields.*.config.video_url' => ['nullable', 'string', 'max:2048'],
             'fields.*.config.tag_ids' => ['nullable', 'array'],
             'fields.*.config.tag_ids.*' => [
                 'integer',
@@ -102,6 +112,17 @@ final class SaveFormRequest extends FormRequest
 
                     if (DonationAnswer::suggestedAmounts($config) === [] && ! DonationAnswer::allowsCustom($config)) {
                         $validator->errors()->add("fields.{$index}.config.amounts", "Proposez au moins un montant ou laissez l'invité choisir le sien.");
+                    }
+                }
+            },
+            // Seules YouTube et Vimeo sont reconnues, et seule leur adresse
+            // d'intégration sans cookie est servie à l'invité (VideoEmbed).
+            function (Validator $validator): void {
+                foreach ((array) $this->input('fields', []) as $index => $field) {
+                    $video = is_array($field) && is_array($field['config'] ?? null) ? ($field['config']['video_url'] ?? null) : null;
+
+                    if ($video !== null && $video !== '' && VideoEmbed::from($video) === null) {
+                        $validator->errors()->add("fields.{$index}.config.video_url", 'Collez un lien YouTube ou Vimeo.');
                     }
                 }
             },

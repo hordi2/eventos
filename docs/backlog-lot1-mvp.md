@@ -276,6 +276,24 @@ multiple, oui/non, consentement, menu/repas, texte informatif.
 > Limites connues : agrégation en mémoire, à revoir en agrégats SQL au-delà de
 > quelques milliers d'inscriptions par événement ; la liste par invité n'est
 > pas paginée (renvoi vers l'export au-delà de 50).
+>
+> **Lot 2, étape H (livrée) — image et vidéo dans « Texte, image, vidéo »** :
+> le bloc informatif ne portait que du texte. L'organisateur y ajoute
+> maintenant une image (PNG, JPEG, WebP, 8 Mo maximum) redimensionnée dès
+> l'envoi — 1600 px de large au plus, orientation EXIF redressée, PNG et WebP
+> gardés pour la transparence, le reste réencodé en JPEG — pour que la page
+> invité tienne sa contrainte de poids ; elle est servie depuis
+> `form-blocks/{form}` du disque public avec son texte alternatif et ses
+> dimensions, ce qui évite tout décalage au chargement. Il colle aussi un lien
+> YouTube ou Vimeo : seule l'adresse du lecteur est retenue (YouTube en
+> `youtube-nocookie`), et rien n'est chargé avant que l'invité clique sur
+> « Lire la vidéo ». Le chemin de l'image est validé côté serveur
+> (`form-blocks/` obligatoire, `..` refusé) ; l'adresse publique est recalculée
+> à l'affichage, jamais enregistrée dans la version du formulaire.
+> Limites connues : pas de bibliothèque d'images réutilisables entre blocs
+> (chaque bloc a la sienne) ; les images du thème (logo, fond) ne sont
+> toujours pas redimensionnées ; aucun autre hébergeur vidéo que YouTube et
+> Vimeo.
 
 ---
 
