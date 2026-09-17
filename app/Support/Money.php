@@ -47,6 +47,46 @@ final class Money
         return new self(0, $currency);
     }
 
+    /**
+     * Montant saisi par une personne, en unités de la devise (« 25 »,
+     * « 12,50 », « 10 000 ») : converti en unité mineure par manipulation de
+     * chaînes, sans jamais passer par un float. Un montant plus précis que la
+     * devise est refusé plutôt qu'arrondi en silence (§4.2).
+     *
+     * @throws InvalidArgumentException
+     */
+    public static function parse(string $amount, string $currency): self
+    {
+        $decimals = self::decimals($currency);
+        $compact = preg_replace('/[\s\x{00A0}\x{202F}]+/u', '', $amount) ?? '';
+
+        // « 10.000 » ou « 10,000 » dans une devise sans décimales (XAF, XOF) :
+        // le séparateur ne peut être qu'un séparateur de milliers.
+        if ($decimals === 0 && preg_match('/^\d{1,3}([.,]\d{3})+$/', $compact) === 1) {
+            $compact = str_replace(['.', ','], '', $compact);
+        }
+
+        if (preg_match('/^(\d{1,12})(?:[.,](\d+))?$/', $compact, $matches) !== 1) {
+            throw new InvalidArgumentException("Montant illisible : \"{$amount}\".");
+        }
+
+        $fraction = $matches[2] ?? '';
+
+        if (strlen($fraction) > $decimals) {
+            throw new InvalidArgumentException("Montant trop précis pour la devise {$currency} : \"{$amount}\".");
+        }
+
+        return new self((int) $matches[1] * (10 ** $decimals) + (int) str_pad($fraction, $decimals, '0'), $currency);
+    }
+
+    /**
+     * Nombre de chiffres après la virgule de la devise.
+     */
+    public static function decimals(string $currency): int
+    {
+        return self::ZERO_DECIMAL_CURRENCIES[$currency] ?? 2;
+    }
+
     public function amountMinor(): int
     {
         return $this->amountMinor;
@@ -171,7 +211,7 @@ final class Money
      */
     public function format(string $locale = 'fr'): string
     {
-        $exponent = self::ZERO_DECIMAL_CURRENCIES[$this->currency] ?? 2;
+        $exponent = self::decimals($this->currency);
         $divisor = 10 ** $exponent;
 
         $majorPart = intdiv($this->amountMinor, $divisor);

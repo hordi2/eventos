@@ -12,7 +12,7 @@ interface PaletteItemProps {
 
 export default function PaletteItem({ entry, onActivate, onDragStateChange }: PaletteItemProps) {
     const soon = entry.action.kind === 'soon';
-    const draggable = entry.action.kind === 'field' || entry.action.kind === 'custom' || entry.action.kind === 'subEvents';
+    const draggable = ['field', 'custom', 'subEvents', 'donation'].includes(entry.action.kind);
 
     function handleDragStart(event: DragEvent<HTMLButtonElement>) {
         event.dataTransfer.setData(PALETTE_DRAG_TYPE, entry.id);

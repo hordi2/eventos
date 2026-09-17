@@ -3,10 +3,12 @@
 @section('title', "Paiement — {$event->title}")
 
 @section('content')
+    {{-- Don promis dans un formulaire d'inscription : une commande sans billet (T-056). --}}
+    @php($isDonation = $order->items->isEmpty() && $order->donations->isNotEmpty())
     <div class="mx-auto max-w-lg px-4 py-10 sm:py-16">
         <p class="mb-1 text-sm font-medium text-ink-soft">{{ $event->title }}</p>
-        <h1 class="mb-2 text-2xl">Moyen de paiement</h1>
-        <p class="mb-8 text-ink-soft">Total à régler : <strong class="text-ink">{{ $order->total->format() }}</strong></p>
+        <h1 class="mb-2 text-2xl">{{ $isDonation ? 'Régler votre don' : 'Moyen de paiement' }}</h1>
+        <p class="mb-8 text-ink-soft">{{ $isDonation ? 'Montant de votre don' : 'Total à régler' }} : <strong class="text-ink">{{ $order->total->format() }}</strong></p>
 
         @if ($errors->any())
             <div class="mb-6 rounded-control border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -66,7 +68,7 @@
             <form method="POST" action="{{ route('guest.ticketing.payment.on-site', [request()->route('organization'), request()->route('event'), $order->reservation_key]) }}">
                 @csrf
                 <button type="submit" class="min-h-11 w-full rounded-pill border border-line px-8 py-3 font-medium text-ink">
-                    Payer à l'arrivée
+                    {{ $isDonation ? "Régler à l'accueil le jour de l'événement" : "Payer à l'arrivée" }}
                 </button>
             </form>
         </div>

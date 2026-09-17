@@ -121,6 +121,28 @@ it('ne garde dans le bloc « Événements secondaires » que les sessions de l\'
         ->where('subEvents.0.title', 'Dîner de gala'));
 });
 
+it('enregistre un bloc « Don » et refuse une devise inconnue ou un don sans montant possible', function (): void {
+    [, $admin, $form] = formWithBuilderSettings();
+    $donation = fn (string $key, array $config): array => ['key' => $key, 'type' => 'donation', 'label' => 'Un don ?', 'config' => $config];
+
+    $this->actingAs($admin)->patch("/forms/{$form->id}", [
+        'name' => 'Inscription',
+        'fields' => [$donation('don', ['currency' => 'CDF', 'amounts' => [1000000, 2500000], 'allow_custom' => true, 'cause' => 'Bibliothèque'])],
+    ])->assertRedirect(route('forms.edit', $form));
+
+    expect($form->fresh()->latestVersion()->fields->first()->config)
+        ->toMatchArray(['currency' => 'CDF', 'amounts' => [1000000, 2500000], 'cause' => 'Bibliothèque']);
+
+    $this->actingAs($admin)->get("/forms/{$form->id}/edit")->assertInertia(fn ($page) => $page
+        ->where('donationCurrencies.0.code', 'XAF')
+        ->has('defaultDonationCurrency'));
+
+    $this->actingAs($admin)->patch("/forms/{$form->id}", [
+        'name' => 'Inscription',
+        'fields' => [$donation('don', ['currency' => 'GBP']), $donation('don_2', ['amounts' => [], 'allow_custom' => false])],
+    ])->assertSessionHasErrors(['fields.0.config.currency', 'fields.1.config.amounts']);
+});
+
 it('enregistre le nombre maximal d\'accompagnants et une question posée à chaque personne', function (): void {
     [, $admin, $form] = formWithBuilderSettings();
 

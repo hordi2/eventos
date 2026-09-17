@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Form\Support;
 
 use App\Domain\Form\Data\FormVisibilityContext;
+use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\FormVersion;
 
 /**
@@ -25,15 +26,18 @@ final class BuildFormValidationRules
     /**
      * @param  array<string, mixed>  $answers
      * @param  bool  $perPersonOnly  règles d'un accompagnant : seulement les questions posées à chaque personne (T-032)
+     * @param  bool  $excludeLocked  modification d'une inscription : les réponses figées (don, T-056) ne se revalident pas
      * @return array<string, list<mixed>>
      */
-    public function handle(FormVersion $version, array $answers, ?FormVisibilityContext $context = null, bool $perPersonOnly = false): array
+    public function handle(FormVersion $version, array $answers, ?FormVisibilityContext $context = null, bool $perPersonOnly = false, bool $excludeLocked = false): array
     {
         $visibility = $this->evaluateFormVisibility->handle($version, $answers, $context);
+        // Les informations du donateur ne s'exigent que d'un invité qui donne.
+        $donationGiven = DonationAnswer::isGiven($version, $answers, $visibility);
         $rules = [];
 
         foreach ($version->fields as $field) {
-            if ($perPersonOnly && ! AskScope::isPerPerson($field)) {
+            if (($perPersonOnly && ! AskScope::isPerPerson($field)) || ($excludeLocked && $field->type->isLockedAfterSubmission())) {
                 continue;
             }
 
@@ -45,10 +49,10 @@ final class BuildFormValidationRules
                 continue;
             }
 
-            $fieldRules = $this->fieldValidationRules->forField($field);
-            $fieldRules[$field->key][0] = $state['required'] ? 'required' : $fieldRules[$field->key][0];
+            $required = ($state['required'] || $field->is_required)
+                && ($field->type !== FieldType::DonorInfo || $donationGiven);
 
-            $rules = [...$rules, ...$fieldRules];
+            $rules = [...$rules, ...$this->fieldValidationRules->forField($field, $required)];
         }
 
         return $rules;

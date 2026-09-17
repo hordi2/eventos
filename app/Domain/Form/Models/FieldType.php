@@ -34,6 +34,20 @@ enum FieldType: string
     // Choix des événements secondaires (T-013) : config.sub_events liste les
     // sessions proposées, avec leur titre au moment de la publication.
     case SubEvents = 'sub_events';
+    // Don (T-056) : devise et montants proposés dans config, réglé après
+    // l'inscription (DonationAnswer).
+    case Donation = 'donation';
+    // Nom, entreprise et adresse du donateur, repris sur le reçu du don.
+    case DonorInfo = 'donor_info';
+
+    /**
+     * Un don a donné naissance à une commande à régler : sa réponse ne se
+     * modifie plus depuis le lien « Modifier mon inscription ».
+     */
+    public function isLockedAfterSubmission(): bool
+    {
+        return $this === self::Donation || $this === self::DonorInfo;
+    }
 
     public function supportsOptions(): bool
     {
@@ -76,6 +90,8 @@ enum FieldType: string
             self::Quantity => 'Quantité',
             self::PostalAddress => 'Adresse postale',
             self::SubEvents => 'Événements secondaires',
+            self::Donation => 'Don',
+            self::DonorInfo => 'Informations sur le donateur',
         };
     }
 }

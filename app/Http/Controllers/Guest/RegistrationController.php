@@ -44,6 +44,8 @@ use App\Support\Page\GetEventPage;
 use App\Support\Registration\BuildGuestSubEventChoices;
 use App\Support\Registration\BuildGuestVisibilityContext;
 use App\Support\Registration\BuildSubEventContexts;
+use App\Support\Registration\OpenRegistrationDonation;
+use App\Support\Registration\PresentRegistrationDonation;
 use App\Support\Registration\RenderAttendeeQrCodes;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
@@ -252,11 +254,14 @@ final class RegistrationController extends Controller
 
         $draft->update(['registration_id' => $result->registration->id, 'submitted_at' => now()]);
 
-        $routeName = $result->outcome === SubmitRegistrationOutcome::DuplicateFound
-            ? 'guest.registration.duplicate'
-            : 'guest.registration.confirmation';
+        if ($result->outcome === SubmitRegistrationOutcome::DuplicateFound) {
+            return redirect()->route('guest.registration.duplicate', [$organization, $event, $draft->resume_token]);
+        }
 
-        return redirect()->route($routeName, [$organization, $event, $draft->resume_token]);
+        // Don promis dans le formulaire : une commande à régler (T-056).
+        app(OpenRegistrationDonation::class)->handle($eventModel, $result->registration);
+
+        return redirect()->route('guest.registration.confirmation', [$organization, $event, $draft->resume_token]);
     }
 
     public function confirmation(Request $request, string $organization, string $event, string $token): View
@@ -274,6 +279,7 @@ final class RegistrationController extends Controller
             'editUrl' => $hideLinks ? null : $this->signedEditUrl($organization, $event, $eventModel, $registration),
             'cancelUrl' => $hideLinks ? null : $this->signedCancelUrl($organization, $event, $eventModel, $registration),
             'qrCodes' => app(RenderAttendeeQrCodes::class)->handle($eventModel, $registration),
+            'donation' => app(PresentRegistrationDonation::class)->handle($organization, $event, $registration),
             ...$this->presentation($eventModel),
         ]);
     }

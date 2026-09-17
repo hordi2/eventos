@@ -6,13 +6,23 @@ import Select from '../Select';
 import Textarea from '../Textarea';
 import TextInput from '../TextInput';
 import Toggle from '../Toggle';
-import { PANEL_SECTION_TITLE, SHOW_IF_LABELS, TYPES_WITH_OPTIONS, withOptionValues } from './logic';
+import DonationSettings from './DonationSettings';
+import { GROUP_WIDE_TYPES, PANEL_SECTION_TITLE, SHOW_IF_LABELS, TYPES_WITH_OPTIONS, withOptionValues } from './logic';
 import OptionsEditor from './OptionsEditor';
 import PremiumBadge from './PremiumBadge';
 import RuleEditor from './RuleEditor';
 import SidePanel from './SidePanel';
 import SoonBadge from './SoonBadge';
-import { type BuilderField, type FieldConfig, type FieldTypeOption, type RuleData, type ShowIf, type SubEventOption, type TagOption } from './types';
+import {
+    type BuilderField,
+    type CurrencyOption,
+    type FieldConfig,
+    type FieldTypeOption,
+    type RuleData,
+    type ShowIf,
+    type SubEventOption,
+    type TagOption,
+} from './types';
 
 interface QuestionDrawerProps {
     field: BuilderField;
@@ -29,6 +39,7 @@ interface QuestionDrawerProps {
     companionsEnabled: boolean;
     subEvents: SubEventOption[];
     subEventsUrl: string;
+    donationCurrencies: CurrencyOption[];
     onSave: (field: BuilderField, rule: RuleData | null) => void;
     onCancel: () => void;
     onRemove: () => void;
@@ -67,6 +78,7 @@ export default function QuestionDrawer({
     companionsEnabled,
     subEvents,
     subEventsUrl,
+    donationCurrencies,
     onSave,
     onCancel,
     onRemove,
@@ -86,9 +98,14 @@ export default function QuestionDrawer({
     const showIf: ShowIf = draft.config.show_if ?? 'attending';
     const askScope = draft.config.ask_scope ?? 'once';
     const isSubEvents = draft.type === 'sub_events';
+    const isDonation = draft.type === 'donation';
+    const isDonorInfo = draft.type === 'donor_info';
+    const isGroupWide = GROUP_WIDE_TYPES.includes(draft.type);
     const offeredSubEvents = (draft.config.sub_events ?? []).map((subEvent) => subEvent.id);
     const tagIds = draft.config.tag_ids ?? [];
-    const sources = fields.filter((item) => item.uid !== field.uid && item.type !== 'informational_text');
+    const sources = fields.filter(
+        (item) => item.uid !== field.uid && item.type !== 'informational_text' && item.type !== 'donation' && item.type !== 'donor_info',
+    );
 
     function update(patch: Partial<BuilderField>) {
         setDraft((previous) => ({ ...previous, ...patch }));
@@ -149,6 +166,12 @@ export default function QuestionDrawer({
 
         if (isSubEvents && offeredSubEvents.length === 0) {
             setLocalError('Choisissez au moins une session à proposer.');
+
+            return;
+        }
+
+        if (isDonation && (draft.config.amounts ?? []).length === 0 && draft.config.allow_custom === false) {
+            setLocalError('Proposez au moins un montant ou laissez l’invité choisir le sien.');
 
             return;
         }
@@ -257,6 +280,15 @@ export default function QuestionDrawer({
                 </fieldset>
             )}
 
+            {isDonation && <DonationSettings config={draft.config} currencies={donationCurrencies} onChange={updateConfig} />}
+
+            {isDonorInfo && (
+                <p className="rounded-control bg-bg-alt px-3 py-2 text-xs text-ink-soft">
+                    L'invité indique son nom (prérempli), son entreprise, son adresse, et peut demander à rester anonyme. Ces informations figurent sur son
+                    reçu : elles ne sont demandées que s'il fait un don.
+                </p>
+            )}
+
             {(draft.type === 'short_text' || draft.type === 'long_text') && (
                 <div>
                     <InputLabel htmlFor="block_max_length">Nombre maximal de caractères</InputLabel>
@@ -324,7 +356,7 @@ export default function QuestionDrawer({
                 </div>
             )}
 
-            {!isInformational && !isSubEvents && (
+            {!isInformational && !isGroupWide && (
                 <fieldset>
                     <legend className={PANEL_SECTION_TITLE}>Poser la question</legend>
                     <div className="space-y-2 text-sm">

@@ -251,7 +251,7 @@ final class SubmitRegistration
 
             $normalized = $this->normalizeFieldAnswer->handle($field, $rawValue, $ip);
 
-            // Adresse laissée entièrement vide : rien à enregistrer.
+            // Adresse laissée vide ou « pas de don » : rien à enregistrer.
             if ($normalized === []) {
                 continue;
             }

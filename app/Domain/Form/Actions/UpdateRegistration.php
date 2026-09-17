@@ -69,7 +69,7 @@ final class UpdateRegistration
 
         $version = $registration->formVersion()->with(['fields.options', 'conditionalRules.targetField'])->firstOrFail();
         $visibility = $this->evaluateFormVisibility->handle($version, $answers, $visibilityContext);
-        $rules = $this->buildFormValidationRules->handle($version, $answers, $visibilityContext);
+        $rules = $this->buildFormValidationRules->handle($version, $answers, $visibilityContext, excludeLocked: true);
         Validator::make($answers, $rules)->validate();
 
         $companions = $this->knownCompanions($registration, $companions);
@@ -102,6 +102,11 @@ final class UpdateRegistration
             $existingAnswers = $registration->answers()->with('formField')->get()->keyBy(fn (RegistrationAnswer $a): string => $a->formField->key);
 
             foreach ($version->fields as $field) {
+                // Un don a déjà donné naissance à une commande : sa réponse reste telle quelle.
+                if ($field->type->isLockedAfterSubmission()) {
+                    continue;
+                }
+
                 $this->reconcileField($registration, $field, $visibility[$field->key]['visible'], $answers, $existingAnswers->get($field->key));
             }
 

@@ -7,7 +7,10 @@ namespace App\Domain\Form\Support;
 use App\Domain\Form\Actions\SyncSubEventRegistrations;
 use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\FormField;
+use App\Support\Money;
+use Closure;
 use Illuminate\Validation\Rule;
+use InvalidArgumentException;
 
 /**
  * Génère les règles de validation Laravel (serveur) propres à chaque type de
@@ -19,15 +22,16 @@ use Illuminate\Validation\Rule;
 final class FieldValidationRules
 {
     /**
+     * @param  bool|null  $required  obligation calculée ailleurs (logique conditionnelle, don) ; à défaut, celle du champ
      * @return array<string, list<mixed>>
      */
-    public function forField(FormField $field): array
+    public function forField(FormField $field, ?bool $required = null): array
     {
-        $presence = $field->is_required && $field->type !== FieldType::InformationalText
+        $presence = ($required ?? $field->is_required) && $field->type !== FieldType::InformationalText
             ? 'required'
             : 'nullable';
 
-        $typeRules = $this->rulesForType($field);
+        $typeRules = $this->rulesForType($field, $presence);
         $rules = [$field->key => [$presence, ...($typeRules[$field->key] ?? [])]];
 
         foreach ($typeRules as $path => $pathRules) {
@@ -42,7 +46,7 @@ final class FieldValidationRules
     /**
      * @return array<string, list<mixed>>
      */
-    private function rulesForType(FormField $field): array
+    private function rulesForType(FormField $field, string $presence): array
     {
         $config = $field->config ?? [];
 
@@ -63,10 +67,18 @@ final class FieldValidationRules
             FieldType::DateTime => [$field->key => ['date']],
             FieldType::Url, FieldType::SocialProfile => [$field->key => ['string', 'max:2048', 'url:http,https']],
             FieldType::Quantity => [$field->key => ['integer', 'min:'.(int) ($config['min'] ?? 0), 'max:'.(int) ($config['max'] ?? 99)]],
-            FieldType::PostalAddress => $this->postalAddressRules($field),
+            FieldType::PostalAddress => $this->postalAddressRules($field->key, $presence),
             FieldType::SubEvents => [
                 $field->key => ['array'],
                 "{$field->key}.*" => ['integer', Rule::in(SyncSubEventRegistrations::offeredIds($config))],
+            ],
+            FieldType::Donation => $this->donationRules($field, $presence),
+            FieldType::DonorInfo => [
+                $field->key => ['array'],
+                "{$field->key}.name" => [$presence, 'string', 'max:255'],
+                "{$field->key}.company" => ['nullable', 'string', 'max:255'],
+                ...$this->postalAddressRules($field->key, $presence),
+                "{$field->key}.anonymous" => ['nullable', 'boolean'],
             ],
         };
     }
@@ -78,18 +90,59 @@ final class FieldValidationRules
      *
      * @return array<string, list<mixed>>
      */
-    private function postalAddressRules(FormField $field): array
+    private function postalAddressRules(string $key, string $presence): array
     {
-        $essential = $field->is_required ? 'required' : 'nullable';
+        return [
+            $key => ['array'],
+            "{$key}.line1" => [$presence, 'string', 'max:255'],
+            "{$key}.line2" => ['nullable', 'string', 'max:255'],
+            "{$key}.city" => [$presence, 'string', 'max:120'],
+            "{$key}.region" => ['nullable', 'string', 'max:120'],
+            "{$key}.postal_code" => ['nullable', 'string', 'max:20'],
+            "{$key}.country" => ['nullable', 'string', 'max:120'],
+        ];
+    }
+
+    /**
+     * Un montant proposé, « autre » avec un montant lisible dans la devise
+     * du bloc, ou rien quand le don est facultatif.
+     *
+     * @return array<string, list<mixed>>
+     */
+    private function donationRules(FormField $field, string $presence): array
+    {
+        $config = $field->config ?? [];
+        $currency = DonationAnswer::currency($config);
+        $choices = array_map(strval(...), DonationAnswer::suggestedAmounts($config));
+
+        if (DonationAnswer::allowsCustom($config)) {
+            $choices[] = DonationAnswer::CUSTOM;
+        }
 
         return [
             $field->key => ['array'],
-            "{$field->key}.line1" => [$essential, 'string', 'max:255'],
-            "{$field->key}.line2" => ['nullable', 'string', 'max:255'],
-            "{$field->key}.city" => [$essential, 'string', 'max:120'],
-            "{$field->key}.region" => ['nullable', 'string', 'max:120'],
-            "{$field->key}.postal_code" => ['nullable', 'string', 'max:20'],
-            "{$field->key}.country" => ['nullable', 'string', 'max:120'],
+            "{$field->key}.choice" => [$presence, 'string', Rule::in($choices)],
+            "{$field->key}.custom" => [
+                "exclude_unless:{$field->key}.choice,".DonationAnswer::CUSTOM,
+                'required',
+                'string',
+                'max:20',
+                function (string $attribute, mixed $value, Closure $fail) use ($currency): void {
+                    try {
+                        $amount = Money::parse((string) $value, $currency);
+                    } catch (InvalidArgumentException) {
+                        $fail(Money::decimals($currency) === 0
+                            ? 'Indiquez un montant en chiffres, sans décimales (par exemple 5000).'
+                            : 'Indiquez un montant en chiffres (par exemple 25 ou 25,50).');
+
+                        return;
+                    }
+
+                    if (! $amount->isPositive()) {
+                        $fail('Le montant du don doit être supérieur à zéro.');
+                    }
+                },
+            ],
         ];
     }
 

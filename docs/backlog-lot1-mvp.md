@@ -550,6 +550,20 @@ Génération de QR signés à usage unique, billet PDF, envoi par e-mail.
 Montants suggérés et libres, don additionnel au moment du paiement du billet,
 reçu automatique.
 
+**Livré avec le formulaire d'inscription (lot 2, étape E)** : blocs « Don »
+(devise choisie dans le bloc, montants proposés, montant libre, cause) et
+« Informations sur le donateur » (nom prérempli, entreprise, adresse, case
+« rester anonyme ») dans le constructeur. À la confirmation, le don promis
+devient une commande sans billet (CreateDonationOrder, liée à l'inscription
+par orders.registration_id), réglée par carte, Mobile Money ou à l'accueil
+via le parcours de paiement existant. Le reçu part par e-mail au paiement
+(événement OrderPaid émis par MarkOrderPaid → SendDonationReceipt). Les
+informations du donateur ne sont exigées que d'un invité qui donne ; le don
+ne se modifie plus depuis le lien « Modifier mon inscription ».
+Limites connues : l'effacement RGPD n'anonymise pas encore commandes et dons
+(même limite qu'Order.buyer_*) ; un don dont le paiement échoue ne peut pas
+être relancé depuis la page de paiement.
+
 ---
 
 ### T-057 · Configuration des billets et tarifs (interface organisateur) · L

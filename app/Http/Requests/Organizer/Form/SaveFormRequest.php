@@ -8,10 +8,12 @@ use App\Domain\Form\Data\CompanionData;
 use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\RuleAction;
 use App\Domain\Form\Support\AskScope;
+use App\Domain\Form\Support\DonationAnswer;
 use App\Domain\Form\Support\FormSettings;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * Utilisée à la fois pour créer et pour enregistrer un formulaire : les deux
@@ -50,6 +52,13 @@ final class SaveFormRequest extends FormRequest
             // (ResolveSubEventFieldConfig), jamais du navigateur.
             'fields.*.config.sub_events' => ['nullable', 'array'],
             'fields.*.config.sub_events.*.id' => ['required', 'integer'],
+            // Bloc « Don » (T-056) : devise, montants proposés en unité
+            // mineure (§4.2), montant libre autorisé, cause soutenue.
+            'fields.*.config.currency' => ['nullable', Rule::in(array_keys(DonationAnswer::CURRENCIES))],
+            'fields.*.config.amounts' => ['nullable', 'array', 'max:'.DonationAnswer::MAX_SUGGESTED_AMOUNTS],
+            'fields.*.config.amounts.*' => ['integer', 'min:1', 'max:100000000000'],
+            'fields.*.config.allow_custom' => ['nullable', 'boolean'],
+            'fields.*.config.cause' => ['nullable', 'string', 'max:255'],
             'fields.*.config.tag_ids' => ['nullable', 'array'],
             'fields.*.config.tag_ids.*' => [
                 'integer',
@@ -66,6 +75,31 @@ final class SaveFormRequest extends FormRequest
             'rules.*.condition_group' => ['required', 'array'],
 
             ...FormSettings::rules(),
+        ];
+    }
+
+    /**
+     * Un bloc « Don » sans montant proposé ni montant libre ne laisserait
+     * aucun choix à l'invité.
+     *
+     * @return list<callable(Validator): void>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                foreach ((array) $this->input('fields', []) as $index => $field) {
+                    if (! is_array($field) || ($field['type'] ?? null) !== FieldType::Donation->value) {
+                        continue;
+                    }
+
+                    $config = is_array($field['config'] ?? null) ? $field['config'] : [];
+
+                    if (DonationAnswer::suggestedAmounts($config) === [] && ! DonationAnswer::allowsCustom($config)) {
+                        $validator->errors()->add("fields.{$index}.config.amounts", "Proposez au moins un montant ou laissez l'invité choisir le sien.");
+                    }
+                }
+            },
         ];
     }
 }

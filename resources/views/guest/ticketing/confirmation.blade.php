@@ -5,10 +5,22 @@
 @section('content')
     <div class="mx-auto max-w-lg px-4 py-10 sm:py-16">
         <p class="mb-1 text-sm font-medium text-ink-soft">{{ $event->title }}</p>
+        @php($isDonation = $order->items->isEmpty() && $order->donations->isNotEmpty())
 
         @if ($order->status->value === 'paid')
-            <h1 class="mb-2 text-2xl">Commande confirmée</h1>
-            <p class="mb-8 text-ink-soft">Merci {{ $order->buyer_name }}, votre paiement a bien été reçu.</p>
+            <h1 class="mb-2 text-2xl">{{ $isDonation ? 'Merci pour votre don' : 'Commande confirmée' }}</h1>
+            <p class="mb-8 text-ink-soft">
+                Merci {{ $order->buyer_name }}, votre paiement a bien été reçu.
+                @if ($isDonation)
+                    Votre reçu vous a été envoyé par e-mail.
+                @endif
+            </p>
+        @elseif ($order->status->value === 'payment_on_site' && $isDonation)
+            <h1 class="mb-2 text-2xl">Promesse de don enregistrée</h1>
+            <p class="mb-8 text-ink-soft">
+                Merci {{ $order->buyer_name }}. Réglez votre don de <strong class="text-ink">{{ $order->total->format() }}</strong>
+                à l'accueil le jour de l'événement : votre reçu vous sera alors envoyé par e-mail.
+            </p>
         @elseif ($order->status->value === 'payment_on_site')
             <h1 class="mb-2 text-2xl">Réservation confirmée</h1>
             <p class="mb-8 text-ink-soft">

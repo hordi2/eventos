@@ -19,6 +19,7 @@ use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormField;
 use App\Domain\Form\Models\FormVersionStatus;
+use App\Domain\Form\Support\DonationAnswer;
 use App\Domain\Form\Support\FormSettings;
 use App\Domain\Organization\Actions\GetEffectivePlan;
 use App\Domain\Organization\Models\Organization;
@@ -195,6 +196,14 @@ final class FormController extends Controller
                 ->values()
                 ->all(),
             'subEventsUrl' => route('events.sub-events.index', $event->id),
+            // Bloc « Don » (T-056) : la devise se choisit dans le bloc, celle
+            // de l'événement proposée d'abord quand elle fait partie de la liste.
+            'donationCurrencies' => array_map(
+                fn (string $code, string $label): array => ['code' => $code, 'label' => $label],
+                array_keys(DonationAnswer::CURRENCIES),
+                DonationAnswer::CURRENCIES,
+            ),
+            'defaultDonationCurrency' => DonationAnswer::currency(['currency' => $event->currency]),
         ];
     }
 

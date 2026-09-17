@@ -18,6 +18,28 @@
             <p class="mb-8 whitespace-pre-line text-ink-soft">{{ $settings['confirmation']['message'] !== '' ? $settings['confirmation']['message'] : "Merci, votre inscription à {$event->title} est enregistrée." }}</p>
         @endif
 
+        {{-- Don promis dans le formulaire, réglé après l'inscription (T-056). --}}
+        @if ($donation !== null)
+            <section class="mb-10 rounded-card border border-line p-5 text-left">
+                <h2 class="mb-1 text-lg">Votre don</h2>
+                <p class="text-2xl font-medium text-ink">{{ $donation['amount'] }}</p>
+                @if ($donation['cause'])
+                    <p class="mt-1 text-sm text-ink-soft">Au profit de : {{ $donation['cause'] }}</p>
+                @endif
+
+                @if ($donation['status'] === 'pending')
+                    <p class="mt-3 text-sm text-ink-soft">Réglez-le maintenant par carte ou Mobile Money, ou choisissez de le régler à l'accueil.</p>
+                    <a href="{{ $donation['paymentUrl'] }}" class="form-button mt-4 inline-flex min-h-11 items-center rounded-pill px-6 py-2.5 font-medium">Finaliser mon don</a>
+                @elseif ($donation['status'] === 'payment_on_site')
+                    <p class="mt-3 text-sm text-ink-soft">Promesse enregistrée : vous le réglerez à l'accueil le jour de l'événement.</p>
+                @elseif ($donation['status'] === 'paid')
+                    <p class="mt-3 text-sm text-ink-soft">Merci ! Votre don est réglé et votre reçu vous a été envoyé par e-mail.</p>
+                @else
+                    <p class="mt-3 text-sm text-ink-soft">Ce don n'a pas été réglé. Contactez l'organisateur pour le finaliser.</p>
+                @endif
+            </section>
+        @endif
+
         {{-- Un QR d'entrée par personne, titulaire puis accompagnants (T-032). --}}
         @if ($qrCodes !== [])
             <section class="mb-10">

@@ -7,6 +7,8 @@ namespace App\Domain\Form\Actions;
 use App\Domain\Form\InvalidFieldAnswerException;
 use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\FormField;
+use App\Domain\Form\Support\DonationAnswer;
+use App\Domain\Form\Support\DonorInfoAnswer;
 use App\Domain\Form\Support\PostalAddress;
 use Carbon\CarbonImmutable;
 use libphonenumber\NumberParseException;
@@ -45,6 +47,8 @@ final class NormalizeFieldAnswer
             FieldType::Quantity => (int) $value,
             FieldType::PostalAddress => $this->normalizeAddress($value),
             FieldType::SubEvents => array_values(array_unique(array_map(intval(...), (array) $value))),
+            FieldType::Donation => DonationAnswer::normalize($field, $value),
+            FieldType::DonorInfo => DonorInfoAnswer::normalize($value),
         };
     }
 

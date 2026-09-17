@@ -66,7 +66,7 @@ final class UpdateRegistrationRequest extends FormRequest
             'first_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'phone' => [$event->type->category() === EventCategory::Personal ? 'required' : 'nullable', 'string', 'max:32'],
-            ...app(BuildFormValidationRules::class)->handle($version, $holderAnswers, $context),
+            ...app(BuildFormValidationRules::class)->handle($version, $holderAnswers, $context, excludeLocked: true),
             ...$this->companionRules($registration, $version, $holderAnswers, $context),
         ];
     }

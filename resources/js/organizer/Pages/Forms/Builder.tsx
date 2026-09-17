@@ -9,6 +9,7 @@ import {
     blueprintForType,
     buildPayload,
     createField,
+    donationBlueprint,
     duplicateField,
     MOVE_DRAG_TYPE,
     normalizeSettings,
@@ -27,6 +28,7 @@ import ScreenDrawer from '../../Components/FormBuilder/ScreenDrawer';
 import ThemeDrawer from '../../Components/FormBuilder/ThemeDrawer';
 import {
     type BuilderField,
+    type CurrencyOption,
     type FieldTypeOption,
     type FontOption,
     type FormPayload,
@@ -54,6 +56,8 @@ interface BuilderPageProps {
     defaultSettings: FormSettings;
     subEvents: SubEventOption[];
     subEventsUrl: string;
+    donationCurrencies: CurrencyOption[];
+    defaultDonationCurrency: string;
 }
 
 interface Notice {
@@ -64,7 +68,19 @@ interface Notice {
 
 const AUTOSAVE_DELAY_MS = 1200;
 
-export default function FormBuilder({ event, form, fieldTypes, fonts, tags, isFreePlan, defaultSettings, subEvents, subEventsUrl }: BuilderPageProps) {
+export default function FormBuilder({
+    event,
+    form,
+    fieldTypes,
+    fonts,
+    tags,
+    isFreePlan,
+    defaultSettings,
+    subEvents,
+    subEventsUrl,
+    donationCurrencies,
+    defaultDonationCurrency,
+}: BuilderPageProps) {
     const { errors: pageErrors, settingsAccess } = usePage<SharedProps & { errors: Record<string, string> }>().props;
 
     const [name, setName] = useState(form?.name ?? `Inscription — ${event.title}`);
@@ -266,6 +282,9 @@ export default function FormBuilder({ event, form, fieldTypes, fonts, tags, isFr
                 }
 
                 insertField(createField(subEventsBlueprint(subEvents), fields), index);
+                break;
+            case 'donation':
+                insertField(createField(donationBlueprint(defaultDonationCurrency), fields), index);
                 break;
             case 'screen':
                 openScreen(action.screen);
@@ -473,6 +492,7 @@ export default function FormBuilder({ event, form, fieldTypes, fonts, tags, isFr
                 companionsEnabled={settings.rsvp.max_companions > 0}
                 subEvents={subEvents}
                 subEventsUrl={subEventsUrl}
+                donationCurrencies={donationCurrencies}
                 onSave={saveField}
                 onCancel={() => {
                     freshUidsRef.current.delete(selectedField.uid);

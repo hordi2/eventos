@@ -32,6 +32,8 @@ final class Order extends Model
     protected $fillable = [
         'organization_id',
         'event_id',
+        // Don promis dans un formulaire d'inscription (T-056) : simple entier.
+        'registration_id',
         'buyer_name',
         'buyer_email',
         'buyer_phone_e164',

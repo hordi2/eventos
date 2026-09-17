@@ -22,7 +22,10 @@ import {
 export const TYPES_WITH_OPTIONS = ['single_choice', 'multiple_choice', 'meal_choice', 'dropdown'];
 
 // Types déjà proposés par leur propre élément de la palette.
-export const HIDDEN_FROM_CUSTOM = ['informational_text', 'meal_choice', 'sub_events'];
+export const HIDDEN_FROM_CUSTOM = ['informational_text', 'meal_choice', 'sub_events', 'donation', 'donor_info'];
+
+// Blocs qui valent pour toute l'inscription et ne servent pas de condition.
+export const GROUP_WIDE_TYPES = ['sub_events', 'donation', 'donor_info'];
 
 export const PALETTE_DRAG_TYPE = 'application/x-itaza-palette';
 
@@ -75,6 +78,8 @@ export const TYPE_DESCRIPTIONS: Record<string, string> = {
     quantity: 'Une quantité bornée : places, tickets, chambres…',
     postal_address: 'Une adresse complète : rue, ville, pays.',
     sub_events: "Les sessions auxquelles l'invité et ses accompagnants participent.",
+    donation: 'Un don réglé après l’inscription : carte, Mobile Money ou à l’accueil.',
+    donor_info: 'Nom, entreprise et adresse du donateur, repris sur son reçu.',
 };
 
 export const SCREEN_META: Record<ScreenKey, { title: string; icon: BuilderIconName }> = {
@@ -110,6 +115,7 @@ export type PaletteAction =
     | { kind: 'field'; blueprint: BlockBlueprint }
     | { kind: 'custom' }
     | { kind: 'subEvents' }
+    | { kind: 'donation' }
     | { kind: 'screen'; screen: ScreenKey }
     | { kind: 'soon' };
 
@@ -148,14 +154,23 @@ export const PALETTE: PaletteEntry[] = [
     },
     { id: 'custom', label: 'Question personnalisée', icon: 'question', premium: true, action: { kind: 'custom' } },
     { id: 'sub_event', label: 'Événements secondaires', icon: 'subEvent', action: { kind: 'subEvents' } },
-    { id: 'donation', label: 'Don en espèces ou en nature', icon: 'donation', action: { kind: 'soon' } },
+    { id: 'donation', label: 'Don', icon: 'donation', action: { kind: 'donation' } },
     {
         id: 'note',
         label: "Note de l'invité",
         icon: 'note',
         action: { kind: 'field', blueprint: { type: 'long_text', label: 'Un mot pour les organisateurs', config: { show_if: 'always' } } },
     },
-    { id: 'donor', label: 'Informations sur le donateur', icon: 'donor', action: { kind: 'soon' } },
+    {
+        id: 'donor',
+        label: 'Informations sur le donateur',
+        icon: 'donor',
+        action: {
+            kind: 'field',
+            // Obligatoire, mais seulement pour un invité qui donne (serveur).
+            blueprint: { type: 'donor_info', label: 'Vos informations de donateur', is_required: true, config: { show_if: 'always' } },
+        },
+    },
     { id: 'confirmation', label: 'Écran de confirmation', icon: 'confirmation', action: { kind: 'screen', screen: 'confirmation' } },
     { id: 'decline', label: 'Écran « Je ne peux pas venir »', icon: 'decline', action: { kind: 'screen', screen: 'decline_screen' } },
 ];
@@ -265,6 +280,85 @@ export function subEventsBlueprint(subEvents: SubEventOption[]): BlockBlueprint 
         type: 'sub_events',
         label: 'À quelles sessions participerez-vous ?',
         config: { sub_events: subEvents.map(({ id, title }) => ({ id, title })) },
+    };
+}
+
+// Montants proposés d'emblée, en unités de la devise : l'organisateur les ajuste ensuite.
+const SUGGESTED_DONATIONS: Record<string, number[]> = {
+    XAF: [5000, 10000, 25000],
+    XOF: [5000, 10000, 25000],
+    CDF: [10000, 25000, 50000],
+};
+
+/**
+ * Chiffres après la virgule de la devise (0 pour XAF et XOF), comme
+ * Money::decimals côté serveur.
+ */
+export function currencyDecimals(currency: string): number {
+    try {
+        return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 2;
+    } catch {
+        return 2;
+    }
+}
+
+export function formatMoney(minor: number, currency: string): string {
+    const decimals = currencyDecimals(currency);
+    const factor = 10 ** decimals;
+
+    return new Intl.NumberFormat('fr-FR', {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: minor % factor === 0 ? 0 : decimals,
+        maximumFractionDigits: decimals,
+    }).format(minor / factor);
+}
+
+/**
+ * Même lecture que Money::parse : « 25 », « 12,50 », « 10 000 ». Renvoie
+ * null pour une saisie illisible ou plus précise que la devise.
+ */
+export function toMinorUnits(text: string, currency: string): number | null {
+    const decimals = currencyDecimals(currency);
+    let compact = text.replace(/[\s  ]+/g, '');
+
+    if (decimals === 0 && /^\d{1,3}([.,]\d{3})+$/.test(compact)) {
+        compact = compact.replace(/[.,]/g, '');
+    }
+
+    const match = /^(\d{1,12})(?:[.,](\d+))?$/.exec(compact);
+    const fraction = match?.[2] ?? '';
+
+    if (!match || fraction.length > decimals) {
+        return null;
+    }
+
+    return Number(match[1]) * 10 ** decimals + Number(fraction.padEnd(decimals, '0') || '0');
+}
+
+export function toMajorText(minor: number, currency: string): string {
+    const decimals = currencyDecimals(currency);
+    const factor = 10 ** decimals;
+
+    return minor % factor === 0 ? String(minor / factor) : (minor / factor).toFixed(decimals).replace('.', ',');
+}
+
+/**
+ * Bloc « Don » : proposé aussi à l'invité qui ne peut pas venir, avec trois
+ * montants de départ et un montant libre.
+ */
+export function donationBlueprint(currency: string): BlockBlueprint {
+    const factor = 10 ** currencyDecimals(currency);
+
+    return {
+        type: 'donation',
+        label: 'Souhaitez-vous soutenir cet événement ?',
+        config: {
+            show_if: 'always',
+            currency,
+            amounts: (SUGGESTED_DONATIONS[currency] ?? [10, 25, 50]).map((amount) => amount * factor),
+            allow_custom: true,
+        },
     };
 }
 

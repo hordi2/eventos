@@ -90,6 +90,28 @@ it('formate correctement pour EUR, USD, CDF, XOF et XAF', function (): void {
     expect($xaf)->toContain('105')->toContain('050')->not->toContain(',');
 });
 
+it('lit un montant saisi en unités et le convertit en unité mineure, sans float', function (string $input, string $currency, int $expected): void {
+    expect(Money::parse($input, $currency)->amountMinor())->toBe($expected);
+})->with([
+    'euros entiers' => ['25', 'EUR', 2500],
+    'virgule décimale' => ['25,5', 'EUR', 2550],
+    'point décimal' => ['25.50', 'USD', 2550],
+    'centimes seuls' => ['0,07', 'EUR', 7],
+    'espace des milliers' => ['10 000', 'XAF', 10000],
+    'point des milliers en franc CFA' => ['10.000', 'XOF', 10000],
+    'espace fine insécable' => ["12\u{202F}500", 'XAF', 12500],
+]);
+
+it('refuse un montant illisible ou plus précis que la devise', function (string $input, string $currency): void {
+    Money::parse($input, $currency);
+})->with([
+    'lettres' => ['abc', 'EUR'],
+    'vide' => ['', 'EUR'],
+    'négatif' => ['-5', 'EUR'],
+    'trois décimales' => ['12,345', 'EUR'],
+    'décimale en franc CFA' => ['500,5', 'XAF'],
+])->throws(InvalidArgumentException::class);
+
 it('aucune méthode publique de Money n\'utilise le type float', function (): void {
     $reflection = new ReflectionClass(Money::class);
 

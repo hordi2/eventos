@@ -39,7 +39,7 @@ final class TicketOrderPaymentController extends Controller
             return redirect()->route('guest.ticketing.payment.status', [$organization, $event, $order]);
         }
 
-        return view('guest.ticketing.payment', ['event' => $this->event($request), 'order' => $orderModel]);
+        return view('guest.ticketing.payment', ['event' => $this->event($request), 'order' => $orderModel->load(['items', 'donations'])]);
     }
 
     public function stripe(Request $request, string $organization, string $event, string $order, CreateStripeCheckout $action): RedirectResponse

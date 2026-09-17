@@ -20,6 +20,12 @@
     @case('sub_events')
         {{ app(\App\Domain\Form\Actions\FormatFieldAnswerForExport::class)->handle($field, (array) $raw) }}
         @break
+    @case('donation')
+        {{ \App\Domain\Form\Support\DonationAnswer::amountFrom($field, $raw)?->format() ?? 'Pas de don' }}
+        @break
+    @case('donor_info')
+        {{ \App\Domain\Form\Support\DonorInfoAnswer::format(\App\Domain\Form\Support\DonorInfoAnswer::normalize($raw)) }}
+        @break
     @default
         {{ is_array($raw) ? implode(', ', $raw) : $raw }}
 @endswitch

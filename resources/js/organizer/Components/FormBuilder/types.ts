@@ -21,7 +21,17 @@ export interface FieldConfig {
     max?: number;
     default_country?: string;
     legal_text?: string;
+    // Bloc « Don » : montants en unité mineure de la devise.
+    currency?: string;
+    amounts?: number[];
+    allow_custom?: boolean;
+    cause?: string | null;
     [key: string]: unknown;
+}
+
+export interface CurrencyOption {
+    code: string;
+    label: string;
 }
 
 export interface FieldOptionData {

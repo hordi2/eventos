@@ -226,6 +226,77 @@
             </div>
             @break
 
+        @case('donation')
+            @php($donation = (array) old($oldKey, $value ?? []))
+            @php($donationCurrency = \App\Domain\Form\Support\DonationAnswer::currency($config))
+            @php($donationChoice = is_string($donation['choice'] ?? null) ? $donation['choice'] : '')
+            <div x-data="{ choice: @js($donationChoice) }" id="{{ $inputId }}" class="space-y-3">
+                @if (! empty($config['cause']))
+                    <p class="text-sm text-ink-soft">Au profit de : <span class="font-medium text-ink">{{ $config['cause'] }}</span></p>
+                @endif
+                <div role="radiogroup" class="flex flex-wrap gap-2">
+                    @foreach (\App\Domain\Form\Support\DonationAnswer::suggestedAmounts($config) as $suggestedAmount)
+                        <label class="cursor-pointer">
+                            <input type="radio" name="{{ $inputName }}[choice]" value="{{ $suggestedAmount }}" x-model="choice" @checked($donationChoice === (string) $suggestedAmount) class="peer sr-only">
+                            <span class="inline-flex min-h-11 items-center rounded-pill border border-line bg-bg px-4 text-sm font-medium text-ink peer-checked:border-ink peer-checked:bg-ink peer-checked:text-bg peer-focus-visible:ring-2 peer-focus-visible:ring-accent">{{ \App\Support\Money::fromMinorUnits($suggestedAmount, $donationCurrency)->format() }}</span>
+                        </label>
+                    @endforeach
+                    @if (\App\Domain\Form\Support\DonationAnswer::allowsCustom($config))
+                        <label class="cursor-pointer">
+                            <input type="radio" name="{{ $inputName }}[choice]" value="{{ \App\Domain\Form\Support\DonationAnswer::CUSTOM }}" x-model="choice" @checked($donationChoice === \App\Domain\Form\Support\DonationAnswer::CUSTOM) class="peer sr-only">
+                            <span class="inline-flex min-h-11 items-center rounded-pill border border-line bg-bg px-4 text-sm font-medium text-ink peer-checked:border-ink peer-checked:bg-ink peer-checked:text-bg peer-focus-visible:ring-2 peer-focus-visible:ring-accent">Autre montant</span>
+                        </label>
+                    @endif
+                    @unless ($field->is_required)
+                        <label class="cursor-pointer">
+                            <input type="radio" name="{{ $inputName }}[choice]" value="" x-model="choice" @checked($donationChoice === '') class="peer sr-only">
+                            <span class="inline-flex min-h-11 items-center rounded-pill border border-line bg-bg px-4 text-sm text-ink-soft peer-checked:border-ink peer-checked:text-ink peer-focus-visible:ring-2 peer-focus-visible:ring-accent">Pas de don pour l'instant</span>
+                        </label>
+                    @endunless
+                </div>
+                @if (\App\Domain\Form\Support\DonationAnswer::allowsCustom($config))
+                    <div x-show="choice === @js(\App\Domain\Form\Support\DonationAnswer::CUSTOM)">
+                        <label for="{{ $inputId }}_custom" class="mb-1.5 block text-sm text-ink">Votre montant ({{ $donationCurrency }})</label>
+                        <input type="text" inputmode="decimal" autocomplete="off" id="{{ $inputId }}_custom" name="{{ $inputName }}[custom]" value="{{ is_string($donation['custom'] ?? null) ? $donation['custom'] : '' }}" class="w-full rounded-control border border-line px-3 py-2 text-ink sm:w-48">
+                    </div>
+                @endif
+                <p class="text-xs text-ink-soft">Vous réglerez votre don juste après l'inscription : par carte, Mobile Money ou à l'accueil.</p>
+            </div>
+            @foreach (['choice', 'custom'] as $part)
+                @error("{$errorKey}.{$part}")
+                    <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            @endforeach
+            @break
+
+        @case('donor_info')
+            @php($donor = (array) old($oldKey, $value ?? []))
+            <div class="space-y-3">
+                <input type="text" id="{{ $inputId }}" name="{{ $inputName }}[name]" value="{{ $donor['name'] ?? ($donorDefaultName ?? '') }}" placeholder="Nom du donateur" aria-label="Nom du donateur" autocomplete="name" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                <input type="text" name="{{ $inputName }}[company]" value="{{ $donor['company'] ?? '' }}" placeholder="Entreprise ou organisation (facultatif)" aria-label="Entreprise ou organisation" autocomplete="organization" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                <input type="text" name="{{ $inputName }}[line1]" value="{{ $donor['line1'] ?? '' }}" placeholder="Adresse" aria-label="Adresse" autocomplete="address-line1" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                <input type="text" name="{{ $inputName }}[line2]" value="{{ $donor['line2'] ?? '' }}" placeholder="Complément d'adresse" aria-label="Complément d'adresse" autocomplete="address-line2" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="text" name="{{ $inputName }}[city]" value="{{ $donor['city'] ?? '' }}" placeholder="Ville" aria-label="Ville" autocomplete="address-level2" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                    <input type="text" name="{{ $inputName }}[region]" value="{{ $donor['region'] ?? '' }}" placeholder="Province ou région" aria-label="Province ou région" autocomplete="address-level1" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="text" name="{{ $inputName }}[postal_code]" value="{{ $donor['postal_code'] ?? '' }}" placeholder="Code postal" aria-label="Code postal" autocomplete="postal-code" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                    <input type="text" name="{{ $inputName }}[country]" value="{{ $donor['country'] ?? '' }}" placeholder="Pays" aria-label="Pays" autocomplete="country-name" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                </div>
+                <label class="flex items-start gap-2 text-sm text-ink">
+                    <input type="checkbox" name="{{ $inputName }}[anonymous]" value="1" @checked(! empty($donor['anonymous'])) class="mt-1">
+                    <span>Je souhaite que mon don reste anonyme</span>
+                </label>
+                <p class="text-xs text-ink-soft">Ces informations figurent sur le reçu de votre don{{ $field->is_required ? ' : elles sont demandées dès que vous donnez' : '' }}.</p>
+            </div>
+            @foreach (['name', 'line1', 'city'] as $part)
+                @error("{$errorKey}.{$part}")
+                    <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            @endforeach
+            @break
+
         @default
             <input
                 type="text"

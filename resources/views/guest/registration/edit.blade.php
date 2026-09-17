@@ -43,7 +43,13 @@
             </div>
 
             @foreach ($version->fields as $field)
-                @if ($visibility[$field->key]['visible'])
+                @continue(! $visibility[$field->key]['visible'])
+                {{-- Le don a donné naissance à une commande : il ne se modifie pas ici (T-056). --}}
+                @if ($field->type->isLockedAfterSubmission())
+                    @if ($field->type->value === 'donation' && ($donationAmount = \App\Domain\Form\Support\DonationAnswer::stored(data_get($answers, $field->key))) !== null)
+                        <p class="mb-6 rounded-control border border-line px-4 py-3 text-sm text-ink-soft">Votre don de <strong class="text-ink">{{ $donationAmount->format() }}</strong> ne se modifie pas ici.</p>
+                    @endif
+                @else
                     @include('guest.registration._field', ['field' => $field, 'value' => data_get($answers, $field->key)])
                 @endif
             @endforeach

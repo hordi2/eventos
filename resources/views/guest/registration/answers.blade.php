@@ -19,6 +19,8 @@
                 ]);
                 $hasVisibleQuestion = collect($visibility)->contains(fn (array $state): bool => $state['visible'])
                     || $companionSections->contains(fn (array $section): bool => $section['fields']->isNotEmpty());
+                // Bloc « Informations sur le donateur » prérempli avec le nom de l'invité.
+                $donorDefaultName = trim(($draft->identity['first_name'] ?? '').' '.($draft->identity['last_name'] ?? ''));
             @endphp
 
             @unless ($hasVisibleQuestion)
@@ -27,7 +29,7 @@
 
             @foreach ($version->fields as $field)
                 @if ($visibility[$field->key]['visible'])
-                    @include('guest.registration._field', ['field' => $field, 'value' => data_get($draft->answers, $field->key)])
+                    @include('guest.registration._field', ['field' => $field, 'value' => data_get($draft->answers, $field->key), 'donorDefaultName' => $donorDefaultName])
                 @endif
             @endforeach
 

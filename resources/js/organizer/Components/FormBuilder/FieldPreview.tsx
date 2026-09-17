@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { optionValue, PREVIEW_INPUT } from './logic';
+import { formatMoney, optionValue, PREVIEW_INPUT } from './logic';
 import { type FieldData } from './types';
 
 interface FieldPreviewProps {
@@ -151,6 +151,49 @@ export default function FieldPreview({ field, required, value, onChange }: Field
                             </label>
                         ))}
                         {(field.config.sub_events ?? []).length === 0 && <p className="opacity-60">Aucune session proposée pour l'instant.</p>}
+                    </div>
+                );
+            case 'donation': {
+                const currency = field.config.currency ?? 'XAF';
+                const choices: [string, string][] = [
+                    ...(field.config.amounts ?? []).map((amount): [string, string] => [String(amount), formatMoney(amount, currency)]),
+                    ...((field.config.allow_custom ?? true) ? [['autre', 'Autre montant'] as [string, string]] : []),
+                    ...(required ? [] : [['', 'Pas de don pour l’instant'] as [string, string]]),
+                ];
+
+                return (
+                    <div className="space-y-3 text-sm">
+                        {field.config.cause && <p className="opacity-70">Au profit de : {field.config.cause}</p>}
+                        <div className="flex flex-wrap gap-2">
+                            {choices.map(([choice, label]) => (
+                                <label key={choice || 'aucun'} className="cursor-pointer">
+                                    <input type="radio" name={groupName} className="peer sr-only" checked={text === choice} onChange={() => onChange(choice)} />
+                                    <span className="inline-block rounded-pill border border-black/15 px-3 py-1.5 peer-checked:border-current peer-checked:font-semibold">
+                                        {label}
+                                    </span>
+                                </label>
+                            ))}
+                        </div>
+                        {text === 'autre' && (
+                            <input type="text" inputMode="decimal" aria-label="Votre montant" placeholder={`Votre montant (${currency})`} className={`${PREVIEW_INPUT} sm:w-48`} />
+                        )}
+                    </div>
+                );
+            }
+            case 'donor_info':
+                return (
+                    <div className="space-y-2">
+                        <input type="text" aria-label="Nom du donateur" placeholder="Nom du donateur" className={PREVIEW_INPUT} />
+                        <input type="text" aria-label="Entreprise ou organisation" placeholder="Entreprise ou organisation (facultatif)" className={PREVIEW_INPUT} />
+                        <input type="text" aria-label="Adresse" placeholder="Adresse" className={PREVIEW_INPUT} />
+                        <div className="grid grid-cols-2 gap-2">
+                            <input type="text" aria-label="Ville" placeholder="Ville" className={PREVIEW_INPUT} />
+                            <input type="text" aria-label="Pays" placeholder="Pays" className={PREVIEW_INPUT} />
+                        </div>
+                        <label className="flex cursor-pointer items-center gap-2 text-sm">
+                            <input type="checkbox" />
+                            Je souhaite que mon don reste anonyme
+                        </label>
                     </div>
                 );
             case 'postal_address':

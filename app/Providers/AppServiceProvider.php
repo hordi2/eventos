@@ -18,11 +18,13 @@ use App\Domain\Form\Models\Form;
 use App\Domain\Form\Policies\FormPolicy;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Organization\Policies\OrganizationPolicy;
+use App\Domain\Ticketing\Events\OrderPaid;
 use App\Listeners\LinkRegistrationToContact;
 use App\Listeners\Notifications\NotifyOrganizersOfRegistration;
 use App\Listeners\ReportHealthDiagnostics;
 use App\Listeners\SendConfirmationEmail;
 use App\Listeners\SendConfirmationWhatsapp;
+use App\Listeners\SendDonationReceipt;
 use App\Listeners\Webhooks\DispatchRegistrationWebhooks;
 use App\Listeners\Webhooks\DispatchWaitlistWebhooks;
 use App\Support\Capacity\Events\WaitlistEntryPromoted;
@@ -74,9 +76,10 @@ class AppServiceProvider extends ServiceProvider
         EventFacade::listen(RegistrationCreated::class, SendConfirmationWhatsapp::class);
 
         // Paramètres → Intégrations & API : webhooks sortants souscrits par
-        // un organisateur (App\Support\Webhooks). Événements limités à ceux
-        // réellement émis aujourd'hui — ni paiement ni check-in n'émettent
-        // encore d'événement Laravel (limite connue, voir le backlog).
+        // un organisateur (App\Support\Webhooks). Événements limités aux
+        // inscriptions : le paiement émet OrderPaid (T-056) sans être encore
+        // proposé en webhook, le check-in n'émet rien (limite connue, voir le
+        // backlog).
         EventFacade::listen(RegistrationCreated::class, [DispatchRegistrationWebhooks::class, 'created']);
         EventFacade::listen(RegistrationUpdated::class, [DispatchRegistrationWebhooks::class, 'updated']);
         EventFacade::listen(RegistrationCancelled::class, [DispatchRegistrationWebhooks::class, 'cancelled']);
@@ -87,6 +90,9 @@ class AppServiceProvider extends ServiceProvider
         EventFacade::listen(RegistrationCreated::class, [NotifyOrganizersOfRegistration::class, 'created']);
         EventFacade::listen(RegistrationUpdated::class, [NotifyOrganizersOfRegistration::class, 'updated']);
         EventFacade::listen(RegistrationCancelled::class, [NotifyOrganizersOfRegistration::class, 'cancelled']);
+
+        // T-056 : reçu du don par e-mail une fois le paiement reçu.
+        EventFacade::listen(OrderPaid::class, SendDonationReceipt::class);
 
         // T-076 : fait échouer /up (bootstrap/app.php) quand la base ou
         // Redis ne répond pas.

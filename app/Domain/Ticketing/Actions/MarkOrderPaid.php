@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Ticketing\Actions;
 
+use App\Domain\Ticketing\Events\OrderPaid;
 use App\Domain\Ticketing\InvalidOrderTransitionException;
 use App\Domain\Ticketing\Models\Order;
 use App\Domain\Ticketing\Models\OrderStatus;
@@ -102,6 +103,12 @@ final class MarkOrderPaid
             }
         });
 
-        return $order->fresh(['items.tickets', 'payments']);
+        $order->refresh()->load(['items.tickets', 'payments']);
+
+        // Après le commit : un listener (reçu de don, T-056) ne voit jamais
+        // un paiement que la transaction aurait finalement annulé.
+        OrderPaid::dispatch($order);
+
+        return $order;
     }
 }

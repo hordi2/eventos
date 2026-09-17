@@ -7,6 +7,8 @@ namespace App\Domain\Form\Actions;
 use App\Domain\Form\Models\FieldOption;
 use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\FormField;
+use App\Domain\Form\Support\DonationAnswer;
+use App\Domain\Form\Support\DonorInfoAnswer;
 use App\Domain\Form\Support\PostalAddress;
 
 /**
@@ -32,6 +34,8 @@ final class FormatFieldAnswerForExport
             FieldType::DateTime, FieldType::Url, FieldType::SocialProfile, FieldType::Quantity => (string) $normalizedValue,
             FieldType::PostalAddress => PostalAddress::format((array) $normalizedValue),
             FieldType::SubEvents => $this->subEventTitles($field, (array) $normalizedValue),
+            FieldType::Donation => DonationAnswer::stored($normalizedValue)?->format() ?? '',
+            FieldType::DonorInfo => DonorInfoAnswer::format((array) $normalizedValue),
         };
     }
 

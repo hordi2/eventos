@@ -47,7 +47,7 @@
                 @foreach ($version->fields as $field)
                     @continue(! $visibility[$field->key]['visible'] || $field->type->value === 'informational_text')
                     @php($raw = data_get($draft->answers, $field->key))
-                    @continue($raw === null || $raw === '')
+                    @continue(blank($raw) || (is_array($raw) && blank(array_filter($raw))))
                     <div class="mb-3 last:mb-0">
                         <p class="text-xs text-ink-soft">{{ $field->label }}</p>
                         <p class="text-sm text-ink">@include('guest.registration._answer_value', ['field' => $field, 'raw' => $raw])</p>
