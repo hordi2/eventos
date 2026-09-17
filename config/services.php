@@ -86,8 +86,10 @@ return [
         // Secret dédié à la signature des JWT de billet (§4.6 CLAUDE.md),
         // distinct de APP_KEY pour pouvoir le faire tourner sans invalider
         // les sessions/le chiffrement applicatif — repli sur APP_KEY tant
-        // qu'aucun secret dédié n'est configuré.
-        'secret' => env('TICKET_QR_SECRET', env('APP_KEY')),
+        // qu'aucun secret dédié n'est configuré. « ?: » et non la valeur par
+        // défaut de env() : celle-ci ignore une variable déclarée vide
+        // (TICKET_QR_SECRET= dans .env.example), qui donnerait un secret vide.
+        'secret' => env('TICKET_QR_SECRET') ?: env('APP_KEY'),
     ],
 
     // Analyse antivirus des fichiers joints des invités (S-06) : démon clamd,
