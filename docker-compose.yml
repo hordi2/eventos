@@ -47,8 +47,10 @@ services:
   # Analyse antivirus des fichiers joints des invités (S-06). Au premier
   # démarrage, le chargement des signatures prend quelques minutes : les
   # fichiers restent « Analyse en cours » et le job réessaie plus tard.
+  # Variante Debian : la seule image officielle publiée aussi pour arm64
+  # (Mac à puce Apple), clamav/clamav ne l'étant que pour amd64.
   clamav:
-    image: clamav/clamav:stable
+    image: clamav/clamav-debian:stable
     ports:
       - "${FORWARD_CLAMAV_PORT:-3310}:3310"
     volumes:
