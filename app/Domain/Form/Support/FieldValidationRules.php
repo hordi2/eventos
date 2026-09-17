@@ -80,6 +80,10 @@ final class FieldValidationRules
                 ...$this->postalAddressRules($field->key, $presence),
                 "{$field->key}.anonymous" => ['nullable', 'boolean'],
             ],
+            // Référence du fichier déjà contrôlé et mis en quarantaine
+            // (StoreGuestUploads) ; son existence est vérifiée à part
+            // (ValidateRegistrationFiles).
+            FieldType::FileUpload => [$field->key => ['string', 'uuid']],
         };
     }
 

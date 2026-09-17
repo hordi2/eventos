@@ -26,6 +26,7 @@ use App\Domain\Form\Support\EvaluateFormVisibility;
 use App\Domain\Form\Support\IsRegistrationWindowOpen;
 use App\Domain\Form\Support\OptionReservationKey;
 use App\Domain\Form\Support\ValidateCompanions;
+use App\Domain\Form\Support\ValidateRegistrationFiles;
 use App\Support\Capacity\Actions\ReserveCapacity;
 use App\Support\Capacity\Data\ReservationOutcome;
 use App\Support\MultiTenancy\CurrentOrganization;
@@ -50,6 +51,8 @@ final class SubmitRegistration
         private readonly IsRegistrationWindowOpen $isRegistrationWindowOpen,
         private readonly ValidateCompanions $validateCompanions,
         private readonly SyncSubEventRegistrations $syncSubEventRegistrations,
+        private readonly ValidateRegistrationFiles $validateRegistrationFiles,
+        private readonly SyncRegistrationFiles $syncRegistrationFiles,
     ) {}
 
     /**
@@ -99,6 +102,7 @@ final class SubmitRegistration
         $rules = $this->buildFormValidationRules->handle($formVersion, $answers, $visibilityContext);
         Validator::make($answers, $rules)->validate();
         $this->validateCompanions->handle($formVersion, $answers, $companions, $visibilityContext);
+        $this->validateRegistrationFiles->handle($formVersion, $answers, $visibility);
 
         $subEvents = $declined ? [] : $this->syncSubEventRegistrations->selected($formVersion, $answers, $visibility, $context->subEvents);
         $this->syncSubEventRegistrations->assertNoScheduleConflict($formVersion, $subEvents);
@@ -155,6 +159,7 @@ final class SubmitRegistration
             }
 
             $this->syncSubEventRegistrations->handle($registration, $subEvents);
+            $this->syncRegistrationFiles->handle($registration, $formVersion);
 
             return $registration;
         });

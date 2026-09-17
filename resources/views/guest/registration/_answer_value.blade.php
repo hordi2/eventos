@@ -23,6 +23,10 @@
     @case('donation')
         {{ \App\Domain\Form\Support\DonationAnswer::amountFrom($field, $raw)?->format() ?? 'Pas de don' }}
         @break
+    @case('file_upload')
+        @php($uploaded = is_string($raw) ? (($uploadedFiles ?? [])[$raw] ?? null) : null)
+        {{ $uploaded !== null ? "{$uploaded['name']} · {$uploaded['status']}" : 'Fichier à envoyer de nouveau' }}
+        @break
     @case('donor_info')
         {{ \App\Domain\Form\Support\DonorInfoAnswer::format(\App\Domain\Form\Support\DonorInfoAnswer::normalize($raw)) }}
         @break

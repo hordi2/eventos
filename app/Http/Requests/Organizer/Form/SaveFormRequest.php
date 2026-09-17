@@ -9,6 +9,7 @@ use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\RuleAction;
 use App\Domain\Form\Support\AskScope;
 use App\Domain\Form\Support\DonationAnswer;
+use App\Domain\Form\Support\FileUploadAnswer;
 use App\Domain\Form\Support\FormSettings;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Foundation\Http\FormRequest;
@@ -59,6 +60,10 @@ final class SaveFormRequest extends FormRequest
             'fields.*.config.amounts.*' => ['integer', 'min:1', 'max:100000000000'],
             'fields.*.config.allow_custom' => ['nullable', 'boolean'],
             'fields.*.config.cause' => ['nullable', 'string', 'max:255'],
+            // Bloc « Fichier joint » : formats acceptés et taille maximale (CDC M2.1).
+            'fields.*.config.file_types' => ['nullable', 'array', 'min:1'],
+            'fields.*.config.file_types.*' => [Rule::in(array_keys(FileUploadAnswer::TYPES))],
+            'fields.*.config.max_size_mb' => ['nullable', 'integer', 'min:1', 'max:'.FileUploadAnswer::MAX_SIZE_MB],
             'fields.*.config.tag_ids' => ['nullable', 'array'],
             'fields.*.config.tag_ids.*' => [
                 'integer',

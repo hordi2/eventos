@@ -7,6 +7,7 @@ import Textarea from '../Textarea';
 import TextInput from '../TextInput';
 import Toggle from '../Toggle';
 import DonationSettings from './DonationSettings';
+import FileUploadSettings, { DEFAULT_FILE_TYPES } from './FileUploadSettings';
 import { GROUP_WIDE_TYPES, PANEL_SECTION_TITLE, SHOW_IF_LABELS, TYPES_WITH_OPTIONS, withOptionValues } from './logic';
 import OptionsEditor from './OptionsEditor';
 import PremiumBadge from './PremiumBadge';
@@ -18,6 +19,7 @@ import {
     type CurrencyOption,
     type FieldConfig,
     type FieldTypeOption,
+    type FileTypeOption,
     type RuleData,
     type ShowIf,
     type SubEventOption,
@@ -40,6 +42,8 @@ interface QuestionDrawerProps {
     subEvents: SubEventOption[];
     subEventsUrl: string;
     donationCurrencies: CurrencyOption[];
+    fileUploadTypes: FileTypeOption[];
+    maxFileSizeMb: number;
     onSave: (field: BuilderField, rule: RuleData | null) => void;
     onCancel: () => void;
     onRemove: () => void;
@@ -79,6 +83,8 @@ export default function QuestionDrawer({
     subEvents,
     subEventsUrl,
     donationCurrencies,
+    fileUploadTypes,
+    maxFileSizeMb,
     onSave,
     onCancel,
     onRemove,
@@ -100,11 +106,13 @@ export default function QuestionDrawer({
     const isSubEvents = draft.type === 'sub_events';
     const isDonation = draft.type === 'donation';
     const isDonorInfo = draft.type === 'donor_info';
+    const isFileUpload = draft.type === 'file_upload';
     const isGroupWide = GROUP_WIDE_TYPES.includes(draft.type);
     const offeredSubEvents = (draft.config.sub_events ?? []).map((subEvent) => subEvent.id);
     const tagIds = draft.config.tag_ids ?? [];
+    // Un don, un donateur ou un fichier ne servent pas de condition à une autre question.
     const sources = fields.filter(
-        (item) => item.uid !== field.uid && item.type !== 'informational_text' && item.type !== 'donation' && item.type !== 'donor_info',
+        (item) => item.uid !== field.uid && !['informational_text', 'donation', 'donor_info', 'file_upload'].includes(item.type),
     );
 
     function update(patch: Partial<BuilderField>) {
@@ -172,6 +180,12 @@ export default function QuestionDrawer({
 
         if (isDonation && (draft.config.amounts ?? []).length === 0 && draft.config.allow_custom === false) {
             setLocalError('Proposez au moins un montant ou laissez l’invité choisir le sien.');
+
+            return;
+        }
+
+        if (isFileUpload && (draft.config.file_types ?? DEFAULT_FILE_TYPES).length === 0) {
+            setLocalError('Choisissez au moins un format de fichier.');
 
             return;
         }
@@ -281,6 +295,8 @@ export default function QuestionDrawer({
             )}
 
             {isDonation && <DonationSettings config={draft.config} currencies={donationCurrencies} onChange={updateConfig} />}
+
+            {isFileUpload && <FileUploadSettings config={draft.config} types={fileUploadTypes} maxSizeMb={maxFileSizeMb} onChange={updateConfig} />}
 
             {isDonorInfo && (
                 <p className="rounded-control bg-bg-alt px-3 py-2 text-xs text-ink-soft">

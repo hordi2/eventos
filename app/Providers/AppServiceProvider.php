@@ -12,6 +12,7 @@ use App\Domain\Event\Policies\EventPolicy;
 use App\Domain\Event\Policies\VenuePolicy;
 use App\Domain\Form\Events\RegistrationCancelled;
 use App\Domain\Form\Events\RegistrationCreated;
+use App\Domain\Form\Events\RegistrationFileRejected;
 use App\Domain\Form\Events\RegistrationUpdated;
 use App\Domain\Form\Listeners\ConfirmPromotedRegistration;
 use App\Domain\Form\Models\Form;
@@ -21,12 +22,15 @@ use App\Domain\Organization\Policies\OrganizationPolicy;
 use App\Domain\Ticketing\Events\OrderPaid;
 use App\Listeners\LinkRegistrationToContact;
 use App\Listeners\Notifications\NotifyOrganizersOfRegistration;
+use App\Listeners\NotifyGuestOfRejectedFile;
 use App\Listeners\ReportHealthDiagnostics;
 use App\Listeners\SendConfirmationEmail;
 use App\Listeners\SendConfirmationWhatsapp;
 use App\Listeners\SendDonationReceipt;
 use App\Listeners\Webhooks\DispatchRegistrationWebhooks;
 use App\Listeners\Webhooks\DispatchWaitlistWebhooks;
+use App\Support\Antivirus\ClamAvScanner;
+use App\Support\Antivirus\FileScanner;
 use App\Support\Capacity\Events\WaitlistEntryPromoted;
 use App\Support\Messaging\TwilioWhatsappProvider;
 use App\Support\Messaging\WhatsappProvider;
@@ -55,6 +59,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(WhatsappProvider::class, TwilioWhatsappProvider::class);
         $this->app->bind(CardCheckoutProvider::class, StripeCheckoutProvider::class);
         $this->app->bind(MobileMoneyProvider::class, FlutterwaveMobileMoneyProvider::class);
+        $this->app->bind(FileScanner::class, fn (): FileScanner => new ClamAvScanner(
+            (string) config('services.clamav.address'),
+            (int) config('services.clamav.timeout'),
+        ));
     }
 
     /**
@@ -93,6 +101,9 @@ class AppServiceProvider extends ServiceProvider
 
         // T-056 : reçu du don par e-mail une fois le paiement reçu.
         EventFacade::listen(OrderPaid::class, SendDonationReceipt::class);
+
+        // Fichier joint refusé par l'antivirus après l'inscription : l'invité est prévenu.
+        EventFacade::listen(RegistrationFileRejected::class, NotifyGuestOfRejectedFile::class);
 
         // T-076 : fait échouer /up (bootstrap/app.php) quand la base ou
         // Redis ne répond pas.

@@ -11,7 +11,7 @@
             <p class="mb-6 rounded-control border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ $message }}</p>
         @enderror
 
-        <form method="POST" action="{{ url()->full() }}" novalidate>
+        <form method="POST" action="{{ url()->full() }}" enctype="multipart/form-data" novalidate>
             @csrf
 
             <div class="mb-6">

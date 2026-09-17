@@ -143,6 +143,28 @@ it('enregistre un bloc « Don » et refuse une devise inconnue ou un don sans mo
     ])->assertSessionHasErrors(['fields.0.config.currency', 'fields.1.config.amounts']);
 });
 
+it('enregistre un bloc « Fichier joint » et refuse un format inconnu, aucun format ou une taille trop grande', function (): void {
+    [, $admin, $form] = formWithBuilderSettings();
+    $file = fn (string $key, array $config): array => ['key' => $key, 'type' => 'file_upload', 'label' => 'Votre justificatif', 'config' => $config];
+
+    $this->actingAs($admin)->patch("/forms/{$form->id}", [
+        'name' => 'Inscription',
+        'fields' => [$file('justificatif', ['file_types' => ['pdf', 'images'], 'max_size_mb' => 5])],
+    ])->assertRedirect(route('forms.edit', $form));
+
+    expect($form->fresh()->latestVersion()->fields->first()->config)->toMatchArray(['file_types' => ['pdf', 'images'], 'max_size_mb' => 5]);
+
+    $this->actingAs($admin)->get("/forms/{$form->id}/edit")->assertInertia(fn ($page) => $page
+        ->has('fileUploadTypes', 3)
+        ->where('maxFileSizeMb', 10)
+        ->where('fieldTypes', fn ($types): bool => collect($types)->firstWhere('value', 'file_upload')['premium'] === true));
+
+    $this->actingAs($admin)->patch("/forms/{$form->id}", [
+        'name' => 'Inscription',
+        'fields' => [$file('a', ['file_types' => ['exe']]), $file('b', ['file_types' => []]), $file('c', ['max_size_mb' => 50])],
+    ])->assertSessionHasErrors(['fields.0.config.file_types.0', 'fields.1.config.file_types', 'fields.2.config.max_size_mb']);
+});
+
 it('enregistre le nombre maximal d\'accompagnants et une question posée à chaque personne', function (): void {
     [, $admin, $form] = formWithBuilderSettings();
 

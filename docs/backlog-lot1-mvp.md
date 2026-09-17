@@ -240,6 +240,26 @@ multiple, oui/non, consentement, menu/repas, texte informatif.
 > Reste l'étape B (constructeur à blocs React) puis le lot 2 (téléversement
 > de fichier avec antivirus, dons, sous-événements, informations du donateur,
 > présence par participant — dépend de T-032).
+>
+> **Lot 2, étape F (livrée) — « Fichier joint »** (question avancée) : formats
+> choisis dans le bloc (images, PDF, documents) et taille jusqu'à 10 Mo. Type
+> réel, extension et taille contrôlés, puis quarantaine hors du dossier public
+> (`registration_files`, disque `REGISTRATION_FILES_DISK`) et analyse ClamAV en
+> file d'attente (`ScanRegistrationFileJob`, client INSTREAM sans dépendance,
+> `CLAMAV_ADDRESS`). L'invité n'attend pas le verdict ; un fichier infecté est
+> supprimé et l'invité prévenu par e-mail avec son lien de modification ; ClamAV
+> injoignable : nouvelles tentatives, puis « Analyse impossible » et bouton
+> « Relancer l'analyse ». Page « Fichiers reçus » de l'événement : liste pour
+> `viewGuests`, téléchargement des fichiers sains pour `exportData`, journalisé
+> (`registration_file.downloaded`). Fichiers conservés avec l'inscription,
+> supprimés à l'effacement RGPD du contact ; ceux jamais rattachés à une
+> inscription sont purgés après 30 jours (`registration-files:purge-unclaimed`).
+> Service `clamav` ajouté au Docker Compose de développement.
+> Limites connues : pas de question « Fichier joint » posée à chaque
+> accompagnant ; le serveur PHP doit accepter les envois (`upload_max_filesize`
+> ≥ 12M, `post_max_size` ≥ 64M, réglés dans l'image Docker) ; un envoi qui
+> dépasse `post_max_size` renvoie une page d'erreur au lieu d'un message dans
+> le formulaire.
 
 ---
 

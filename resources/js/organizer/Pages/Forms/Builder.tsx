@@ -30,6 +30,7 @@ import {
     type BuilderField,
     type CurrencyOption,
     type FieldTypeOption,
+    type FileTypeOption,
     type FontOption,
     type FormPayload,
     type FormSettings,
@@ -58,6 +59,8 @@ interface BuilderPageProps {
     subEventsUrl: string;
     donationCurrencies: CurrencyOption[];
     defaultDonationCurrency: string;
+    fileUploadTypes: FileTypeOption[];
+    maxFileSizeMb: number;
 }
 
 interface Notice {
@@ -80,6 +83,8 @@ export default function FormBuilder({
     subEventsUrl,
     donationCurrencies,
     defaultDonationCurrency,
+    fileUploadTypes,
+    maxFileSizeMb,
 }: BuilderPageProps) {
     const { errors: pageErrors, settingsAccess } = usePage<SharedProps & { errors: Record<string, string> }>().props;
 
@@ -493,6 +498,8 @@ export default function FormBuilder({
                 subEvents={subEvents}
                 subEventsUrl={subEventsUrl}
                 donationCurrencies={donationCurrencies}
+                fileUploadTypes={fileUploadTypes}
+                maxFileSizeMb={maxFileSizeMb}
                 onSave={saveField}
                 onCancel={() => {
                     freshUidsRef.current.delete(selectedField.uid);

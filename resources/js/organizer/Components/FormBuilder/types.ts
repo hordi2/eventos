@@ -26,7 +26,15 @@ export interface FieldConfig {
     amounts?: number[];
     allow_custom?: boolean;
     cause?: string | null;
+    // Bloc « Fichier joint ».
+    file_types?: string[];
+    max_size_mb?: number;
     [key: string]: unknown;
+}
+
+export interface FileTypeOption {
+    value: string;
+    label: string;
 }
 
 export interface CurrencyOption {

@@ -41,6 +41,7 @@ use App\Http\Controllers\Organizer\HelpController;
 use App\Http\Controllers\Organizer\MessageAutomationController;
 use App\Http\Controllers\Organizer\OrganizationBrandingController;
 use App\Http\Controllers\Organizer\PageController;
+use App\Http\Controllers\Organizer\RegistrationFileController;
 use App\Http\Controllers\Organizer\SeatingController;
 use App\Http\Controllers\Organizer\Settings\EventSharingController;
 use App\Http\Controllers\Organizer\Settings\IntegrationController;
@@ -256,6 +257,11 @@ Route::middleware('auth')->group(function (): void {
         Route::patch('events/{event}/sub-events/{subEvent}', [SubEventController::class, 'update'])->name('events.sub-events.update');
         Route::delete('events/{event}/sub-events/{subEvent}', [SubEventController::class, 'destroy'])->name('events.sub-events.destroy');
 
+        // Fichiers joints des invités : liste, téléchargement journalisé, nouvelle analyse.
+        Route::get('events/{event}/files', [RegistrationFileController::class, 'index'])->name('events.files.index');
+        Route::get('events/{event}/files/{file}/download', [RegistrationFileController::class, 'download'])->name('events.files.download');
+        Route::post('events/{event}/files/{file}/rescan', [RegistrationFileController::class, 'rescan'])->name('events.files.rescan');
+
         Route::middleware('can-organization:createEvents')->group(function (): void {
             Route::get('events/{event}/form/create', [FormController::class, 'create'])->name('forms.create');
             Route::post('events/{event}/form', [FormController::class, 'store'])->name('forms.store');
@@ -386,7 +392,8 @@ Route::middleware('resolve-guest-event')
         Route::post('{token}/identite', [RegistrationController::class, 'identityStore'])->name('identity.store');
 
         Route::get('{token}/reponses', [RegistrationController::class, 'answersShow'])->name('answers.show');
-        Route::post('{token}/reponses', [RegistrationController::class, 'answersStore'])->name('answers.store');
+        // Débit limité : la page peut porter des fichiers joints (§7 du CLAUDE.md).
+        Route::post('{token}/reponses', [RegistrationController::class, 'answersStore'])->middleware('throttle:20,1')->name('answers.store');
 
         Route::get('{token}/recap', [RegistrationController::class, 'reviewShow'])->name('review.show');
         Route::post('{token}/recap', [RegistrationController::class, 'reviewConfirm'])->name('review.confirm');
@@ -397,7 +404,7 @@ Route::middleware('resolve-guest-event')
         // Lien signé (T-033) : la signature protège {registration} contre
         // toute manipulation, inutile d'y ajouter un jeton non devinable.
         Route::middleware('signed')->group(function (): void {
-            Route::match(['GET', 'POST'], 'inscriptions/{registration}/modifier', [RegistrationController::class, 'edit'])->name('edit');
+            Route::match(['GET', 'POST'], 'inscriptions/{registration}/modifier', [RegistrationController::class, 'edit'])->middleware('throttle:30,1')->name('edit');
             Route::match(['GET', 'POST'], 'inscriptions/{registration}/annuler', [RegistrationController::class, 'cancel'])->name('cancel');
         });
     });

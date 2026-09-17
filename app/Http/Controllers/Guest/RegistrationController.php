@@ -30,8 +30,10 @@ use App\Domain\Form\RegistrationClosedException;
 use App\Domain\Form\SubEventFullException;
 use App\Domain\Form\Support\AskScope;
 use App\Domain\Form\Support\EvaluateFormVisibility;
+use App\Domain\Form\Support\FileUploadAnswer;
 use App\Domain\Form\Support\FormSettings;
 use App\Domain\Form\Support\IsRegistrationWindowOpen;
+use App\Domain\Form\Support\PresentRegistrationFiles;
 use App\Domain\Organization\Actions\GetEffectivePlan;
 use App\Domain\Organization\Actions\GetPlanQuotas;
 use App\Http\Controllers\Controller;
@@ -191,6 +193,7 @@ final class RegistrationController extends Controller
             'visibility' => app(EvaluateFormVisibility::class)->handle($version, $this->holderAnswers($draft), $this->visibilityContext($draft)),
             'companions' => $this->draftCompanions($draft, $version),
             'subEventChoices' => app(BuildGuestSubEventChoices::class)->handle($eventModel),
+            'uploadedFiles' => app(PresentRegistrationFiles::class)->handle($this->holderAnswers($draft)),
             ...$this->presentation($eventModel),
         ]);
     }
@@ -215,6 +218,7 @@ final class RegistrationController extends Controller
             'visibility' => app(EvaluateFormVisibility::class)->handle($version, $this->holderAnswers($draft), $this->visibilityContext($draft)),
             'attending' => $this->attending($draft),
             'companions' => $this->draftCompanions($draft, $version),
+            'uploadedFiles' => app(PresentRegistrationFiles::class)->handle($this->holderAnswers($draft)),
             ...$this->presentation($eventModel),
         ]);
     }
@@ -320,6 +324,7 @@ final class RegistrationController extends Controller
             'answers' => $answers,
             'companions' => $this->registrationCompanions($registrationModel, $version, $answers, $context),
             'subEventChoices' => app(BuildGuestSubEventChoices::class)->handle($eventModel),
+            'uploadedFiles' => app(PresentRegistrationFiles::class)->handle($answers),
             ...$this->presentation($eventModel),
         ]);
     }
@@ -536,6 +541,7 @@ final class RegistrationController extends Controller
             'yes_no' => $value ? '1' : '0',
             'date' => $value ? CarbonImmutable::parse($value)->format('Y-m-d') : $value,
             'date_time' => $value ? CarbonImmutable::parse($value)->format('Y-m-d\TH:i') : $value,
+            'file_upload' => FileUploadAnswer::storedToken($value),
             default => $value,
         };
     }

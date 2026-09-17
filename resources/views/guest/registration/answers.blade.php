@@ -9,7 +9,7 @@
 
         @include('guest.registration._progress', ['step' => 2])
 
-        <form method="POST" action="{{ route('guest.registration.answers.store', [request()->route('organization'), request()->route('event'), $draft->resume_token]) }}" novalidate>
+        <form method="POST" action="{{ route('guest.registration.answers.store', [request()->route('organization'), request()->route('event'), $draft->resume_token]) }}" enctype="multipart/form-data" novalidate>
             @csrf
 
             @php

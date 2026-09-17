@@ -9,9 +9,14 @@
 
         @include('guest.registration._progress', ['step' => 3])
 
-        @error('submission')
-            <p class="mb-6 rounded-control border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ $message }}</p>
-        @enderror
+        {{-- Soumission refusée (complet, fichier refusé par l'antivirus…) : tous les motifs. --}}
+        @if ($errors->any())
+            <div class="mb-6 rounded-control border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                @foreach ($errors->all() as $message)
+                    <p>{{ $message }}</p>
+                @endforeach
+            </div>
+        @endif
 
         @php($identityUrl = route('guest.registration.identity.show', [request()->route('organization'), request()->route('event'), $draft->resume_token]))
         @php($answersUrl = route('guest.registration.answers.show', [request()->route('organization'), request()->route('event'), $draft->resume_token]))

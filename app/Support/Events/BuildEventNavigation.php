@@ -7,7 +7,9 @@ namespace App\Support\Events;
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventStatus;
+use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\Form;
+use App\Domain\Form\Models\FormField;
 use App\Domain\Organization\Services\CollaboratorAccess;
 use App\Models\User;
 use App\Support\MultiTenancy\CurrentOrganization;
@@ -82,6 +84,7 @@ final class BuildEventNavigation
             'responses' => $link($gate->allows('viewGuests', $organization), route('events.dashboard.index', $event->id)),
             // Un seul niveau de hiérarchie : une session n'a pas ses propres sessions.
             'subEvents' => $link($canUpdate && ! $event->isSubEvent(), route('events.sub-events.index', $event->id)),
+            'files' => $link($gate->allows('viewGuests', $organization) && $this->asksForFiles($formId), route('events.files.index', $event->id)),
             'guests' => $link($gate->allows('viewGuests', $organization), route('events.segments.index', $event->id)),
             'form' => $formId !== null
                 ? $link($canUpdate, route('forms.edit', $formId))
@@ -98,5 +101,17 @@ final class BuildEventNavigation
             'exports' => $link($gate->allows('exportData', $organization), route('events.exports.index', $event->id)),
             'referral' => $link(! $isCollaborator && $gate->allows('manageBilling', $organization), route('settings.referral.edit')),
         ];
+    }
+
+    /**
+     * « Fichiers reçus » n'a de sens que pour un formulaire qui pose, ou a
+     * posé dans l'une de ses versions, une question « Fichier joint ».
+     */
+    private function asksForFiles(mixed $formId): bool
+    {
+        return $formId !== null && FormField::query()
+            ->where('type', FieldType::FileUpload)
+            ->whereHas('formVersion', fn ($query) => $query->where('form_id', $formId))
+            ->exists();
     }
 }

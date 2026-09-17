@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Support\Gdpr;
 
 use App\Domain\Contact\Models\Contact;
+use App\Domain\Form\Actions\DeleteRegistrationFile;
+use App\Domain\Form\Models\FieldType;
+use App\Domain\Form\Models\RegistrationFile;
 use App\Domain\Organization\Actions\RecordAuditLog;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +25,9 @@ use Illuminate\Support\Facades\Gate;
  * (RegistrationAnswer) ne sont volontairement pas parcourues : un champ
  * personnalisé peut contenir n'importe quoi, aucune façon fiable d'y
  * détecter une identité sans risquer d'effacer une réponse métier légitime
- * — signalé, pas traité par ce ticket.
+ * — signalé, pas traité par ce ticket. Seule exception : les fichiers joints,
+ * conservés avec l'inscription et supprimés à l'effacement (décision
+ * produit), nom gardé dans la réponse compris.
  *
  * N'anonymise pas les commandes de billetterie (Order.buyer_*) : Domain/Ticketing
  * n'a aucune colonne reliant une commande à un Contact (section 3 du
@@ -34,6 +39,7 @@ final class AnonymizeContact
 {
     public function __construct(
         private readonly RecordAuditLog $recordAuditLog,
+        private readonly DeleteRegistrationFile $deleteRegistrationFile,
     ) {}
 
     public function handle(Contact $contact, User $user): Contact
@@ -66,6 +72,15 @@ final class AnonymizeContact
                     'user_agent' => null,
                     'updated_at' => now(),
                 ]);
+
+            foreach (RegistrationFile::query()->whereIn('registration_id', $registrationIds)->get() as $file) {
+                $this->deleteRegistrationFile->handle($file);
+            }
+
+            DB::table('registration_answers')
+                ->whereIn('registration_id', $registrationIds)
+                ->whereIn('form_field_id', DB::table('form_fields')->where('type', FieldType::FileUpload->value)->select('id'))
+                ->update(['value' => json_encode(['name' => 'Fichier supprimé']), 'updated_at' => now()]);
 
             $contact->forceFill([
                 'first_name' => 'Contact',

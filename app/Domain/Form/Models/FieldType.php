@@ -39,6 +39,9 @@ enum FieldType: string
     case Donation = 'donation';
     // Nom, entreprise et adresse du donateur, repris sur le reçu du don.
     case DonorInfo = 'donor_info';
+    // Fichier joint analysé par ClamAV (S-06) : la réponse garde la référence
+    // du RegistrationFile (FileUploadAnswer).
+    case FileUpload = 'file_upload';
 
     /**
      * Un don a donné naissance à une commande à régler : sa réponse ne se
@@ -65,7 +68,7 @@ enum FieldType: string
      */
     public function isPremium(): bool
     {
-        return in_array($this, [self::DateTime, self::Url, self::SocialProfile, self::Quantity, self::PostalAddress], true);
+        return in_array($this, [self::DateTime, self::Url, self::SocialProfile, self::Quantity, self::PostalAddress, self::FileUpload], true);
     }
 
     public function label(): string
@@ -92,6 +95,7 @@ enum FieldType: string
             self::SubEvents => 'Événements secondaires',
             self::Donation => 'Don',
             self::DonorInfo => 'Informations sur le donateur',
+            self::FileUpload => 'Fichier joint',
         };
     }
 }

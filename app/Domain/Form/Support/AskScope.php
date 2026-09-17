@@ -20,12 +20,12 @@ final class AskScope
     public const EACH_ATTENDEE = 'each_attendee';
 
     /**
-     * Le choix des événements secondaires et le don valent pour tout le
-     * groupe : ils ne se posent jamais à chaque personne.
+     * Le choix des événements secondaires, le don et le fichier joint valent
+     * pour tout le groupe : ils ne se posent jamais à chaque personne.
      */
     public static function isPerPerson(FormField $field): bool
     {
-        return ! in_array($field->type, [FieldType::SubEvents, FieldType::Donation, FieldType::DonorInfo], true)
+        return ! in_array($field->type, [FieldType::SubEvents, FieldType::Donation, FieldType::DonorInfo, FieldType::FileUpload], true)
             && (($field->config ?? [])['ask_scope'] ?? self::ONCE) === self::EACH_ATTENDEE;
     }
 

@@ -21,6 +21,7 @@ use App\Domain\Form\Support\BuildFormValidationRules;
 use App\Domain\Form\Support\EvaluateFormVisibility;
 use App\Domain\Form\Support\OptionReservationKey;
 use App\Domain\Form\Support\ValidateCompanions;
+use App\Domain\Form\Support\ValidateRegistrationFiles;
 use App\Support\Capacity\Actions\ReleaseCapacity;
 use App\Support\Capacity\Actions\ReserveCapacity;
 use App\Support\Capacity\Data\ReservationOutcome;
@@ -47,6 +48,8 @@ final class UpdateRegistration
         private readonly SnapshotRegistration $snapshotRegistration,
         private readonly ValidateCompanions $validateCompanions,
         private readonly SyncSubEventRegistrations $syncSubEventRegistrations,
+        private readonly ValidateRegistrationFiles $validateRegistrationFiles,
+        private readonly SyncRegistrationFiles $syncRegistrationFiles,
     ) {}
 
     /**
@@ -71,6 +74,7 @@ final class UpdateRegistration
         $visibility = $this->evaluateFormVisibility->handle($version, $answers, $visibilityContext);
         $rules = $this->buildFormValidationRules->handle($version, $answers, $visibilityContext, excludeLocked: true);
         Validator::make($answers, $rules)->validate();
+        $this->validateRegistrationFiles->handle($version, $answers, $visibility, $registration->id);
 
         $companions = $this->knownCompanions($registration, $companions);
         $this->validateCompanions->handle($version, $answers, $companions, $visibilityContext);
@@ -113,6 +117,9 @@ final class UpdateRegistration
             foreach ($companions as $companion) {
                 $this->updateCompanion($registration, $version, $answers, $companion, $visibilityContext);
             }
+
+            // Fichier remplacé ou question masquée : l'ancien fichier est supprimé.
+            $this->syncRegistrationFiles->handle($registration, $version);
 
             if ($selectedSubEvents !== null) {
                 $this->syncSubEventRegistrations->handle($registration->fresh(), $selectedSubEvents);

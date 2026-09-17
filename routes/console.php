@@ -25,6 +25,10 @@ Schedule::command('billing:process-dunning')->daily();
 // après la durée définie »).
 Schedule::command('gdpr:purge-expired-contacts')->daily();
 
+// Fichiers joints jamais rattachés à une inscription (brouillon abandonné) :
+// supprimés 30 jours après l'envoi (App\Support\Registration).
+Schedule::command('registration-files:purge-unclaimed')->daily();
+
 // T-076 : historique de santé affiché sur /status et alerte en cas de
 // changement d'état (App\Support\Status\RecordSystemStatus).
 Schedule::command('status:check-health')->everyFiveMinutes();

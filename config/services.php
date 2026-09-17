@@ -90,4 +90,11 @@ return [
         'secret' => env('TICKET_QR_SECRET', env('APP_KEY')),
     ],
 
+    // Analyse antivirus des fichiers joints des invités (S-06) : démon clamd,
+    // en TCP (tcp://hôte:3310) ou par socket Unix (unix:///chemin/clamd.sock).
+    'clamav' => [
+        'address' => env('CLAMAV_ADDRESS', 'tcp://127.0.0.1:3310'),
+        'timeout' => (int) env('CLAMAV_TIMEOUT', 30),
+    ],
+
 ];

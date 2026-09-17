@@ -269,6 +269,31 @@
             @endforeach
             @break
 
+        @case('file_upload')
+            @php($currentToken = old($oldKey, $value))
+            @php($currentFile = is_string($currentToken) ? (($uploadedFiles ?? [])[$currentToken] ?? null) : null)
+            @if ($currentFile !== null)
+                {{-- Fichier déjà envoyé : gardé tant que l'invité n'en choisit pas un autre, sauf s'il a été refusé. --}}
+                @unless ($currentFile['isRejected'])
+                    <input type="hidden" name="{{ $inputName }}" value="{{ $currentToken }}">
+                @endunless
+                <p class="mb-2 flex flex-wrap items-baseline gap-x-2 text-sm">
+                    <span class="font-medium break-all text-ink">{{ $currentFile['name'] }}</span>
+                    <span class="{{ $currentFile['isRejected'] ? 'text-red-600' : 'text-ink-soft' }}">{{ $currentFile['size'] }} · {{ $currentFile['status'] }}</span>
+                </p>
+            @endif
+            <input
+                type="file"
+                id="{{ $inputId }}"
+                name="{{ \App\Domain\Form\Support\FileUploadAnswer::INPUT_KEY }}[{{ $field->key }}]"
+                accept="{{ \App\Domain\Form\Support\FileUploadAnswer::acceptAttribute($config) }}"
+                class="block w-full text-sm text-ink-soft file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-pill file:border file:border-line file:bg-bg file:px-4 file:py-2 file:text-sm file:font-medium file:text-ink"
+            >
+            <p class="mt-1.5 text-xs text-ink-soft">
+                {{ \App\Domain\Form\Support\FileUploadAnswer::typesLabel($config) }} · {{ \App\Domain\Form\Support\FileUploadAnswer::maxSizeMb($config) }} Mo maximum{{ $currentFile !== null ? ' · choisissez un autre fichier pour le remplacer' : '' }}. Chaque fichier est vérifié par un antivirus.
+            </p>
+            @break
+
         @case('donor_info')
             @php($donor = (array) old($oldKey, $value ?? []))
             <div class="space-y-3">

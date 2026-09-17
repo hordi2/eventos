@@ -10,6 +10,7 @@ services:
     environment:
       DB_HOST: postgres
       REDIS_HOST: redis
+      CLAMAV_ADDRESS: tcp://clamav:3310
     depends_on:
       postgres:
         condition: service_healthy
@@ -43,6 +44,18 @@ services:
       timeout: 5s
       retries: 10
 
+  # Analyse antivirus des fichiers joints des invités (S-06). Au premier
+  # démarrage, le chargement des signatures prend quelques minutes : les
+  # fichiers restent « Analyse en cours » et le job réessaie plus tard.
+  clamav:
+    image: clamav/clamav:stable
+    ports:
+      - "${FORWARD_CLAMAV_PORT:-3310}:3310"
+    volumes:
+      - eventos_clamav:/var/lib/clamav
+
 volumes:
   eventos_pgdata:
+    driver: local
+  eventos_clamav:
     driver: local

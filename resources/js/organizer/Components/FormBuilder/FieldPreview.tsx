@@ -180,6 +180,13 @@ export default function FieldPreview({ field, required, value, onChange }: Field
                     </div>
                 );
             }
+            case 'file_upload':
+                return (
+                    <div className="rounded-control border border-dashed border-black/20 px-3 py-4 text-sm">
+                        <span className="font-medium">Choisir un fichier</span>
+                        <span className="block text-xs opacity-70">{field.config.max_size_mb ?? 10} Mo maximum · vérifié par un antivirus</span>
+                    </div>
+                );
             case 'donor_info':
                 return (
                     <div className="space-y-2">

@@ -6,15 +6,18 @@ namespace App\Http\Requests\Guest;
 
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventCategory;
+use App\Domain\Form\Actions\StoreGuestUploads;
 use App\Domain\Form\Data\CompanionData;
 use App\Domain\Form\Data\FormVisibilityContext;
 use App\Domain\Form\Models\FormVersion;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Form\Support\BuildFormValidationRules;
+use App\Domain\Form\Support\FileUploadAnswer;
 use App\Domain\Form\Support\ValidateCompanions;
 use App\Support\Registration\BuildGuestVisibilityContext;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 /**
  * Toujours validée contre la version du formulaire de LA Registration
@@ -23,6 +26,17 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 final class UpdateRegistrationRequest extends FormRequest
 {
+    private ?Registration $resolvedRegistration = null;
+
+    private ?FormVersion $resolvedVersion = null;
+
+    /**
+     * Fichiers joints refusés au contrôle, par clé de question.
+     *
+     * @var array<string, string>
+     */
+    private array $uploadErrors = [];
+
     public function authorize(): bool
     {
         return true;
@@ -42,12 +56,31 @@ final class UpdateRegistrationRequest extends FormRequest
     }
 
     /**
+     * Un fichier joint envoyé en remplacement passe en quarantaine avant la
+     * validation ; UpdateRegistration le rattache et supprime l'ancien.
+     */
+    protected function prepareForValidation(): void
+    {
+        $uploads = $this->file(FileUploadAnswer::INPUT_KEY);
+
+        if (! is_array($uploads)) {
+            return;
+        }
+
+        $registration = $this->registration();
+        $stored = app(StoreGuestUploads::class)->handle($this->version(), $registration->organization_id, $registration->event_id, $uploads);
+
+        $this->uploadErrors = $stored['errors'];
+        $this->merge($stored['tokens']);
+    }
+
+    /**
      * @return array<string, list<mixed>>
      */
     public function rules(): array
     {
-        $registration = Registration::query()->findOrFail($this->route('registration'));
-        $version = $registration->formVersion()->with(['fields.options', 'conditionalRules.targetField'])->firstOrFail();
+        $registration = $this->registration();
+        $version = $this->version();
         // Registration ne porte jamais de relation Eloquent vers Event
         // (section 3 du CLAUDE.md) : chargé ici séparément, ce Form Request
         // n'étant pas sous Domain/Form, il peut le faire librement.
@@ -59,7 +92,7 @@ final class UpdateRegistrationRequest extends FormRequest
             $registration->status !== RegistrationStatus::Declined,
         );
 
-        $holderAnswers = $this->except(CompanionData::INPUT_KEY);
+        $holderAnswers = $this->except([CompanionData::INPUT_KEY, FileUploadAnswer::INPUT_KEY]);
 
         return [
             'email' => ['required', 'email:rfc'],
@@ -80,6 +113,32 @@ final class UpdateRegistrationRequest extends FormRequest
             'phone.required' => 'Le numéro de téléphone est obligatoire pour ce type d\'événement.',
             CompanionData::INPUT_KEY.'.*.first_name.required' => 'Indiquez le prénom de chaque accompagnant.',
         ];
+    }
+
+    /**
+     * @return list<callable(Validator): void>
+     */
+    public function after(): array
+    {
+        return [
+            // Un fichier refusé au contrôle : son message plutôt qu'un « obligatoire ».
+            function (Validator $validator): void {
+                foreach ($this->uploadErrors as $key => $message) {
+                    $validator->errors()->forget($key);
+                    $validator->errors()->add($key, $message);
+                }
+            },
+        ];
+    }
+
+    private function registration(): Registration
+    {
+        return $this->resolvedRegistration ??= Registration::query()->findOrFail($this->route('registration'));
+    }
+
+    private function version(): FormVersion
+    {
+        return $this->resolvedVersion ??= $this->registration()->formVersion()->with(['fields.options', 'conditionalRules.targetField'])->firstOrFail();
     }
 
     /**

@@ -20,6 +20,7 @@ use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormField;
 use App\Domain\Form\Models\FormVersionStatus;
 use App\Domain\Form\Support\DonationAnswer;
+use App\Domain\Form\Support\FileUploadAnswer;
 use App\Domain\Form\Support\FormSettings;
 use App\Domain\Organization\Actions\GetEffectivePlan;
 use App\Domain\Organization\Models\Organization;
@@ -204,6 +205,13 @@ final class FormController extends Controller
                 DonationAnswer::CURRENCIES,
             ),
             'defaultDonationCurrency' => DonationAnswer::currency(['currency' => $event->currency]),
+            // Bloc « Fichier joint » : formats proposés et taille maximale.
+            'fileUploadTypes' => array_map(
+                fn (string $value, array $type): array => ['value' => $value, 'label' => $type['label']],
+                array_keys(FileUploadAnswer::TYPES),
+                FileUploadAnswer::TYPES,
+            ),
+            'maxFileSizeMb' => FileUploadAnswer::MAX_SIZE_MB,
         ];
     }
 

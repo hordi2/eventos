@@ -38,6 +38,7 @@ function buildSections(nav: EventNav): SidebarSection[] {
                         { label: 'Toutes les réponses', linkKey: 'responses' },
                         { label: 'Événements secondaires', linkKey: 'subEvents' },
                         { label: 'Questions personnalisées', linkKey: 'form' },
+                        { label: 'Fichiers reçus', linkKey: 'files' },
                         { label: 'Préférences alimentaires', soon: true },
                         { label: 'Dons et cadeaux', soon: true },
                     ],

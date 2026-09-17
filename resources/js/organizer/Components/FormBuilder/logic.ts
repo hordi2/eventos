@@ -25,7 +25,7 @@ export const TYPES_WITH_OPTIONS = ['single_choice', 'multiple_choice', 'meal_cho
 export const HIDDEN_FROM_CUSTOM = ['informational_text', 'meal_choice', 'sub_events', 'donation', 'donor_info'];
 
 // Blocs qui valent pour toute l'inscription et ne servent pas de condition.
-export const GROUP_WIDE_TYPES = ['sub_events', 'donation', 'donor_info'];
+export const GROUP_WIDE_TYPES = ['sub_events', 'donation', 'donor_info', 'file_upload'];
 
 export const PALETTE_DRAG_TYPE = 'application/x-itaza-palette';
 
@@ -80,6 +80,7 @@ export const TYPE_DESCRIPTIONS: Record<string, string> = {
     sub_events: "Les sessions auxquelles l'invité et ses accompagnants participent.",
     donation: 'Un don réglé après l’inscription : carte, Mobile Money ou à l’accueil.',
     donor_info: 'Nom, entreprise et adresse du donateur, repris sur son reçu.',
+    file_upload: 'Un fichier envoyé par l’invité : justificatif, photo, CV… vérifié par un antivirus.',
 };
 
 export const SCREEN_META: Record<ScreenKey, { title: string; icon: BuilderIconName }> = {

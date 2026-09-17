@@ -7,6 +7,7 @@ namespace App\Domain\Form\Actions;
 use App\Domain\Form\InvalidFieldAnswerException;
 use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\FormField;
+use App\Domain\Form\Models\RegistrationFile;
 use App\Domain\Form\Support\DonationAnswer;
 use App\Domain\Form\Support\DonorInfoAnswer;
 use App\Domain\Form\Support\PostalAddress;
@@ -49,7 +50,21 @@ final class NormalizeFieldAnswer
             FieldType::SubEvents => array_values(array_unique(array_map(intval(...), (array) $value))),
             FieldType::Donation => DonationAnswer::normalize($field, $value),
             FieldType::DonorInfo => DonorInfoAnswer::normalize($value),
+            FieldType::FileUpload => $this->normalizeFile((string) $value),
         };
+    }
+
+    /**
+     * La réponse garde la référence du fichier, avec son nom et sa taille :
+     * lisibles même une fois le fichier supprimé.
+     *
+     * @return array{token: string, name: string, size: int}|array{}
+     */
+    private function normalizeFile(string $token): array
+    {
+        $file = RegistrationFile::query()->where('token', $token)->first();
+
+        return $file === null ? [] : ['token' => $file->token, 'name' => $file->original_name, 'size' => $file->size_bytes];
     }
 
     /**

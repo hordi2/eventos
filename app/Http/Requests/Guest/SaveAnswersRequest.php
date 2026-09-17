@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Requests\Guest;
 
 use App\Domain\Event\Models\Event;
+use App\Domain\Form\Actions\SaveRegistrationDraft;
+use App\Domain\Form\Actions\StoreGuestUploads;
 use App\Domain\Form\Actions\SyncSubEventRegistrations;
 use App\Domain\Form\Data\CompanionData;
 use App\Domain\Form\Data\FormVisibilityContext;
@@ -12,7 +14,9 @@ use App\Domain\Form\Models\FormVersion;
 use App\Domain\Form\Models\RegistrationDraft;
 use App\Domain\Form\Support\BuildFormValidationRules;
 use App\Domain\Form\Support\EvaluateFormVisibility;
+use App\Domain\Form\Support\FileUploadAnswer;
 use App\Domain\Form\Support\ValidateCompanions;
+use App\Domain\Form\Support\ValidateRegistrationFiles;
 use App\Support\Registration\BuildGuestVisibilityContext;
 use App\Support\Registration\BuildSubEventContexts;
 use Illuminate\Foundation\Http\FormRequest;
@@ -34,9 +38,47 @@ final class SaveAnswersRequest extends FormRequest
 
     private ?FormVersion $resolvedVersion = null;
 
+    /**
+     * Fichiers joints refusés au contrôle, par clé de question.
+     *
+     * @var array<string, string>
+     */
+    private array $uploadErrors = [];
+
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * Les fichiers joints passent en quarantaine avant la validation : leur
+     * référence prend leur place dans les réponses (StoreGuestUploads) et
+     * rejoint aussitôt le brouillon. L'ancienne saisie renvoyée après une
+     * erreur ne reprend pas ce qui est ajouté ici : sans le brouillon,
+     * l'invité devrait renvoyer un fichier déjà accepté.
+     */
+    protected function prepareForValidation(): void
+    {
+        $uploads = $this->file(FileUploadAnswer::INPUT_KEY);
+
+        if (! is_array($uploads)) {
+            return;
+        }
+
+        $stored = app(StoreGuestUploads::class)->handle(
+            $this->version(),
+            $this->draft()->organization_id,
+            $this->guestEvent()->id,
+            $uploads,
+            $this->draft()->id,
+        );
+
+        $this->uploadErrors = $stored['errors'];
+        $this->merge($stored['tokens']);
+
+        if ($stored['tokens'] !== []) {
+            app(SaveRegistrationDraft::class)->handle($this->draft(), answers: $stored['tokens']);
+        }
     }
 
     /**
@@ -45,7 +87,7 @@ final class SaveAnswersRequest extends FormRequest
     public function rules(): array
     {
         $identity = $this->draft()->identity ?? [];
-        $holderAnswers = $this->except(CompanionData::INPUT_KEY);
+        $holderAnswers = $this->except([CompanionData::INPUT_KEY, FileUploadAnswer::INPUT_KEY]);
         $submitted = $this->input(CompanionData::INPUT_KEY);
         $companionsAnswers = [];
 
@@ -66,12 +108,31 @@ final class SaveAnswersRequest extends FormRequest
     public function after(): array
     {
         return [
+            // Un fichier refusé au contrôle : son message plutôt qu'un « obligatoire ».
+            function (Validator $validator): void {
+                foreach ($this->uploadErrors as $key => $message) {
+                    $validator->errors()->forget($key);
+                    $validator->errors()->add($key, $message);
+                }
+            },
             function (Validator $validator): void {
                 if ($validator->errors()->isNotEmpty()) {
                     return;
                 }
 
-                $answers = $this->except(CompanionData::INPUT_KEY);
+                $answers = $this->except([CompanionData::INPUT_KEY, FileUploadAnswer::INPUT_KEY]);
+                $visibility = app(EvaluateFormVisibility::class)->handle($this->version(), $answers, $this->visibilityContext());
+
+                foreach (app(ValidateRegistrationFiles::class)->errors($this->version(), $answers, $visibility) as $key => $message) {
+                    $validator->errors()->add($key, $message);
+                }
+            },
+            function (Validator $validator): void {
+                if ($validator->errors()->isNotEmpty()) {
+                    return;
+                }
+
+                $answers = $this->except([CompanionData::INPUT_KEY, FileUploadAnswer::INPUT_KEY]);
                 $visibility = app(EvaluateFormVisibility::class)->handle($this->version(), $answers, $this->visibilityContext());
                 $sync = app(SyncSubEventRegistrations::class);
                 $selected = $sync->selected($this->version(), $answers, $visibility, app(BuildSubEventContexts::class)->handle($this->guestEvent()));

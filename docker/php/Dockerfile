@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# Fichiers joints des invités : jusqu'à 10 Mo chacun, plusieurs par page.
+RUN printf "upload_max_filesize=12M\npost_max_size=64M\n" > /usr/local/etc/php/conf.d/uploads.ini
+
 WORKDIR /var/www/html
 
 EXPOSE 8000

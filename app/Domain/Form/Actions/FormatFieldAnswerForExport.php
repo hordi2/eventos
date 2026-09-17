@@ -36,6 +36,7 @@ final class FormatFieldAnswerForExport
             FieldType::SubEvents => $this->subEventTitles($field, (array) $normalizedValue),
             FieldType::Donation => DonationAnswer::stored($normalizedValue)?->format() ?? '',
             FieldType::DonorInfo => DonorInfoAnswer::format((array) $normalizedValue),
+            FieldType::FileUpload => is_array($normalizedValue) && is_string($normalizedValue['name'] ?? null) ? $normalizedValue['name'] : '',
         };
     }
 
