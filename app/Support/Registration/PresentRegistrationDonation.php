@@ -10,7 +10,8 @@ use App\Domain\Ticketing\Models\OrderStatus;
 
 /**
  * Encart « Votre don » de la page de confirmation d'inscription (T-056) :
- * montant, cause et, tant qu'il reste à régler, le lien vers le paiement.
+ * montant, cause et, tant qu'il reste à régler, le lien vers le paiement —
+ * ou, après un refus, vers la page qui propose de réessayer.
  */
 final class PresentRegistrationDonation
 {
@@ -33,9 +34,11 @@ final class PresentRegistrationDonation
             'amount' => $order->total->format(),
             'cause' => $order->donations->first()?->cause,
             'status' => $order->status->value,
-            'paymentUrl' => $order->status === OrderStatus::Pending
-                ? route('guest.ticketing.payment.show', [$organizationSlug, $eventSlug, $order->reservation_key])
-                : null,
+            'paymentUrl' => match ($order->status) {
+                OrderStatus::Pending => route('guest.ticketing.payment.show', [$organizationSlug, $eventSlug, $order->reservation_key]),
+                OrderStatus::Failed => route('guest.ticketing.payment.status', [$organizationSlug, $eventSlug, $order->reservation_key]),
+                default => null,
+            },
         ];
     }
 }

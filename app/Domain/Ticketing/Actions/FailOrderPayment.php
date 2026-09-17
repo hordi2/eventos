@@ -11,6 +11,7 @@ use App\Domain\Ticketing\Models\Payment;
 use App\Domain\Ticketing\Models\PaymentStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Échec de paiement : contrairement à l'expiration (délai écoulé), le stock
@@ -21,6 +22,11 @@ use Illuminate\Support\Facades\DB;
  * Money, T-053 : InitiateMobileMoneyPayment crée la ligne dès la demande de
  * charge), cette ligne est mise à jour plutôt que dupliquée — sans quoi
  * l'unicité de provider_payment_id serait violée.
+ *
+ * Un échec déjà enregistré pour ce même paiement est ignoré (§4.4 CLAUDE.md,
+ * comme MarkOrderPaid pour un succès) : sans quoi un refus en retard d'une
+ * première tentative referait échouer la commande rouverte par
+ * RetryOrderPayment pour une nouvelle tentative.
  */
 final class FailOrderPayment
 {
@@ -28,13 +34,22 @@ final class FailOrderPayment
 
     public function handle(Order $order, string $provider, ?string $providerPaymentId, string $reason): Order
     {
-        if ($order->status !== OrderStatus::Pending) {
-            throw InvalidOrderTransitionException::notPending($order->id, $order->status);
-        }
-
         $existingPayment = $providerPaymentId !== null
             ? Payment::query()->where('provider_payment_id', $providerPaymentId)->first()
             : null;
+
+        if ($existingPayment !== null && $existingPayment->status === PaymentStatus::Failed) {
+            Log::info('Échec de paiement déjà traité, ignoré de façon idempotente.', [
+                'order_id' => $order->id,
+                'provider_payment_id' => $providerPaymentId,
+            ]);
+
+            return $order->fresh(['payments']);
+        }
+
+        if ($order->status !== OrderStatus::Pending) {
+            throw InvalidOrderTransitionException::notPending($order->id, $order->status);
+        }
 
         DB::transaction(function () use ($order, $provider, $providerPaymentId, $reason, $existingPayment): void {
             if ($existingPayment !== null) {

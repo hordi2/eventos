@@ -18,7 +18,7 @@ final class ReservePriceTierCapacity
 {
     public function __construct(private readonly ReserveCapacity $reserveCapacity) {}
 
-    public function handle(PriceTier $tier, string $reservationKey, int $quantity = 1): ReservationResult
+    public function handle(PriceTier $tier, string $reservationKey, int $quantity = 1, bool $reacquireReleased = false): ReservationResult
     {
         return $this->reserveCapacity->handle(
             organizationId: $tier->organization_id,
@@ -28,6 +28,7 @@ final class ReservePriceTierCapacity
             reservationKey: $reservationKey,
             quantity: $quantity,
             allowWaitlist: false,
+            reacquireReleased: $reacquireReleased,
         );
     }
 }

@@ -18,6 +18,11 @@ final class TicketsUnavailableException extends RuntimeException
         return new self("Le type de billet #{$ticketTypeId} n'a aucun palier de tarification actif (vente fermée ou tous les paliers épuisés).");
     }
 
+    public static function removedFromSale(int $ticketTypeId): self
+    {
+        return new self("Le type de billet #{$ticketTypeId} ou son palier de tarification n'est plus en vente.");
+    }
+
     public static function tierQuotaReached(int $priceTierId): self
     {
         return new self("Le palier de tarification #{$priceTierId} a atteint son quota.");

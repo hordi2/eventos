@@ -18,7 +18,7 @@ final class ReserveTicketTypeCapacity
 {
     public function __construct(private readonly ReserveCapacity $reserveCapacity) {}
 
-    public function handle(TicketType $ticketType, string $reservationKey, int $quantity = 1): ReservationResult
+    public function handle(TicketType $ticketType, string $reservationKey, int $quantity = 1, bool $reacquireReleased = false): ReservationResult
     {
         return $this->reserveCapacity->handle(
             organizationId: $ticketType->organization_id,
@@ -28,6 +28,7 @@ final class ReserveTicketTypeCapacity
             reservationKey: $reservationKey,
             quantity: $quantity,
             allowWaitlist: false,
+            reacquireReleased: $reacquireReleased,
         );
     }
 }

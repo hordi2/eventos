@@ -423,6 +423,7 @@ Route::middleware('resolve-guest-event')
             Route::post('paiement/carte', [TicketOrderPaymentController::class, 'stripe'])->name('stripe');
             Route::post('paiement/mobile-money', [TicketOrderPaymentController::class, 'mobileMoney'])->name('mobile-money');
             Route::post('paiement/arrivee', [TicketOrderPaymentController::class, 'onSite'])->name('on-site');
+            Route::post('paiement/reessayer', [TicketOrderPaymentController::class, 'retry'])->middleware('throttle:6,1')->name('retry');
             Route::get('statut', [TicketOrderPaymentController::class, 'status'])->name('status');
             Route::get('confirmation', [TicketOrderPaymentController::class, 'confirmation'])->name('confirmation');
             Route::get('billet/{ticket}', [TicketOrderPaymentController::class, 'downloadTicket'])->name('ticket');

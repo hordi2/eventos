@@ -10,11 +10,13 @@ use App\Domain\Ticketing\Actions\CreateStripeCheckout;
 use App\Domain\Ticketing\Actions\GenerateTicketPdf;
 use App\Domain\Ticketing\Actions\GenerateTicketQrToken;
 use App\Domain\Ticketing\Actions\InitiateMobileMoneyPayment;
+use App\Domain\Ticketing\Actions\RetryOrderPayment;
 use App\Domain\Ticketing\Data\TicketPdfContext;
 use App\Domain\Ticketing\InvalidOrderTransitionException;
 use App\Domain\Ticketing\Models\Order;
 use App\Domain\Ticketing\Models\OrderStatus;
 use App\Domain\Ticketing\Models\Ticket;
+use App\Domain\Ticketing\TicketsUnavailableException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Guest\MobileMoneyPaymentRequest;
 use App\Support\Payments\MobileMoneyProviderUnavailableException;
@@ -90,15 +92,32 @@ final class TicketOrderPaymentController extends Controller
         return redirect()->route('guest.ticketing.payment.status', [$organization, $event, $order]);
     }
 
+    public function retry(Request $request, string $organization, string $event, string $order, RetryOrderPayment $action): RedirectResponse
+    {
+        $eventModel = $this->event($request);
+
+        try {
+            $action->handle($this->order($request, $order), CarbonImmutable::instance($eventModel->end_at ?? $eventModel->start_at));
+        } catch (TicketsUnavailableException) {
+            return redirect()->route('guest.ticketing.payment.status', [$organization, $event, $order])
+                ->withErrors(['payment' => 'Les places de cette commande ne sont plus disponibles.']);
+        } catch (InvalidOrderTransitionException) {
+            // Déjà rouverte (double clic) ou résolue entre-temps : la page de
+            // paiement renvoie d'elle-même vers le statut réel.
+        }
+
+        return redirect()->route('guest.ticketing.payment.show', [$organization, $event, $order]);
+    }
+
     /**
      * Écran d'attente Mobile Money avec relance de statut (AC de ce
      * ticket) : une balise meta-refresh recharge cette même page toutes
      * les quelques secondes plutôt que du JavaScript de polling — plus
      * léger, et fonctionne même si le JS est désactivé.
      *
-     * Failed est terminal, comme Expired : FailOrderPayment a déjà libéré
-     * la capacité, et show() renvoie ici tout ce qui n'est plus pending —
-     * renvoyer vers show() ferait boucler les deux pages.
+     * Failed s'affiche ici, jamais par un renvoi vers show() : show() renvoie
+     * ici tout ce qui n'est plus pending, les deux pages boucleraient. La
+     * nouvelle tentative passe par retry(), qui rouvre d'abord la commande.
      */
     public function status(Request $request, string $organization, string $event, string $order): View|RedirectResponse
     {

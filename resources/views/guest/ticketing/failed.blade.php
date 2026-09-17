@@ -9,15 +9,33 @@
         <p class="mb-1 text-sm font-medium text-ink-soft">{{ $event->title }}</p>
         @if ($isDonation)
             <h1 class="mb-4 text-2xl">Le paiement de votre don n'a pas abouti</h1>
-            <p class="text-ink-soft">Ce don n'a pas été réglé. Contactez l'organisateur pour le finaliser.</p>
+            <p class="mb-8 text-ink-soft">Vous pouvez réessayer par carte ou Mobile Money, ou choisir de le régler à l'accueil.</p>
         @else
             <h1 class="mb-4 text-2xl">Le paiement n'a pas abouti</h1>
             <p class="mb-8 text-ink-soft">
-                Les places de cette commande ne sont plus réservées. Vous pouvez recommencer votre commande.
+                Vous pouvez réessayer : vos places seront de nouveau réservées pendant 15 minutes, si elles sont encore disponibles.
             </p>
-            <a href="{{ route('guest.ticketing.show', [request()->route('organization'), request()->route('event')]) }}" class="inline-flex min-h-11 items-center justify-center rounded-pill bg-ink px-8 py-3 font-medium text-bg">
-                Recommencer
-            </a>
         @endif
+
+        @if ($errors->any())
+            <div class="mb-6 rounded-control border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                @foreach ($errors->all() as $message)
+                    <p>{{ $message }}</p>
+                @endforeach
+            </div>
+        @endif
+
+        <form method="POST" action="{{ route('guest.ticketing.payment.retry', [request()->route('organization'), request()->route('event'), $order->reservation_key]) }}">
+            @csrf
+            <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-pill bg-ink px-8 py-3 font-medium text-bg">
+                Réessayer le paiement
+            </button>
+        </form>
+
+        @unless ($isDonation)
+            <a href="{{ route('guest.ticketing.show', [request()->route('organization'), request()->route('event')]) }}" class="mt-6 inline-block text-sm text-ink-soft underline">
+                Choisir d'autres billets
+            </a>
+        @endunless
     </div>
 @endsection

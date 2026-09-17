@@ -14,6 +14,11 @@ final class InvalidOrderTransitionException extends RuntimeException
         return new self("La commande #{$orderId} n'est pas en attente (statut actuel : {$actual->value}).");
     }
 
+    public static function notFailed(int $orderId, OrderStatus $actual): self
+    {
+        return new self("La commande #{$orderId} n'a pas échoué (statut actuel : {$actual->value}), impossible de relancer son paiement.");
+    }
+
     public static function notPaid(int $orderId, OrderStatus $actual): self
     {
         return new self("La commande #{$orderId} n'est pas payée (statut actuel : {$actual->value}), impossible de la rembourser.");

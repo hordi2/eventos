@@ -8,7 +8,10 @@ namespace App\Domain\Ticketing\Models;
  * Machine à états M5.4 : pending -> paid | failed | expired | refunded.
  * Refunded n'est atteignable que depuis Paid ; failed/expired uniquement
  * depuis Pending (voir RefundOrder / MarkOrderPaid / FailOrderPayment /
- * ExpireOrder, qui gardent chacun leur transition).
+ * ExpireOrder, qui gardent chacun leur transition). Seule sortie de failed :
+ * failed -> pending, pour une nouvelle tentative de paiement de la même
+ * commande (RetryOrderPayment, qui reprend ses places). Expired reste
+ * terminal.
  *
  * PaymentOnSite (D3, T-054) est une branche parallèle à pending : l'invité
  * a choisi de payer à l'arrivée plutôt qu'en ligne, donc pas de réservation

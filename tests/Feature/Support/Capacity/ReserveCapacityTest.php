@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use App\Domain\Organization\Models\Organization;
+use App\Support\Capacity\Actions\ReleaseCapacity;
 use App\Support\Capacity\Actions\ReserveCapacity;
 use App\Support\Capacity\Data\ReservationOutcome;
 use App\Support\Capacity\Models\CapacityHold;
+use App\Support\Capacity\Models\CapacityHoldStatus;
 use App\Support\Capacity\Models\WaitlistEntry;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Support\Str;
@@ -88,6 +90,29 @@ it('est idempotent pour une clé déjà placée en liste d\'attente', function (
     expect($first->waitlistPosition)->toBe(1);
     expect($replay->waitlistPosition)->toBe(1);
     expect(WaitlistEntry::query()->count())->toBe(1);
+});
+
+it('ne reprend une place relâchée que sur demande explicite, et dans la limite de la capacité', function (): void {
+    $action = app(ReserveCapacity::class);
+    $key = (string) Str::uuid();
+
+    $action->handle($this->organization->id, 'ticket_type', '1', 3, $key, quantity: 2);
+    app(ReleaseCapacity::class)->handle('ticket_type', '1', $key);
+
+    $replay = $action->handle($this->organization->id, 'ticket_type', '1', 3, $key, quantity: 2);
+    expect($replay->outcome)->toBe(ReservationOutcome::Accepted);
+    expect(CapacityHold::query()->where('reservation_key', $key)->value('status'))->toBe(CapacityHoldStatus::Released);
+
+    $action->handle($this->organization->id, 'ticket_type', '1', 3, (string) Str::uuid(), quantity: 2);
+    $tooMany = $action->handle($this->organization->id, 'ticket_type', '1', 3, $key, quantity: 2, reacquireReleased: true);
+    expect($tooMany->outcome)->toBe(ReservationOutcome::Rejected);
+
+    $action->handle($this->organization->id, 'ticket_type', '1', 4, $key, quantity: 2, reacquireReleased: true);
+    $again = $action->handle($this->organization->id, 'ticket_type', '1', 4, $key, quantity: 2, reacquireReleased: true);
+
+    expect($again->outcome)->toBe(ReservationOutcome::Accepted);
+    expect(CapacityHold::query()->where('reservation_key', $key)->value('status'))->toBe(CapacityHoldStatus::Held);
+    expect((int) CapacityHold::query()->where('status', CapacityHoldStatus::Held)->sum('quantity'))->toBe(4);
 });
 
 it('isole la capacité par holder : deux événements ne se gênent jamais', function (): void {

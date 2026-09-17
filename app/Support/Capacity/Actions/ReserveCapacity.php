@@ -49,8 +49,9 @@ final class ReserveCapacity
         int $quantity = 1,
         bool $allowWaitlist = false,
         int $lockWaitSeconds = self::DEFAULT_LOCK_WAIT_SECONDS,
+        bool $reacquireReleased = false,
     ): ReservationResult {
-        $existing = $this->existingResultFor($reservationKey);
+        $existing = $this->existingResultFor($reservationKey, $reacquireReleased);
 
         if ($existing !== null) {
             return $existing;
@@ -68,15 +69,22 @@ final class ReserveCapacity
                 $reservationKey,
                 $quantity,
                 $allowWaitlist,
+                $reacquireReleased,
             )),
         );
     }
 
-    private function existingResultFor(string $reservationKey): ?ReservationResult
+    /**
+     * Rejouer une clé reste un no-op, même si sa place a été relâchée depuis :
+     * seule une reprise explicite ($reacquireReleased, nouvelle tentative de
+     * paiement d'une commande — RetryOrderPayment) la retient à nouveau, les
+     * clés de billetterie étant dérivées de la commande et donc réutilisées.
+     */
+    private function existingResultFor(string $reservationKey, bool $reacquireReleased): ?ReservationResult
     {
         $hold = CapacityHold::query()->where('reservation_key', $reservationKey)->first();
 
-        if ($hold !== null) {
+        if ($hold !== null && ! ($reacquireReleased && $hold->status === CapacityHoldStatus::Released)) {
             return ReservationResult::accepted();
         }
 
@@ -97,7 +105,18 @@ final class ReserveCapacity
         string $reservationKey,
         int $quantity,
         bool $allowWaitlist,
+        bool $reacquireReleased,
     ): ReservationResult {
+        $released = $reacquireReleased
+            ? CapacityHold::query()->where('reservation_key', $reservationKey)->first()
+            : null;
+
+        // Relu sous le verrou : une reprise concurrente (double clic) a pu
+        // retenir la place entre existingResultFor() et ce point.
+        if ($released?->status === CapacityHoldStatus::Held) {
+            return ReservationResult::accepted();
+        }
+
         if ($capacityLimit !== null) {
             $held = CapacityHold::query()
                 ->where('holder_type', $holderType)
@@ -128,6 +147,12 @@ final class ReserveCapacity
 
                 return ReservationResult::waitlisted($position);
             }
+        }
+
+        if ($released !== null) {
+            $released->update(['status' => CapacityHoldStatus::Held, 'quantity' => $quantity, 'released_at' => null]);
+
+            return ReservationResult::accepted();
         }
 
         CapacityHold::query()->create([

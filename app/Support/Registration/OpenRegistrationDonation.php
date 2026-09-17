@@ -10,6 +10,7 @@ use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationAnswer;
 use App\Domain\Form\Support\DonationAnswer;
 use App\Domain\Ticketing\Actions\CreateDonationOrder;
+use App\Domain\Ticketing\Actions\DetermineDonationPayableUntil;
 use App\Domain\Ticketing\Data\DonationPledge;
 use App\Domain\Ticketing\Models\Order;
 use App\Support\Money;
@@ -25,6 +26,7 @@ final class OpenRegistrationDonation
 {
     public function __construct(
         private readonly CreateDonationOrder $createDonationOrder,
+        private readonly DetermineDonationPayableUntil $determineDonationPayableUntil,
     ) {}
 
     public function handle(Event $event, Registration $registration): ?Order
@@ -93,14 +95,8 @@ final class OpenRegistrationDonation
         return implode('-', [substr($hash, 0, 8), substr($hash, 8, 4), substr($hash, 12, 4), substr($hash, 16, 4), substr($hash, 20, 12)]);
     }
 
-    /**
-     * Payable jusqu'à deux jours après l'événement, le temps d'un règlement
-     * tardif, et jamais moins de deux jours à partir d'aujourd'hui.
-     */
     private function payableUntil(Event $event): CarbonImmutable
     {
-        $end = CarbonImmutable::parse($event->end_at ?? $event->start_at);
-
-        return ($end->isPast() ? CarbonImmutable::now() : $end)->addDays(2);
+        return $this->determineDonationPayableUntil->handle(CarbonImmutable::parse($event->end_at ?? $event->start_at));
     }
 }

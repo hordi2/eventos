@@ -10,6 +10,7 @@ use App\Domain\Form\Models\RegistrationDraft;
 use App\Domain\Organization\Models\Membership;
 use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Organization\Models\Organization;
+use App\Domain\Ticketing\Actions\FailOrderPayment;
 use App\Domain\Ticketing\Actions\RecordOnSitePayment;
 use App\Domain\Ticketing\Models\Donation;
 use App\Domain\Ticketing\Models\Order;
@@ -162,6 +163,31 @@ it('enregistre une promesse de don réglée à l\'accueil, puis envoie le reçu 
         && $mail->receipt['amount'] === Money::fromMinorUnits(10000, 'XAF')->format()
         && $mail->receipt['method'] === "Espèces, à l'accueil"
         && $mail->receipt['donorCompany'] === 'Itaza SARL');
+});
+
+it('propose de réessayer le paiement d\'un don refusé depuis la confirmation d\'inscription', function (): void {
+    ['organization' => $organization, 'event' => $event, 'base' => $base] = donationGuestEvent();
+    $token = startDonationRegistration($this, $event, $base);
+    $this->post("{$base}/{$token}/reponses", ['don' => ['choice' => '5000'], 'donateur' => donorDetails()]);
+    $this->post("{$base}/{$token}/recap");
+
+    app(CurrentOrganization::class)->set($organization);
+    $order = Order::query()->where('registration_id', marieRegistration()->id)->firstOrFail();
+    app(FailOrderPayment::class)->handle($order, 'flutterwave', null, 'Paiement Mobile Money refusé.');
+    app(CurrentOrganization::class)->clear();
+
+    $orderBase = "/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}";
+
+    $this->get("{$base}/{$token}/confirmation")
+        ->assertSee('Le paiement de votre don n\'a pas abouti', false)
+        ->assertSee("{$orderBase}/statut", false);
+
+    $this->post("{$orderBase}/paiement/reessayer")->assertRedirect("{$orderBase}/paiement");
+
+    $reopened = Order::withoutGlobalScopes()->findOrFail($order->id);
+    expect($reopened->status)->toBe(OrderStatus::Pending);
+    expect($reopened->reserved_until->isAfter(now()->addDay()))->toBeTrue();
+    $this->get("{$base}/{$token}/confirmation")->assertSee('Finaliser mon don');
 });
 
 it('garde le don tel quel quand l\'invité modifie son inscription', function (): void {

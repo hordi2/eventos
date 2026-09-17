@@ -30,6 +30,9 @@
                 @if ($donation['status'] === 'pending')
                     <p class="mt-3 text-sm text-ink-soft">Réglez-le maintenant par carte ou Mobile Money, ou choisissez de le régler à l'accueil.</p>
                     <a href="{{ $donation['paymentUrl'] }}" class="form-button mt-4 inline-flex min-h-11 items-center rounded-pill px-6 py-2.5 font-medium">Finaliser mon don</a>
+                @elseif ($donation['status'] === 'failed')
+                    <p class="mt-3 text-sm text-ink-soft">Le paiement de votre don n'a pas abouti. Vous pouvez réessayer.</p>
+                    <a href="{{ $donation['paymentUrl'] }}" class="form-button mt-4 inline-flex min-h-11 items-center rounded-pill px-6 py-2.5 font-medium">Réessayer le paiement</a>
                 @elseif ($donation['status'] === 'payment_on_site')
                     <p class="mt-3 text-sm text-ink-soft">Promesse enregistrée : vous le réglerez à l'accueil le jour de l'événement.</p>
                 @elseif ($donation['status'] === 'paid')

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domain\Event\Models\Event;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Ticketing\Actions\CreateDonationOrder;
+use App\Domain\Ticketing\Actions\CreateOrder;
 use App\Domain\Ticketing\Actions\FailOrderPayment;
 use App\Domain\Ticketing\Actions\MarkOrderPaid;
 use App\Domain\Ticketing\Data\DonationPledge;
@@ -17,6 +18,7 @@ use App\Support\Payments\CardCheckoutProvider;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Tests\TestCase;
 
 function makeGuestTicketedEvent(): array
 {
@@ -185,10 +187,16 @@ it('permet de télécharger le PDF d\'un billet une fois la commande payée', fu
     $response->assertHeader('content-type', 'application/pdf');
 });
 
-it('affiche l\'échec de paiement d\'une commande de billets sans renvoyer vers la page de paiement', function (): void {
-    ['organization' => $organization, 'event' => $event, 'ticketType' => $ticketType] = makeGuestTicketedEvent();
+/**
+ * Commande de billets (1 place) passée par la page publique, puis refusée par le prestataire.
+ *
+ * @param  array{organization: Organization, event: Event, ticketType: TicketType, tier: PriceTier}  $context
+ */
+function failedGuestTicketOrder(TestCase $test, array $context): Order
+{
+    ['organization' => $organization, 'event' => $event, 'ticketType' => $ticketType] = $context;
 
-    $this->post("/billets/{$organization->slug}/{$event->slug}", [
+    $test->post("/billets/{$organization->slug}/{$event->slug}", [
         'checkout_token' => (string) Str::uuid(),
         'buyer_name' => 'Alice',
         'buyer_email' => 'alice@example.com',
@@ -200,17 +208,15 @@ it('affiche l\'échec de paiement d\'une commande de billets sans renvoyer vers 
     app(FailOrderPayment::class)->handle($order, 'stripe', null, 'Carte refusée');
     app(CurrentOrganization::class)->clear();
 
-    $payment = $this->get("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/paiement");
-    $payment->assertRedirect("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/statut");
+    return $order;
+}
 
-    $status = $this->get("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/statut");
-    $status->assertOk();
-    $status->assertSee('Le paiement n\'a pas abouti', false);
-    $status->assertSee('Recommencer');
-});
-
-it('affiche l\'échec de paiement d\'une commande de don sans renvoyer vers la page de paiement', function (): void {
-    ['organization' => $organization, 'event' => $event] = makeGuestTicketedEvent();
+/**
+ * @param  array{organization: Organization, event: Event, ticketType: TicketType, tier: PriceTier}  $context
+ */
+function failedGuestDonationOrder(array $context): Order
+{
+    ['organization' => $organization, 'event' => $event] = $context;
 
     app(CurrentOrganization::class)->set($organization);
     $order = app(CreateDonationOrder::class)->handle($organization->id, $event->id, new DonationPledge(
@@ -223,11 +229,80 @@ it('affiche l\'échec de paiement d\'une commande de don sans renvoyer vers la p
     app(FailOrderPayment::class)->handle($order, 'stripe', null, 'Carte refusée');
     app(CurrentOrganization::class)->clear();
 
+    return $order;
+}
+
+it('affiche l\'échec de paiement d\'une commande de billets sans renvoyer vers la page de paiement', function (): void {
+    $context = makeGuestTicketedEvent();
+    ['organization' => $organization, 'event' => $event] = $context;
+    $order = failedGuestTicketOrder($this, $context);
+
+    $payment = $this->get("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/paiement");
+    $payment->assertRedirect("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/statut");
+
+    $status = $this->get("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/statut");
+    $status->assertOk();
+    $status->assertSee('Le paiement n\'a pas abouti', false);
+    $status->assertSee('Réessayer le paiement');
+});
+
+it('affiche l\'échec de paiement d\'une commande de don sans renvoyer vers la page de paiement', function (): void {
+    $context = makeGuestTicketedEvent();
+    ['organization' => $organization, 'event' => $event] = $context;
+    $order = failedGuestDonationOrder($context);
+
     $payment = $this->get("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/paiement");
     $payment->assertRedirect("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/statut");
 
     $status = $this->get("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/statut");
     $status->assertOk();
     $status->assertSee('Le paiement de votre don n\'a pas abouti', false);
-    $status->assertDontSee('Recommencer');
+    $status->assertSee('Réessayer le paiement');
+    $status->assertDontSee('Choisir d\'autres billets', false);
+});
+
+it('rouvre le paiement d\'une commande de billets échouée', function (): void {
+    $context = makeGuestTicketedEvent();
+    ['organization' => $organization, 'event' => $event] = $context;
+    $order = failedGuestTicketOrder($this, $context);
+    $base = "/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}";
+
+    $this->post("{$base}/paiement/reessayer")->assertRedirect("{$base}/paiement");
+
+    $this->get("{$base}/paiement")->assertOk()->assertSee('Moyen de paiement');
+});
+
+it('rouvre le paiement d\'une commande de don échouée', function (): void {
+    $context = makeGuestTicketedEvent();
+    ['organization' => $organization, 'event' => $event] = $context;
+    $order = failedGuestDonationOrder($context);
+    $base = "/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}";
+
+    $this->post("{$base}/paiement/reessayer")->assertRedirect("{$base}/paiement");
+
+    $this->get("{$base}/paiement")->assertOk()->assertSee('Régler votre don');
+});
+
+it('refuse de rouvrir le paiement quand les places ne sont plus disponibles', function (): void {
+    $context = makeGuestTicketedEvent();
+    ['organization' => $organization, 'event' => $event, 'ticketType' => $ticketType] = $context;
+    $order = failedGuestTicketOrder($this, $context);
+    $base = "/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}";
+
+    app(CreateOrder::class)->handle(
+        $organization->id, $event->id,
+        ['name' => 'Bob', 'email' => 'bob@example.com'],
+        [['ticket_type_id' => $ticketType->id, 'quantity' => 10]],
+        (string) Str::uuid(),
+    );
+    app(CurrentOrganization::class)->clear();
+
+    $this->post("{$base}/paiement/reessayer")
+        ->assertRedirect("{$base}/statut")
+        ->assertSessionHasErrors('payment');
+
+    $this->get("{$base}/statut")
+        ->assertOk()
+        ->assertSee('Les places de cette commande ne sont plus disponibles.')
+        ->assertSee('Choisir d\'autres billets', false);
 });
