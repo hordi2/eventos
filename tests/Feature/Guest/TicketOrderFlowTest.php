@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 use App\Domain\Event\Models\Event;
 use App\Domain\Organization\Models\Organization;
+use App\Domain\Ticketing\Actions\CreateDonationOrder;
+use App\Domain\Ticketing\Actions\FailOrderPayment;
 use App\Domain\Ticketing\Actions\MarkOrderPaid;
+use App\Domain\Ticketing\Data\DonationPledge;
 use App\Domain\Ticketing\Models\Order;
 use App\Domain\Ticketing\Models\PriceTier;
 use App\Domain\Ticketing\Models\TicketType;
 use App\Support\Money;
 use App\Support\MultiTenancy\CurrentOrganization;
 use App\Support\Payments\CardCheckoutProvider;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -179,4 +183,51 @@ it('permet de télécharger le PDF d\'un billet une fois la commande payée', fu
 
     $response->assertOk();
     $response->assertHeader('content-type', 'application/pdf');
+});
+
+it('affiche l\'échec de paiement d\'une commande de billets sans renvoyer vers la page de paiement', function (): void {
+    ['organization' => $organization, 'event' => $event, 'ticketType' => $ticketType] = makeGuestTicketedEvent();
+
+    $this->post("/billets/{$organization->slug}/{$event->slug}", [
+        'checkout_token' => (string) Str::uuid(),
+        'buyer_name' => 'Alice',
+        'buyer_email' => 'alice@example.com',
+        'items' => [$ticketType->id => 1],
+    ]);
+
+    app(CurrentOrganization::class)->set($organization);
+    $order = Order::query()->where('buyer_email', 'alice@example.com')->firstOrFail();
+    app(FailOrderPayment::class)->handle($order, 'stripe', null, 'Carte refusée');
+    app(CurrentOrganization::class)->clear();
+
+    $payment = $this->get("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/paiement");
+    $payment->assertRedirect("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/statut");
+
+    $status = $this->get("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/statut");
+    $status->assertOk();
+    $status->assertSee('Le paiement n\'a pas abouti', false);
+    $status->assertSee('Recommencer');
+});
+
+it('affiche l\'échec de paiement d\'une commande de don sans renvoyer vers la page de paiement', function (): void {
+    ['organization' => $organization, 'event' => $event] = makeGuestTicketedEvent();
+
+    app(CurrentOrganization::class)->set($organization);
+    $order = app(CreateDonationOrder::class)->handle($organization->id, $event->id, new DonationPledge(
+        registrationId: null,
+        amount: Money::fromMinorUnits(5000, 'EUR'),
+        cause: null,
+        donorName: 'Alice',
+        email: 'alice@example.com',
+    ), (string) Str::uuid(), CarbonImmutable::now()->addDays(2));
+    app(FailOrderPayment::class)->handle($order, 'stripe', null, 'Carte refusée');
+    app(CurrentOrganization::class)->clear();
+
+    $payment = $this->get("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/paiement");
+    $payment->assertRedirect("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/statut");
+
+    $status = $this->get("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/statut");
+    $status->assertOk();
+    $status->assertSee('Le paiement de votre don n\'a pas abouti', false);
+    $status->assertDontSee('Recommencer');
 });
