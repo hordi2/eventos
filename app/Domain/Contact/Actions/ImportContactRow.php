@@ -9,7 +9,10 @@ use App\Domain\Contact\Models\ContactImport;
 use App\Domain\Contact\Models\ContactImportRow;
 use App\Domain\Contact\Models\ContactImportRowStatus;
 use App\Domain\Contact\Models\DuplicateStrategy;
+use App\Domain\Contact\Models\EventInvitee;
 use App\Domain\Contact\Support\CalculateContactSimilarity;
+use App\Domain\Contact\Support\CompanionAllowance;
+use InvalidArgumentException;
 use libphonenumber\NumberParseException;
 use libphonenumber\PhoneNumberFormat;
 use libphonenumber\PhoneNumberUtil;
@@ -25,6 +28,7 @@ final class ImportContactRow
     public function __construct(
         private readonly CalculateContactSimilarity $calculateContactSimilarity,
         private readonly FindOrCreateHousehold $findOrCreateHousehold,
+        private readonly ResolveTagsByName $resolveTagsByName,
     ) {}
 
     /**
@@ -42,6 +46,18 @@ final class ImportContactRow
             return $this->recordRow($import, $rowNumber, $rawRow, ContactImportRowStatus::Rejected, "Adresse e-mail invalide : \"{$data['email']}\".");
         }
 
+        // Liste d'invités : ses colonnes sont vérifiées avant de créer ou
+        // modifier le moindre contact, pour qu'une ligne refusée ne laisse rien.
+        $invitation = null;
+
+        if ($import->event_id !== null) {
+            try {
+                $invitation = $this->invitationFrom($data);
+            } catch (InvalidArgumentException $exception) {
+                return $this->recordRow($import, $rowNumber, $rawRow, ContactImportRowStatus::Rejected, $exception->getMessage());
+            }
+        }
+
         if (($data['phone_e164'] ?? '') !== '') {
             $normalizedPhone = $this->normalizePhone($data['phone_e164']);
 
@@ -54,13 +70,83 @@ final class ImportContactRow
 
         [$existing, $score] = $this->findBestCandidate($import->organization_id, $data);
 
-        if ($existing !== null && $this->calculateContactSimilarity->isDuplicate($score)) {
-            return $this->handleDuplicate($import, $rowNumber, $rawRow, $data, $existing, $score);
+        $row = $existing !== null && $this->calculateContactSimilarity->isDuplicate($score)
+            ? $this->handleDuplicate($import, $rowNumber, $rawRow, $data, $existing, $score)
+            : $this->recordRow($import, $rowNumber, $rawRow, ContactImportRowStatus::Accepted, null, $this->createContact($import, $data));
+
+        if ($row->contact_id !== null) {
+            $this->applyTags($import, $row->contact_id, $data);
+
+            if ($invitation !== null) {
+                $this->addToGuestList($import, $row->contact_id, $invitation);
+            }
         }
 
-        $contact = $this->createContact($import, $data);
+        return $row;
+    }
 
-        return $this->recordRow($import, $rowNumber, $rawRow, ContactImportRowStatus::Accepted, null, $contact);
+    /**
+     * Seules les colonnes mappées sont retenues : une colonne absente du
+     * fichier ne remet pas à zéro ce qu'une importation précédente avait
+     * fixé ; une colonne présente mais vide vaut « aucun accompagnant ».
+     *
+     * @param  array<string, string>  $data
+     * @return array<string, string|int|null>
+     *
+     * @throws InvalidArgumentException
+     */
+    private function invitationFrom(array $data): array
+    {
+        $invitation = [];
+
+        if (array_key_exists('group_key', $data)) {
+            $invitation['group_key'] = $data['group_key'] !== '' ? mb_substr($data['group_key'], 0, 50) : null;
+        }
+
+        if (array_key_exists('companions_allowed', $data)) {
+            $invitation['companions_allowed'] = CompanionAllowance::parse($data['companions_allowed']);
+        }
+
+        if (array_key_exists('cc_email', $data)) {
+            if ($data['cc_email'] !== '' && ! filter_var($data['cc_email'], FILTER_VALIDATE_EMAIL)) {
+                throw new InvalidArgumentException("E-mail en copie invalide : \"{$data['cc_email']}\".");
+            }
+
+            $invitation['cc_email'] = $data['cc_email'] !== '' ? mb_strtolower($data['cc_email']) : null;
+        }
+
+        return $invitation;
+    }
+
+    /**
+     * Réimporter le même fichier met l'invité à jour sans le dupliquer
+     * (règle 4.4).
+     *
+     * @param  array<string, string|int|null>  $invitation
+     */
+    private function addToGuestList(ContactImport $import, int $contactId, array $invitation): void
+    {
+        EventInvitee::query()->updateOrCreate(
+            ['event_id' => $import->event_id, 'contact_id' => $contactId],
+            ['organization_id' => $import->organization_id, 'contact_import_id' => $import->id, ...$invitation],
+        );
+    }
+
+    /**
+     * Les tags du fichier s'ajoutent à ceux du contact, sans en retirer.
+     *
+     * @param  array<string, string>  $data
+     */
+    private function applyTags(ContactImport $import, int $contactId, array $data): void
+    {
+        $names = ResolveTagsByName::split($data['tags'] ?? null);
+
+        if ($names === []) {
+            return;
+        }
+
+        $tagIds = $this->resolveTagsByName->handle($import->organization_id, $names);
+        Contact::query()->findOrFail($contactId)->tags()->syncWithoutDetaching(array_fill_keys($tagIds, ['organization_id' => $import->organization_id]));
     }
 
     /**
@@ -164,7 +250,9 @@ final class ImportContactRow
         return match ($import->duplicate_strategy) {
             DuplicateStrategy::Skip => $this->recordRow(
                 $import, $rowNumber, $rawRow, ContactImportRowStatus::Skipped,
-                "Doublon détecté (score {$score}) avec le contact #{$existing->id}, ignoré.",
+                $import->event_id !== null
+                    ? "Déjà dans vos contacts (#{$existing->id}) : fiche inchangée, ajoutée à la liste d'invités."
+                    : "Doublon détecté (score {$score}) avec le contact #{$existing->id}, ignoré.",
                 $existing,
             ),
             DuplicateStrategy::CreateNew => $this->recordRow(

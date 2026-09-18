@@ -10,6 +10,7 @@ use App\Domain\Contact\Models\Contact;
 use App\Domain\Contact\Models\ContactImport;
 use App\Domain\Contact\Models\ContactImportRow;
 use App\Domain\Contact\Models\DuplicateStrategy;
+use App\Domain\Event\Models\Event;
 use App\Domain\Organization\Models\Organization;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\ContactImport\ConfirmContactImportMappingRequest;
@@ -39,6 +40,17 @@ final class ContactImportController extends Controller
         'email_consent' => 'Consentement e-mail',
         'sms_consent' => 'Consentement SMS',
         'whatsapp_consent' => 'Consentement WhatsApp',
+        'tags' => 'Tags (séparés par des virgules)',
+    ];
+
+    /**
+     * Colonnes propres à une liste d'invités (import lancé depuis un
+     * événement) : elles décrivent l'invitation, pas le contact.
+     */
+    private const GUEST_LIST_FIELDS = [
+        'group_key' => 'Groupe (répondent ensemble)',
+        'companions_allowed' => 'Accompagnants autorisés',
+        'cc_email' => 'E-mail en copie',
     ];
 
     public function create(): Response
@@ -68,7 +80,8 @@ final class ContactImportController extends Controller
                 'column_mapping' => $import->column_mapping,
             ],
             'preview' => $this->previewRows($import, 5),
-            'mappableFields' => self::MAPPABLE_FIELDS,
+            'mappableFields' => $import->event_id !== null ? self::GUEST_LIST_FIELDS + self::MAPPABLE_FIELDS : self::MAPPABLE_FIELDS,
+            'event' => $this->eventSummary($import),
         ]);
     }
 
@@ -111,7 +124,25 @@ final class ContactImportController extends Controller
                 'rejected_count' => $import->rejected_count,
             ],
             'rows' => $rows,
+            'event' => $this->eventSummary($import),
         ]);
+    }
+
+    /**
+     * Import lancé depuis la liste d'invités d'un événement : les écrans
+     * ramènent à cette liste.
+     *
+     * @return array{id: int, title: string}|null
+     */
+    private function eventSummary(ContactImport $import): ?array
+    {
+        if ($import->event_id === null) {
+            return null;
+        }
+
+        $event = Event::query()->find($import->event_id);
+
+        return $event === null ? null : ['id' => $event->id, 'title' => $event->title];
     }
 
     /**

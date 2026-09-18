@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 import Button from '../../Components/Button';
 import InputLabel from '../../Components/InputLabel';
@@ -22,10 +22,12 @@ export default function Mapping({
     import: contactImport,
     preview,
     mappableFields,
+    event,
 }: {
     import: ImportDraft;
     preview: Record<string, string>[];
     mappableFields: Record<string, string>;
+    event: { id: number; title: string } | null;
 }) {
     const { data, setData, post, processing } = useForm({
         mapping: contactImport.column_mapping,
@@ -40,6 +42,16 @@ export default function Mapping({
     return (
         <OrganizerLayout title="Faire correspondre les colonnes" eyebrow={contactImport.original_filename}>
             <Head title="Faire correspondre les colonnes" />
+
+            {event && (
+                <p className="mb-6 max-w-2xl text-sm text-ink-soft">
+                    Ces personnes rejoindront la liste d'invités de « {event.title} ». Vérifiez surtout les colonnes Groupe, Accompagnants autorisés et
+                    E-mail en copie.{' '}
+                    <Link href={`/events/${event.id}/guest-list/import`} className="text-ink underline hover:no-underline">
+                        Changer de fichier
+                    </Link>
+                </p>
+            )}
 
             <form onSubmit={handleSubmit}>
                 <div className="mb-10 overflow-x-auto rounded-card ring-1 ring-line">

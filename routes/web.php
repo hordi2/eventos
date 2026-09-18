@@ -34,6 +34,8 @@ use App\Http\Controllers\Organizer\EventAnswerController;
 use App\Http\Controllers\Organizer\EventChecklistController;
 use App\Http\Controllers\Organizer\EventController;
 use App\Http\Controllers\Organizer\EventDashboardController;
+use App\Http\Controllers\Organizer\EventGuestImportController;
+use App\Http\Controllers\Organizer\EventGuestListController;
 use App\Http\Controllers\Organizer\EventPublicationController;
 use App\Http\Controllers\Organizer\EventReportController;
 use App\Http\Controllers\Organizer\EventSegmentController;
@@ -48,6 +50,7 @@ use App\Http\Controllers\Organizer\OrganizationImageController;
 use App\Http\Controllers\Organizer\PageController;
 use App\Http\Controllers\Organizer\RegistrationFileController;
 use App\Http\Controllers\Organizer\SeatingController;
+use App\Http\Controllers\Organizer\SenderAgreementController;
 use App\Http\Controllers\Organizer\Settings\EventSharingController;
 use App\Http\Controllers\Organizer\Settings\IntegrationController;
 use App\Http\Controllers\Organizer\Settings\N8nConnectionController;
@@ -329,6 +332,16 @@ Route::middleware('auth')->group(function (): void {
 
         Route::get('events/{event}/dashboard', [EventDashboardController::class, 'index'])->name('events.dashboard.index');
         Route::get('events/{event}/dashboard/stream', [EventDashboardController::class, 'stream'])->name('events.dashboard.stream');
+
+        // Liste d'invités d'un événement (UC-03) et son import.
+        Route::get('events/{event}/guest-list', [EventGuestListController::class, 'index'])->name('events.guest-list.index');
+        Route::post('events/{event}/guest-list', [EventGuestListController::class, 'store'])->name('events.guest-list.store');
+        Route::get('events/{event}/guest-list/template', [EventGuestListController::class, 'template'])->name('events.guest-list.template');
+        Route::get('events/{event}/guest-list/import', [EventGuestImportController::class, 'create'])->name('events.guest-list.import');
+        Route::post('events/{event}/guest-list/import', [EventGuestImportController::class, 'store'])->name('events.guest-list.import.store');
+        Route::patch('events/{event}/guest-list/{invitee}', [EventGuestListController::class, 'update'])->whereNumber('invitee')->name('events.guest-list.update');
+        Route::delete('events/{event}/guest-list/{invitee}', [EventGuestListController::class, 'destroy'])->whereNumber('invitee')->name('events.guest-list.destroy');
+        Route::post('sender-agreement', [SenderAgreementController::class, 'store'])->name('sender-agreement.store');
 
         Route::get('events/{event}/segments', [EventSegmentController::class, 'index'])->name('events.segments.index');
         Route::get('events/{event}/segments/{segment}', [EventSegmentController::class, 'show'])->name('events.segments.show');

@@ -22,6 +22,7 @@ final class ContactImport extends Model
      */
     protected $fillable = [
         'organization_id',
+        'event_id',
         'created_by',
         'original_filename',
         'file_path',

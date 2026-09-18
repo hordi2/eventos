@@ -44,6 +44,8 @@ final class Organization extends Model
         'n8n_base_url',
         'n8n_api_key',
         'n8n_connected_at',
+        'sender_agreement_accepted_at',
+        'sender_agreement_accepted_by',
     ];
 
     /**
@@ -67,6 +69,7 @@ final class Organization extends Model
             'referral_rewarded_at' => 'immutable_datetime',
             'n8n_api_key' => 'encrypted',
             'n8n_connected_at' => 'immutable_datetime',
+            'sender_agreement_accepted_at' => 'immutable_datetime',
         ];
     }
 

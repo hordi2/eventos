@@ -89,13 +89,13 @@ final class BuildEventNavigation
             // Rapports : proposés seulement quand le formulaire pose la question.
             'meals' => $link($gate->allows('viewGuests', $organization) && $this->asksFor($formId, FieldType::MealChoice), route('events.meals.index', $event->id)),
             'donations' => $link($gate->allows('viewGuests', $organization) && $this->asksFor($formId, FieldType::Donation), route('events.donations.index', $event->id)),
-            'guests' => $link($gate->allows('viewGuests', $organization), route('events.segments.index', $event->id)),
+            'guests' => $link($gate->allows('viewGuests', $organization), route('events.guest-list.index', $event->id)),
             'form' => $formId !== null
                 ? $link($canUpdate, route('forms.edit', $formId))
                 : $link($gate->allows('create', [Form::class, $organization]), route('forms.create', $event->id)),
             'website' => $link($canUpdate, route('events.page.edit', $event->id)),
             'settings' => $link($canUpdate, route('events.edit', $event->id)),
-            'import' => $link(! $isCollaborator && $gate->allows('create', [Contact::class, $organization]), route('contact-imports.create')),
+            'import' => $link(! $isCollaborator && $gate->allows('create', [Contact::class, $organization]) && $gate->allows('updateGuests', $organization), route('events.guest-list.import', $event->id)),
             'communications' => $link($gate->allows('sendCommunications', $organization), route('events.automations.index', $event->id)),
             'collaborators' => $link(! $isCollaborator && $gate->allows('inviteMembers', $organization), route('settings.event-sharing.index')),
             'seating' => $link($gate->allows('viewGuests', $organization), route('events.seating.index', $event->id)),

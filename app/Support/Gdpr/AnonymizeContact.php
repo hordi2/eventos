@@ -83,6 +83,13 @@ final class AnonymizeContact
                 ->whereIn('form_field_id', DB::table('form_fields')->where('type', FieldType::FileUpload->value)->select('id'))
                 ->update(['value' => json_encode(['name' => 'Fichier supprimé']), 'updated_at' => now()]);
 
+            // Sur la liste d'invités, l'e-mail en copie est une donnée
+            // personnelle : effacé, et l'invitation retirée de la liste.
+            DB::table('event_invitees')
+                ->where('contact_id', $contact->id)
+                ->whereNull('deleted_at')
+                ->update(['cc_email' => null, 'deleted_at' => now(), 'updated_at' => now()]);
+
             $orderIds = DB::table('orders')
                 ->where(fn ($query) => $query->whereIn('registration_id', $registrationIds)->orWhere('contact_id', $contact->id))
                 ->pluck('id');

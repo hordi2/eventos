@@ -510,6 +510,38 @@ avant validation, rapport d'import.
 - [ ] Rapport ligne par ligne : acceptée, rejetée, motif
 - [ ] Import incrémental sans écraser les données existantes non fournies
 
+**Complément (lot 2) — liste d'invités d'un événement, étape 1 (gestion)** :
+jusque-là « Invités » menait aux segments et « Importation » à l'import de
+contacts de l'organisation ; aucune liste d'invités propre à un événement
+n'existait, et le mode d'accès « liste fermée » n'avait donc aucun effet.
+- Table `event_invitees` : un contact invité à un événement, avec son groupe
+  (les membres répondent ensemble, notion propre à la liste et distincte du
+  foyer), ses accompagnants autorisés (0 à 20, ou illimité) et un e-mail en
+  copie. Un contact n'y figure qu'une fois : réimporter met à jour (règle
+  4.4) ; retirer un invité est une suppression logique qui garde le contact.
+- Écran « Liste des invités » : état vide, ajout et modification à la main,
+  recherche, compteurs (invités, groupes, ont répondu) et réponse de chaque
+  invité lue dans ses inscriptions — jamais stockée deux fois.
+- Import : l'import de contacts accepte désormais les classeurs Excel
+  (OpenSpout, dépendance acceptée) et peut viser un événement ; il propose
+  alors les colonnes Groupe, Accompagnants autorisés, E-mail en copie, en
+  plus des Tags (aussi disponibles pour un import de contacts). Les en-têtes
+  du modèle Itaza et ceux du modèle RSVPify sont reconnus ; un champ n'est
+  attribué qu'à une colonne. Une valeur invalide refuse la ligne avant de
+  toucher au moindre contact. Modèle Excel à télécharger, avec une feuille
+  « Mode d'emploi » et un exemple.
+- Accord d'envoi : accepté une fois par organisation, à l'ouverture de la
+  liste, daté, attribué et journalisé ; exigé côté serveur pour ajouter ou
+  importer des invités. Un membre en lecture seule consulte la liste sans
+  pouvoir l'accepter.
+- Effacement RGPD : l'e-mail en copie est effacé et l'invitation retirée.
+Reste l'étape 2 (parcours de réponse) : en « liste fermée », seuls les
+invités répondent, un groupe répond ensemble, et les accompagnants autorisés
+de chacun remplacent le réglage du formulaire.
+Limites connues : un CSV exporté par un Excel français (séparateur « ; »)
+n'est pas encore reconnu — le classeur .xlsx l'est ; l'e-mail en copie est
+enregistré mais pas encore utilisé par les envois (M4).
+
 ---
 
 ### T-042 · Tags et segments · M

@@ -26,15 +26,39 @@ final class GuessColumnMapping
         'job_title' => ['fonction', 'poste', 'job title', 'title', 'role'],
         'preferred_language' => ['langue', 'language', 'langue preferee', 'langue préférée'],
         'household_name' => ['foyer', 'groupe', 'household', 'family', 'famille'],
+        'tags' => ['tags', 'tag', 'etiquettes', 'etiquette'],
     ];
 
     /**
+     * Colonnes propres à la liste d'invités d'un événement, en tête de
+     * recherche : « Groupe » y désigne les invités qui répondent ensemble,
+     * pas le foyer. Les en-têtes du modèle RSVPify sont reconnus, pour
+     * faciliter une migration.
+     *
+     * @var array<string, list<string>>
+     */
+    private const GUEST_LIST_SYNONYMS = [
+        'group_key' => ['groupe', 'group', 'group id', 'id de groupe', 'numero de groupe'],
+        'companions_allowed' => [
+            'accompagnants', 'accompagnants autorises', 'invites supplementaires', '+1', 'plus one',
+            'additional guests allowed', "additional guest(s) allowed (+1's)",
+        ],
+        'cc_email' => ['e-mail en copie', 'email en copie', 'copie e-mail', 'copie email', 'cc', 'cc email', 'cc email recipient'],
+    ];
+
+    /**
+     * Un champ n'est proposé qu'une fois : la première colonne qui lui
+     * correspond le prend. Sans cela, « CC EMAIL RECIPIENT » viendrait
+     * écraser la vraie colonne e-mail par correspondance mot à mot.
+     *
      * @param  list<string>  $headers
      * @return array<string, string|null> en-tête => champ Contact deviné (ou null)
      */
-    public function handle(array $headers): array
+    public function handle(array $headers, bool $forGuestList = false): array
     {
+        $synonyms = $forGuestList ? $this->guestListSynonyms() : self::SYNONYMS;
         $mapping = [];
+        $taken = [];
 
         foreach ($headers as $header) {
             $normalized = $this->normalize($header);
@@ -45,16 +69,35 @@ final class GuessColumnMapping
             // mot « mail », mais ce n'est pas ce qu'on cherche ici) — sans
             // quoi l'ordre des champs dans SYNONYMS déciderait au hasard
             // entre deux champs également valides.
-            $mapping[$header] = $this->exactMatch($normalized) ?? $this->wordMatch($this->words($normalized));
+            $field = $this->exactMatch($synonyms, $normalized) ?? $this->wordMatch($synonyms, $this->words($normalized));
+            $mapping[$header] = $field !== null && ! in_array($field, $taken, true) ? $field : null;
+
+            if ($mapping[$header] !== null) {
+                $taken[] = $mapping[$header];
+            }
         }
 
         return $mapping;
     }
 
-    private function exactMatch(string $normalized): ?string
+    /**
+     * @return array<string, list<string>>
+     */
+    private function guestListSynonyms(): array
     {
-        foreach (self::SYNONYMS as $field => $synonyms) {
-            if (in_array($normalized, $synonyms, true)) {
+        $base = self::SYNONYMS;
+        $base['household_name'] = array_values(array_diff($base['household_name'], ['groupe']));
+
+        return self::GUEST_LIST_SYNONYMS + $base;
+    }
+
+    /**
+     * @param  array<string, list<string>>  $synonyms
+     */
+    private function exactMatch(array $synonyms, string $normalized): ?string
+    {
+        foreach ($synonyms as $field => $candidates) {
+            if (in_array($normalized, $candidates, true)) {
                 return $field;
             }
         }
@@ -63,12 +106,13 @@ final class GuessColumnMapping
     }
 
     /**
+     * @param  array<string, list<string>>  $synonyms
      * @param  list<string>  $words
      */
-    private function wordMatch(array $words): ?string
+    private function wordMatch(array $synonyms, array $words): ?string
     {
-        foreach (self::SYNONYMS as $field => $synonyms) {
-            foreach ($synonyms as $synonym) {
+        foreach ($synonyms as $field => $candidates) {
+            foreach ($candidates as $synonym) {
                 if (! str_contains($synonym, ' ') && in_array($synonym, $words, true)) {
                     return $field;
                 }

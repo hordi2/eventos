@@ -42,7 +42,15 @@ const ROW_STATUS_LABELS: Record<string, string> = {
     rejected: 'Rejeté',
 };
 
-export default function Report({ import: contactImport, rows }: { import: ImportSummary; rows: Paginated<RowReport> }) {
+export default function Report({
+    import: contactImport,
+    rows,
+    event,
+}: {
+    import: ImportSummary;
+    rows: Paginated<RowReport>;
+    event: { id: number; title: string } | null;
+}) {
     const isRunning = contactImport.status === 'queued' || contactImport.status === 'processing';
 
     useEffect(() => {
@@ -66,6 +74,11 @@ export default function Report({ import: contactImport, rows }: { import: Import
                     {STATUS_LABELS[contactImport.status] ?? contactImport.status}
                 </Badge>
                 {isRunning && <span className="text-sm text-ink-soft">Traitement en file d'attente, la page se met à jour toute seule…</span>}
+                {event && (
+                    <Link href={`/events/${event.id}/guest-list`} className="ml-auto rounded-pill bg-ink px-5 py-2 text-sm font-medium text-bg hover:opacity-90">
+                        Voir la liste des invités
+                    </Link>
+                )}
             </div>
 
             <div className="mb-10 grid grid-cols-2 gap-4 sm:grid-cols-4">
