@@ -100,7 +100,7 @@ final class UpdateRegistration
             $registration->attendees()->where('is_primary', true)->update([
                 'first_name' => $identity->firstName,
                 'last_name' => $identity->lastName,
-                'email' => $email,
+                'email' => $email !== '' ? $email : null,
             ]);
 
             $existingAnswers = $registration->answers()->with('formField')->get()->keyBy(fn (RegistrationAnswer $a): string => $a->formField->key);

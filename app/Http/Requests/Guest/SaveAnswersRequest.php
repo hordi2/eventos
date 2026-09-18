@@ -10,13 +10,16 @@ use App\Domain\Form\Actions\StoreGuestUploads;
 use App\Domain\Form\Actions\SyncSubEventRegistrations;
 use App\Domain\Form\Data\CompanionData;
 use App\Domain\Form\Data\FormVisibilityContext;
+use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\FormVersion;
 use App\Domain\Form\Models\RegistrationDraft;
 use App\Domain\Form\Support\BuildFormValidationRules;
+use App\Domain\Form\Support\DonationAnswer;
 use App\Domain\Form\Support\EvaluateFormVisibility;
 use App\Domain\Form\Support\FileUploadAnswer;
 use App\Domain\Form\Support\ValidateCompanions;
 use App\Domain\Form\Support\ValidateRegistrationFiles;
+use App\Support\GuestList\ResolveGuestInvitation;
 use App\Support\Registration\BuildGuestVisibilityContext;
 use App\Support\Registration\BuildSubEventContexts;
 use Illuminate\Foundation\Http\FormRequest;
@@ -127,6 +130,22 @@ final class SaveAnswersRequest extends FormRequest
                     $validator->errors()->add($key, $message);
                 }
             },
+            // Un invité qui répond avec son seul numéro WhatsApp ne peut pas
+            // régler un don en ligne : carte et Mobile Money exigent un e-mail.
+            function (Validator $validator): void {
+                if ($validator->errors()->isNotEmpty() || trim((string) (($this->draft()->identity ?? [])['email'] ?? '')) !== '') {
+                    return;
+                }
+
+                $answers = $this->except([CompanionData::INPUT_KEY, FileUploadAnswer::INPUT_KEY]);
+                $visibility = app(EvaluateFormVisibility::class)->handle($this->version(), $answers, $this->visibilityContext());
+
+                foreach ($this->version()->fields as $field) {
+                    if ($field->type === FieldType::Donation && DonationAnswer::isGiven($this->version(), [$field->key => $answers[$field->key] ?? null], $visibility)) {
+                        $validator->errors()->add($field->key, "Pour faire un don en ligne, ajoutez votre adresse e-mail à l'étape précédente : le paiement par carte ou Mobile Money l'exige.");
+                    }
+                }
+            },
             function (Validator $validator): void {
                 if ($validator->errors()->isNotEmpty()) {
                     return;
@@ -168,6 +187,7 @@ final class SaveAnswersRequest extends FormRequest
             $this->draft()->organization_id,
             $identity['email'] ?? null,
             (bool) ($identity['attending'] ?? true),
+            app(ResolveGuestInvitation::class)->handle($this->draft())?->contact->id,
         );
     }
 

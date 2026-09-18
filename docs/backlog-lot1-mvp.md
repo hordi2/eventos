@@ -564,10 +564,19 @@ d'invités (droit de modifier l'événement).
   l'e-mail saisi : la liste affiche « Confirmé · avec Grace Mbuyi », un
   invité ne répond pas deux fois, et l'effacement RGPD atteint son nom dans
   l'inscription d'un autre.
+- Réponse sans e-mail : un invité de la liste peut répondre avec son seul
+  numéro WhatsApp (l'un des deux est exigé ; hors invitation, l'e-mail reste
+  obligatoire). L'inscription garde une adresse vide — même convention que
+  l'effacement RGPD —, se relie au contact par l'invitation, et deux
+  réponses sans adresse ne se confondent pas. Les tags du contact sont lus
+  par l'invitation ou l'inscription reliée, plus seulement par l'e-mail. Un
+  don en ligne reste refusé sans e-mail (carte et Mobile Money l'exigent),
+  avec un message qui l'explique ; aucun reçu n'est envoyé à une adresse
+  vide.
 Limites connues : un lien personnel ne se révoque pas encore (retirer
-l'invité le désactive) ; la réponse exige toujours une adresse e-mail, même
-pour un invité retrouvé par WhatsApp ; l'envoi groupé des liens par e-mail
-ou WhatsApp relève des campagnes (M4).
+l'invité le désactive) ; la confirmation par WhatsApp dépend des
+automatisations et du consentement WhatsApp du contact ; l'envoi groupé des
+liens par e-mail ou WhatsApp relève des campagnes (M4).
 
 ---
 

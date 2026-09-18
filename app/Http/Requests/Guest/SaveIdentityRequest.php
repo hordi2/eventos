@@ -73,13 +73,15 @@ final class SaveIdentityRequest extends FormRequest
             // ce bloc identité fixe ne doit jamais dépendre de la résolution
             // DNS en sortie — recours réseau que cet environnement sandboxé a
             // révélé peu fiable même pour un domaine qui résout par ailleurs.
-            'email' => ['required', 'email:rfc'],
+            // Invité de la liste : l'e-mail ou le numéro WhatsApp suffit
+            // (beaucoup d'invités n'ont que WhatsApp, §1 du CLAUDE.md).
+            'email' => $this->invitation() !== null ? ['nullable', 'email:rfc', 'required_without:phone'] : ['required', 'email:rfc'],
             'first_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             // Obligatoire pour un événement personnel (mariage, anniversaire...
             // — accord explicite) : posé par ResolveGuestEvent avant que ce
             // Form Request ne soit résolu.
-            'phone' => [$this->isPersonalEvent() ? 'required' : 'nullable', 'string', 'max:32'],
+            'phone' => [$this->isPersonalEvent() ? 'required' : 'nullable', 'string', 'max:32', ...($this->invitation() !== null ? ['required_without:email'] : [])],
             // « Je serai présent(e) » / « Je ne peux pas venir » : demandé
             // seulement si l'organisateur propose le refus.
             'attending' => [$this->settings()['rsvp']['decline_enabled'] ? 'required' : 'nullable', 'boolean'],
@@ -99,6 +101,8 @@ final class SaveIdentityRequest extends FormRequest
     {
         return [
             'phone.required' => 'Le numéro de téléphone est obligatoire pour ce type d\'événement.',
+            'email.required_without' => 'Indiquez votre adresse e-mail ou votre numéro WhatsApp.',
+            'phone.required_without' => 'Indiquez votre adresse e-mail ou votre numéro WhatsApp.',
             'attending.required' => 'Indiquez si vous serez présent(e).',
             CompanionData::INPUT_KEY.'.max' => 'Vous pouvez venir avec :max accompagnant(s) au plus.',
             CompanionData::INPUT_KEY.'.*.first_name.required' => 'Indiquez le prénom de chaque accompagnant.',

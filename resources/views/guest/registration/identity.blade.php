@@ -39,8 +39,12 @@
             @csrf
 
             <div class="mb-6">
-                <label for="email" class="mb-1.5 block text-sm font-medium text-ink">Adresse e-mail *</label>
-                <input type="email" id="email" name="email" value="{{ old('email', $draft->identity['email'] ?? $known?->email ?? '') }}" required autofocus class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                {{-- Invité de la liste : l'e-mail ou le numéro WhatsApp suffit. --}}
+                <label for="email" class="mb-1.5 block text-sm font-medium text-ink">Adresse e-mail{{ $invitation ? '' : ' *' }}</label>
+                @if ($invitation)
+                    <p class="mb-2 text-xs text-ink-soft">Facultative si vous indiquez votre numéro WhatsApp plus bas.</p>
+                @endif
+                <input type="email" id="email" name="email" value="{{ old('email', $draft->identity['email'] ?? $known?->email ?? '') }}" @required(! $invitation) autofocus class="w-full rounded-control border border-line px-3 py-2 text-ink">
                 @error('email')
                     <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
                 @enderror

@@ -83,10 +83,10 @@ final class SubmitRegistration
 
         $email = mb_strtolower(trim($identity->email));
 
-        $duplicate = Registration::query()
-            ->where('event_id', $context->eventId)
-            ->where('email', $email)
-            ->first() ?? $this->answeredByContact($context, $identity->contactId);
+        // Sans e-mail (invité connu par WhatsApp), le doublon se reconnaît
+        // par le contact : deux réponses sans adresse ne se confondent pas.
+        $duplicate = ($email !== '' ? Registration::query()->where('event_id', $context->eventId)->where('email', $email)->first() : null)
+            ?? $this->answeredByContact($context, $identity->contactId);
 
         if ($duplicate !== null) {
             return SubmitRegistrationResult::duplicateFound($duplicate);
@@ -137,7 +137,7 @@ final class SubmitRegistration
                 'contact_id' => $identity->contactId,
                 'first_name' => $identity->firstName,
                 'last_name' => $identity->lastName,
-                'email' => $email,
+                'email' => $email !== '' ? $email : null,
                 'is_primary' => true,
                 'position' => 0,
             ]);

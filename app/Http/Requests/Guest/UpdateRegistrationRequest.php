@@ -90,12 +90,15 @@ final class UpdateRegistrationRequest extends FormRequest
             $registration->organization_id,
             $registration->email,
             $registration->status !== RegistrationStatus::Declined,
+            $registration->contact_id,
         );
 
         $holderAnswers = $this->except([CompanionData::INPUT_KEY, FileUploadAnswer::INPUT_KEY]);
 
         return [
-            'email' => ['required', 'email:rfc'],
+            // Une réponse donnée sans e-mail (invité connu par WhatsApp) se
+            // modifie de même : l'e-mail ou le numéro suffit.
+            'email' => $registration->email === '' ? ['nullable', 'email:rfc', 'required_without:phone'] : ['required', 'email:rfc'],
             'first_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'phone' => [$event->type->category() === EventCategory::Personal ? 'required' : 'nullable', 'string', 'max:32'],

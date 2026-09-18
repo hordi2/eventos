@@ -24,11 +24,12 @@ beforeEach(function (): void {
  * Grace et Patrick forment le groupe « 1 » (Grace peut amener une personne
  * de plus) ; Awa est seule, avec des accompagnants illimités.
  *
- * @return array{organization: Organization, event: Event, base: string, admin: User, grace: EventInvitee, patrick: EventInvitee, awa: EventInvitee}
+ * @param  array<int, array<string, mixed>>  $fields
+ * @return array{organization: Organization, event: Event, base: string, admin: User, grace: EventInvitee, patrick: EventInvitee, awa: EventInvitee, fatou: EventInvitee}
  */
-function closedListEvent(EventAccessMode $mode = EventAccessMode::ClosedList): array
+function closedListEvent(EventAccessMode $mode = EventAccessMode::ClosedList, array $fields = []): array
 {
-    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent([], ['type' => EventType::Conference, 'access_mode' => $mode]);
+    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent($fields, ['type' => EventType::Conference, 'access_mode' => $mode]);
 
     app(CurrentOrganization::class)->set($organization);
     $admin = User::factory()->create();
@@ -47,6 +48,8 @@ function closedListEvent(EventAccessMode $mode = EventAccessMode::ClosedList): a
         'grace' => $invite(['first_name' => 'Grace', 'last_name' => 'Mbuyi', 'email' => 'grace@exemple.cd', 'phone_e164' => '+243812345678'], ['group_key' => '1', 'companions_allowed' => 1]),
         'patrick' => $invite(['first_name' => 'Patrick', 'last_name' => 'Mbuyi', 'email' => 'patrick@exemple.cd'], ['group_key' => '1', 'companions_allowed' => 0]),
         'awa' => $invite(['first_name' => 'Awa', 'last_name' => 'Diallo', 'email' => 'awa@exemple.sn'], ['companions_allowed' => null]),
+        // Connue par son seul numéro WhatsApp.
+        'fatou' => $invite(['first_name' => 'Fatou', 'last_name' => 'Sow', 'email' => null, 'phone_e164' => '+221771234567'], []),
     ];
     app(CurrentOrganization::class)->clear();
 
@@ -254,4 +257,95 @@ it('efface le nom d\'un membre de groupe dans l\'inscription d\'un autre invité
     app(AnonymizeContact::class)->handle(Contact::query()->findOrFail($patrick->contact_id), $admin);
 
     expect(Attendee::query()->where('contact_id', $patrick->contact_id)->sole()->first_name)->toBe('Invité');
+});
+
+it('laisse un invité connu par WhatsApp répondre sans adresse e-mail', function (): void {
+    ['organization' => $organization, 'event' => $event, 'base' => $base, 'fatou' => $fatou] = closedListEvent();
+
+    $this->get("{$base}/invitation/{$fatou->invitation_token}");
+    $this->get("{$base}/commencer");
+    $token = closedListDraft($event)->resume_token;
+
+    $this->get("{$base}/{$token}/identite")->assertSee('Facultative si vous indiquez votre numéro WhatsApp');
+
+    $this->post("{$base}/{$token}/identite", ['first_name' => 'Fatou', 'last_name' => 'Sow', 'phone' => '+221771234567'])
+        ->assertRedirect("{$base}/{$token}/reponses");
+    $this->post("{$base}/{$token}/reponses", []);
+    $this->post("{$base}/{$token}/recap")->assertRedirect("{$base}/{$token}/confirmation");
+
+    app(CurrentOrganization::class)->set($organization);
+    $registration = Registration::query()->where('event_id', $event->id)->sole();
+    expect($registration->email)->toBe('');
+    expect($registration->contact_id)->toBe($fatou->contact_id);
+    expect(Attendee::query()->where('registration_id', $registration->id)->sole()->email)->toBeNull();
+    app(CurrentOrganization::class)->clear();
+
+    $this->get("{$base}/{$token}/confirmation")->assertSee('avec le numéro +221771234567')->assertDontSee("avec l'adresse");
+});
+
+it('demande au moins un e-mail ou un numéro WhatsApp à un invité', function (): void {
+    ['event' => $event, 'base' => $base, 'fatou' => $fatou] = closedListEvent();
+
+    $this->get("{$base}/invitation/{$fatou->invitation_token}");
+    $this->get("{$base}/commencer");
+    $token = closedListDraft($event)->resume_token;
+
+    $this->from("{$base}/{$token}/identite")
+        ->post("{$base}/{$token}/identite", ['first_name' => 'Fatou'])
+        ->assertSessionHasErrors(['email' => 'Indiquez votre adresse e-mail ou votre numéro WhatsApp.', 'phone']);
+});
+
+it('garde l\'e-mail obligatoire pour qui répond sans invitation', function (): void {
+    ['event' => $event, 'base' => $base] = closedListEvent(EventAccessMode::Public);
+
+    $this->get("{$base}/commencer");
+    $token = closedListDraft($event)->resume_token;
+
+    $this->from("{$base}/{$token}/identite")
+        ->post("{$base}/{$token}/identite", ['first_name' => 'Anonyme', 'phone' => '+221771234567'])
+        ->assertSessionHasErrors('email');
+});
+
+it('ne confond pas deux réponses données sans e-mail', function (): void {
+    ['organization' => $organization, 'event' => $event, 'base' => $base, 'fatou' => $fatou] = closedListEvent();
+    app(CurrentOrganization::class)->set($organization);
+    $moussa = EventInvitee::factory()->create([
+        'organization_id' => $organization->id,
+        'event_id' => $event->id,
+        'contact_id' => Contact::factory()->for($organization)->create(['first_name' => 'Moussa', 'email' => null, 'phone_e164' => '+221781234567'])->id,
+    ]);
+    app(CurrentOrganization::class)->clear();
+
+    foreach ([[$fatou, '+221771234567'], [$moussa, '+221781234567']] as [$invitee, $phone]) {
+        $this->get("{$base}/invitation/{$invitee->invitation_token}");
+        $this->get("{$base}/commencer");
+        $token = closedListDraft($event)->resume_token;
+        $this->post("{$base}/{$token}/identite", ['phone' => $phone]);
+        $this->post("{$base}/{$token}/reponses", []);
+        $this->post("{$base}/{$token}/recap")->assertRedirect("{$base}/{$token}/confirmation");
+    }
+
+    app(CurrentOrganization::class)->set($organization);
+    expect(Registration::query()->where('event_id', $event->id)->count())->toBe(2);
+});
+
+it('refuse un don en ligne à qui répond sans e-mail', function (): void {
+    ['event' => $event, 'base' => $base, 'fatou' => $fatou] = closedListEvent(fields: [[
+        'key' => 'don',
+        'type' => 'donation',
+        'label' => 'Un don pour le projet ?',
+        'config' => ['show_if' => 'always', 'currency' => 'XAF', 'amounts' => [5000], 'allow_custom' => false],
+    ]]);
+
+    $this->get("{$base}/invitation/{$fatou->invitation_token}");
+    $this->get("{$base}/commencer");
+    $token = closedListDraft($event)->resume_token;
+    $this->post("{$base}/{$token}/identite", ['phone' => '+221771234567']);
+
+    $this->from("{$base}/{$token}/reponses")
+        ->post("{$base}/{$token}/reponses", ['don' => ['choice' => '5000']])
+        ->assertSessionHasErrors('don');
+
+    // Sans don, la réponse passe.
+    $this->post("{$base}/{$token}/reponses", ['don' => ['choice' => '']])->assertRedirect("{$base}/{$token}/recap");
 });

@@ -26,7 +26,8 @@ final class LinkRegistrationToContact
     {
         $registration = $event->registration;
 
-        if ($registration->contact_id !== null) {
+        // Déjà reliée (invitation), ou sans e-mail pour retrouver le contact.
+        if ($registration->contact_id !== null || $registration->email === '') {
             return;
         }
 

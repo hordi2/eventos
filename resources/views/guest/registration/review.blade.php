@@ -27,7 +27,7 @@
                 <a href="{{ $identityUrl }}" class="text-xs text-accent underline">Modifier</a>
             </div>
             <p class="text-sm text-ink">{{ trim(($draft->identity['first_name'] ?? '').' '.($draft->identity['last_name'] ?? '')) ?: '—' }}</p>
-            <p class="text-sm text-ink-soft">{{ $draft->identity['email'] ?? '' }}</p>
+            <p class="text-sm text-ink-soft">{{ ($draft->identity['email'] ?? '') !== '' ? $draft->identity['email'] : ($draft->identity['phone'] ?? '') }}</p>
             @if (! empty($draft->identity['phone']))
                 <p class="text-sm text-ink-soft">{{ $draft->identity['phone'] }}</p>
             @endif

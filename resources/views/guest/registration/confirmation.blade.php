@@ -62,7 +62,7 @@
         @endif
 
         <p class="mb-8 text-sm text-ink-soft">
-            {{ $registration->status->value === 'declined' ? 'Réponse enregistrée' : 'Inscription enregistrée' }} avec l'adresse {{ $registration->email }}.
+            {{ $registration->status->value === 'declined' ? 'Réponse enregistrée' : 'Inscription enregistrée' }}{{ $registration->email !== '' ? " avec l'adresse {$registration->email}" : ($registration->phone_e164 ? " avec le numéro {$registration->phone_e164}" : '') }}.
         </p>
 
         @if ($editUrl || $cancelUrl)

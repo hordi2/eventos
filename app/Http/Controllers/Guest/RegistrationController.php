@@ -508,6 +508,7 @@ final class RegistrationController extends Controller
             $draft->organization_id,
             ($draft->identity ?? [])['email'] ?? null,
             $this->attending($draft),
+            app(ResolveGuestInvitation::class)->handle($draft)?->contact->id,
         );
     }
 
@@ -517,6 +518,7 @@ final class RegistrationController extends Controller
             $registration->organization_id,
             $registration->email,
             $registration->status !== RegistrationStatus::Declined,
+            $registration->contact_id,
         );
     }
 

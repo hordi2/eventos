@@ -39,7 +39,8 @@ final class SendDonationReceipt
         $order = $orderPaid->order;
         $donations = Donation::query()->where('order_id', $order->id)->orderBy('id')->get();
 
-        if ($donations->isEmpty()) {
+        // Sans adresse (commande anonymisée), pas de reçu à envoyer.
+        if ($donations->isEmpty() || $order->buyer_email === '') {
             return;
         }
 
