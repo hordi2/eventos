@@ -2,7 +2,7 @@
     $steps = ['Identité', 'Réponses', 'Récapitulatif'];
 @endphp
 
-<nav aria-label="Étapes de l'inscription" class="mb-8">
+<nav aria-label="Étapes de l'inscription" class="itaza-progress mb-8">
     <ol class="flex items-center gap-2">
         @foreach ($steps as $index => $label)
             @php($number = $index + 1)

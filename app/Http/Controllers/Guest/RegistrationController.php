@@ -29,6 +29,7 @@ use App\Domain\Form\OptionFullException;
 use App\Domain\Form\RegistrationClosedException;
 use App\Domain\Form\SubEventFullException;
 use App\Domain\Form\Support\AskScope;
+use App\Domain\Form\Support\CustomCss;
 use App\Domain\Form\Support\EvaluateFormVisibility;
 use App\Domain\Form\Support\FileUploadAnswer;
 use App\Domain\Form\Support\FormSettings;
@@ -383,13 +384,14 @@ final class RegistrationController extends Controller
      * Réglages d'écrans et thème du formulaire de l'événement, pour les vues
      * du parcours et la mise en page invitée.
      *
-     * @return array{settings: array<string, array<string, mixed>>, formTheme: array{variables: array<string, string>, logoUrl: ?string, backgroundUrl: ?string}}
+     * @return array{settings: array<string, array<string, mixed>>, formTheme: array{variables: array<string, string>, logoUrl: ?string, backgroundUrl: ?string, customCssUrl: ?string}}
      */
     private function presentation(Event $event): array
     {
         $form = Form::query()->where('event_id', $event->id)->first();
         $settings = FormSettings::resolve($form?->settings);
         $theme = $settings['theme'];
+        $customCss = CustomCss::forDelivery($theme['custom_css']);
 
         return [
             'settings' => $settings,
@@ -397,6 +399,13 @@ final class RegistrationController extends Controller
                 'variables' => FormSettings::cssVariables($settings),
                 'logoUrl' => is_string($theme['logo_path']) ? Storage::disk('public')->url($theme['logo_path']) : null,
                 'backgroundUrl' => is_string($theme['background_image_path']) ? Storage::disk('public')->url($theme['background_image_path']) : null,
+                // L'empreinte du contenu sert de version : la feuille est mise
+                // en cache longtemps, mais une modification arrive tout de suite.
+                'customCssUrl' => $customCss === '' ? null : route('guest.registration.theme-style', [
+                    $event->organization->slug,
+                    $event->slug,
+                    'v' => substr(sha1($customCss), 0, 8),
+                ]),
             ],
         ];
     }

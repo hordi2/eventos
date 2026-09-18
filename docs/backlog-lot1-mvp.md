@@ -310,6 +310,27 @@ multiple, oui/non, consentement, menu/repas, texte informatif.
 > bibliothèque ; l'onglet « Bibliothèque » (photos libres de droits) reste
 > « bientôt » — il demande un prestataire externe, une clé d'API et un cadre
 > de licence.
+>
+> **Lot 2, étape J (livrée) — CSS personnalisé** : dernière fonction du
+> constructeur marquée « bientôt ». Champ CSS par formulaire, réservé aux
+> plans payants et refusé à l'enregistrement au plan Gratuit — contrairement
+> aux questions avancées, il s'appliquerait tout de suite, il ne peut donc pas
+> s'essayer. Ce qui ferait sortir la feuille de son rôle est refusé en nommant
+> la construction fautive (@import, @charset, @namespace, expression(),
+> behavior, -moz-binding, le caractère « < », et toute adresse dans url()
+> hors /storage), puis revérifié à la livraison : une feuille écrite
+> directement en base n'atteint jamais un invité (`CustomCss`). Elle est
+> servie comme vraie feuille de style (`/r/{orga}/{événement}/theme.css`,
+> empreinte du contenu en version, cache d'une heure) plutôt qu'en ligne : le
+> navigateur la garde d'un écran à l'autre du parcours et une future CSP
+> stricte n'aura pas à autoriser de style en ligne. Les pages invité portent
+> désormais trois repères stables à cibler — `.itaza-page`, `.itaza-field`,
+> `.itaza-progress` — sans quoi il faudrait viser des classes utilitaires qui
+> changent à chaque construction des styles.
+> Limites connues : le contrôle du plan a lieu à l'enregistrement, donc un
+> rétrogradage ne retire pas un CSS déjà enregistré (même comportement que les
+> questions avancées déjà publiées) ; pas d'aperçu du CSS dans le constructeur ;
+> trois repères seulement, à élargir si les organisateurs le demandent.
 
 ---
 

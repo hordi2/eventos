@@ -9,7 +9,7 @@
     $errorKey = $oldKey;
 @endphp
 
-<div class="mb-6">
+<div class="itaza-field mb-6">
     @if ($field->type->value !== 'informational_text')
         <label for="{{ $inputId }}" class="mb-1.5 block text-sm font-medium text-ink">
             {{ $field->label }}

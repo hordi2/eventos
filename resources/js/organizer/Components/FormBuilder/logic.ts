@@ -35,6 +35,9 @@ export const HEX_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 export const PANEL_SECTION_TITLE = 'mb-3 block font-label text-[11px] tracking-[0.18em] text-ink-soft uppercase';
 
+// Même limite que CustomCss::MAX_LENGTH côté serveur.
+export const MAX_CUSTOM_CSS = 5000;
+
 export const PREVIEW_INPUT = 'w-full rounded-control border border-black/15 bg-transparent px-3 py-2 text-sm text-current focus:border-current focus:outline-none';
 
 export const SHOW_IF_LABELS: Record<ShowIf, string> = {

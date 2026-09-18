@@ -8,10 +8,14 @@ use App\Domain\Form\Data\CompanionData;
 use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\RuleAction;
 use App\Domain\Form\Support\AskScope;
+use App\Domain\Form\Support\CustomCss;
 use App\Domain\Form\Support\DonationAnswer;
 use App\Domain\Form\Support\FileUploadAnswer;
 use App\Domain\Form\Support\FormSettings;
 use App\Domain\Form\Support\VideoEmbed;
+use App\Domain\Organization\Actions\GetEffectivePlan;
+use App\Domain\Organization\Models\Organization;
+use App\Domain\Organization\Models\PlanTier;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -132,6 +136,32 @@ final class SaveFormRequest extends FormRequest
                     if ($video !== null && $video !== '' && VideoEmbed::from($video) === null) {
                         $validator->errors()->add("fields.{$index}.config.video_url", 'Collez un lien YouTube ou Vimeo.');
                     }
+                }
+            },
+            // CSS personnalisé : réservé aux plans payants, contrairement aux
+            // questions avancées il s'applique dès l'enregistrement — un plan
+            // Gratuit ne peut donc pas l'enregistrer du tout. Les
+            // constructions refusées sont nommées, pour que l'organisateur
+            // sache quoi corriger.
+            function (Validator $validator): void {
+                $css = $this->input('settings.theme.custom_css');
+
+                if (! is_string($css) || trim($css) === '') {
+                    return;
+                }
+
+                $organization = Organization::query()->findOrFail(app(CurrentOrganization::class)->requireId());
+
+                if (app(GetEffectivePlan::class)->handle($organization) === PlanTier::Free) {
+                    $validator->errors()->add('settings.theme.custom_css', 'Le CSS personnalisé est réservé aux plans payants.');
+
+                    return;
+                }
+
+                $problems = CustomCss::problems($css);
+
+                if ($problems !== []) {
+                    $validator->errors()->add('settings.theme.custom_css', 'Ce CSS ne peut pas être publié : '.implode(', ', $problems).'.');
                 }
             },
         ];

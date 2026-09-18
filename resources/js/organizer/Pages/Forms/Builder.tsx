@@ -529,6 +529,8 @@ export default function FormBuilder({
             <ThemeDrawer
                 theme={settings.theme}
                 fonts={fonts}
+                isFreePlan={isFreePlan}
+                error={saveErrors['settings.theme.custom_css']}
                 onChange={updateTheme}
                 onReset={() => updateTheme(resetTheme(settings.theme))}
                 onClose={() => setSelection(null)}

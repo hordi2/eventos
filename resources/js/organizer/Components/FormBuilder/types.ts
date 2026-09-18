@@ -115,6 +115,7 @@ export interface ThemeSettings {
     body_font: string;
     logo_url?: string | null;
     background_image_url?: string | null;
+    custom_css?: string | null;
 }
 
 export interface FormSettings {

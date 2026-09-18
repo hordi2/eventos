@@ -27,9 +27,18 @@
                 }
             @endif
         </style>
+        @if ($formTheme['customCssUrl'] ?? null)
+            {{-- CSS de l'organisateur : servi à part, vérifié avant livraison
+                 (CustomCss), et placé en dernier pour qu'il puisse ajuster le
+                 thème sans être écrasé par lui. --}}
+            <link rel="stylesheet" href="{{ $formTheme['customCssUrl'] }}">
+        @endif
     @endisset
 </head>
-<body class="min-h-screen bg-bg-alt antialiased">
+{{-- itaza-page, itaza-field et itaza-progress sont les repères offerts au
+     CSS personnalisé : ce sont des noms stables, contrairement aux classes
+     utilitaires qui changent à chaque construction des styles. --}}
+<body class="itaza-page min-h-screen bg-bg-alt antialiased">
     @if (isset($formTheme) && $formTheme['logoUrl'])
         <div class="flex justify-center px-4 pt-10">
             <img src="{{ $formTheme['logoUrl'] }}" alt="" class="h-14 w-auto max-w-[240px] object-contain">

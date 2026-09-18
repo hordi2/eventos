@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Guest\FormThemeStyleController;
 use App\Http\Controllers\Guest\RegistrationController;
 use App\Http\Controllers\Guest\StaticPageController;
 use App\Http\Controllers\Guest\StatusController;
@@ -407,6 +408,10 @@ Route::middleware('resolve-guest-event')
 
         Route::get('/', [RegistrationController::class, 'start'])->name('start');
         Route::get('commencer', [RegistrationController::class, 'begin'])->name('begin');
+
+        // CSS personnalisé du thème (plans payants), servi comme feuille de
+        // style pour être mis en cache d'un écran à l'autre du parcours.
+        Route::get('theme.css', [FormThemeStyleController::class, 'show'])->name('theme-style');
 
         Route::get('{token}/accueil', [RegistrationController::class, 'welcomeShow'])->name('welcome.show');
 

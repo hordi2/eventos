@@ -85,6 +85,7 @@ final class FormSettings
             'body_font' => 'jakarta',
             'logo_path' => null,
             'background_image_path' => null,
+            'custom_css' => null,
         ],
     ];
 
@@ -148,6 +149,9 @@ final class FormSettings
             "{$prefix}.theme.button_text_color" => $color,
             "{$prefix}.theme.heading_font" => $font,
             "{$prefix}.theme.body_font" => $font,
+            // Le contenu de la feuille est vérifié dans SaveFormRequest, qui
+            // sait nommer ce qui est refusé et connaît le plan de l'organisation.
+            "{$prefix}.theme.custom_css" => ['nullable', 'string', 'max:'.CustomCss::MAX_LENGTH],
         ];
     }
 

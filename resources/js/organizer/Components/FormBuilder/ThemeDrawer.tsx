@@ -1,15 +1,18 @@
+import InputError from '../InputError';
 import InputLabel from '../InputLabel';
 import Select from '../Select';
 import BuilderIcon from './BuilderIcon';
 import ColorField from './ColorField';
-import { COLOR_FIELDS, fontStackFor, IMAGE_SLOTS, PANEL_SECTION_TITLE } from './logic';
+import { COLOR_FIELDS, fontStackFor, IMAGE_SLOTS, MAX_CUSTOM_CSS, PANEL_SECTION_TITLE } from './logic';
+import PremiumBadge from './PremiumBadge';
 import SidePanel from './SidePanel';
-import SoonBadge from './SoonBadge';
 import { type FontOption, type ImageKind, type ThemeColorKey, type ThemeSettings } from './types';
 
 interface ThemeDrawerProps {
     theme: ThemeSettings;
     fonts: FontOption[];
+    isFreePlan: boolean;
+    error?: string;
     onChange: (patch: Partial<ThemeSettings>) => void;
     onReset: () => void;
     onClose: () => void;
@@ -20,7 +23,7 @@ interface ThemeDrawerProps {
  * Thème du parcours invité. Chaque changement s'applique tout de suite à
  * l'aperçu puis s'enregistre automatiquement, comme le reste du constructeur.
  */
-export default function ThemeDrawer({ theme, fonts, onChange, onReset, onClose, onPickImage }: ThemeDrawerProps) {
+export default function ThemeDrawer({ theme, fonts, isFreePlan, error, onChange, onReset, onClose, onPickImage }: ThemeDrawerProps) {
     function setColor(key: ThemeColorKey, value: string | null) {
         const patch: Partial<ThemeSettings> = {};
         patch[key] = value;
@@ -122,15 +125,25 @@ export default function ThemeDrawer({ theme, fonts, onChange, onReset, onClose, 
 
             <section>
                 <h3 className={`${PANEL_SECTION_TITLE} flex items-center gap-2`}>
-                    CSS personnalisé <SoonBadge />
+                    CSS personnalisé <PremiumBadge compact />
                 </h3>
                 <textarea
-                    disabled
-                    rows={3}
-                    aria-label="CSS personnalisé (bientôt disponible)"
-                    placeholder=".bouton { … }"
-                    className="w-full rounded-control border border-line bg-bg-alt px-3 py-2 font-mono text-xs text-ink-soft"
+                    id="theme_custom_css"
+                    rows={6}
+                    maxLength={MAX_CUSTOM_CSS}
+                    disabled={isFreePlan}
+                    value={theme.custom_css ?? ''}
+                    onChange={(event) => onChange({ custom_css: event.target.value === '' ? null : event.target.value })}
+                    aria-label="CSS personnalisé"
+                    placeholder=".carte { border-radius: 2rem; }"
+                    className="w-full rounded-control border border-line bg-bg px-3 py-2 font-mono text-xs text-ink disabled:bg-bg-alt disabled:text-ink-soft"
                 />
+                <InputError message={error} />
+                <p className="mt-2 text-xs text-ink-soft">
+                    {isFreePlan
+                        ? 'Réservé aux plans payants : passez à un plan payant pour habiller vos pages au-delà des couleurs et des polices.'
+                        : 'Appliqué à toutes les pages du parcours invité, après le thème. Ciblez les repères .itaza-page, .itaza-field et .itaza-progress : ils ne changent pas. Les @import et les adresses extérieures sont refusés ; pour une image, passez par « Mes images ».'}
+                </p>
             </section>
         </SidePanel>
     );
