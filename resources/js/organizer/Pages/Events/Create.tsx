@@ -35,6 +35,8 @@ interface EventDraft {
     audience: string;
     startAt: string;
     endAt: string;
+    registrationOpensAt: string | null;
+    registrationClosesAt: string | null;
     timezone: string;
     venueId: number | null;
     venueName: string | null;
@@ -110,6 +112,8 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
         description: event?.description ?? '',
         start_at: event ? toDatetimeLocalValue(event.startAt, event.timezone) : '',
         end_at: event ? toDatetimeLocalValue(event.endAt, event.timezone) : '',
+        registration_opens_at: event?.registrationOpensAt ? toDatetimeLocalValue(event.registrationOpensAt, event.timezone) : '',
+        registration_closes_at: event?.registrationClosesAt ? toDatetimeLocalValue(event.registrationClosesAt, event.timezone) : '',
         timezone: event?.timezone ?? 'Africa/Kinshasa',
         venue_id: event?.venueId ? String(event.venueId) : '',
         venue_name: '',
@@ -274,6 +278,36 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                         <InputError message={errors.timezone} />
                     </div>
 
+                    <fieldset>
+                        <legend className="mb-1 block font-label text-xs tracking-[0.1em] text-ink-soft uppercase">Inscriptions</legend>
+                        <p className="mb-3 text-sm text-ink-soft">
+                            À l'heure de l'événement, dans le fuseau choisi ci-dessus. Sans date d'ouverture, les inscriptions sont possibles dès la
+                            publication ; sans date de fermeture, jusqu'au bout.
+                        </p>
+                        <div className="grid gap-6 sm:grid-cols-2">
+                            <div>
+                                <InputLabel htmlFor="registration_opens_at">Ouverture (optionnel)</InputLabel>
+                                <TextInput
+                                    id="registration_opens_at"
+                                    type="datetime-local"
+                                    value={data.registration_opens_at}
+                                    onChange={(e) => setData('registration_opens_at', e.target.value)}
+                                />
+                                <InputError message={errors.registration_opens_at} />
+                            </div>
+                            <div>
+                                <InputLabel htmlFor="registration_closes_at">Fermeture (optionnel)</InputLabel>
+                                <TextInput
+                                    id="registration_closes_at"
+                                    type="datetime-local"
+                                    value={data.registration_closes_at}
+                                    onChange={(e) => setData('registration_closes_at', e.target.value)}
+                                />
+                                <InputError message={errors.registration_closes_at} />
+                            </div>
+                        </div>
+                    </fieldset>
+
                     <div>
                         <InputLabel>Lieu (optionnel)</InputLabel>
                         <div className="flex flex-wrap gap-2">
@@ -388,6 +422,14 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                         <Row label="Début" value={formatInEventTimezone(event.startAt, event.timezone)} />
                         <Row label="Fin" value={formatInEventTimezone(event.endAt, event.timezone)} />
                         <Row label="Fuseau horaire" value={timezones[event.timezone] ?? event.timezone} />
+                        <Row
+                            label="Ouverture des inscriptions"
+                            value={event.registrationOpensAt ? formatInEventTimezone(event.registrationOpensAt, event.timezone) : 'Dès la publication'}
+                        />
+                        <Row
+                            label="Fermeture des inscriptions"
+                            value={event.registrationClosesAt ? formatInEventTimezone(event.registrationClosesAt, event.timezone) : 'Aucune'}
+                        />
                         {event.venueName && <Row label="Lieu" value={event.venueName} />}
                     </dl>
 

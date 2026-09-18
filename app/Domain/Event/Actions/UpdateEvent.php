@@ -63,6 +63,15 @@ final class UpdateEvent
                 : ($data['start_at'] ?? $event->start_at)->addHours(3);
         }
 
+        // Dates d'ouverture saisies à l'heure de l'événement (règle 4.3) ; une
+        // valeur vide retire la borne : inscriptions ouvertes dès maintenant,
+        // ou jusqu'au bout.
+        foreach (['registration_opens_at', 'registration_closes_at'] as $key) {
+            if (array_key_exists($key, $data)) {
+                $data[$key] = $data[$key] !== null ? CarbonImmutable::parse($data[$key], $timezone)->utc() : null;
+            }
+        }
+
         $event->update($data);
 
         return $event->refresh();

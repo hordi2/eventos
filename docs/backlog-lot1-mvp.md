@@ -1869,9 +1869,18 @@ publié peut repasser en « Inédit ».
 - `ResolveRouteEventId` extrait de la restriction des collaborateurs, pour
   être partagé avec la navigation.
 
-**Hors périmètre, à décider** : écran des dates d'ouverture/fermeture des
-inscriptions ; interface des sous-événements (le modèle existe) ; les
-inscriptions faites via le lien de test comptent comme de vraies réponses.
+**Hors périmètre, à décider** : interface des sous-événements (le modèle
+existe) ; les inscriptions faites via le lien de test comptent comme de vraies
+réponses.
+
+**Complément (lot 2)** : l'ouverture et la fermeture des inscriptions se
+règlent enfin dans « Paramètres de l'événement », à l'heure de l'événement
+(fuseau choisi), stockées en UTC (règle 4.3) — aussi à la création, qui ne
+convertissait pas ces dates. Une fermeture qui ne suit pas l'ouverture est
+refusée ; une date effacée retire la borne. La fenêtre elle-même était déjà
+appliquée par `IsRegistrationWindowOpen` (entrée du parcours et soumission).
+L'entrée « Décors » du menu devient « Plan de table » sous « Liste des
+invités », vers l'écran de placement existant.
 
 ---
 
