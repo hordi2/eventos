@@ -7,6 +7,7 @@ use App\Domain\Event\Models\Event;
 use App\Domain\Form\Models\FormVersionStatus;
 use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Organization\Models\Organization;
+use App\Domain\Organization\Models\OrganizationImage;
 use App\Domain\Organization\Models\PlanTier;
 use App\Models\User;
 use App\Support\MultiTenancy\CurrentOrganization;
@@ -210,7 +211,7 @@ it('publie une question avancée sur un plan payant', function (): void {
     expect($form->fresh()->latestVersion()->status)->toBe(FormVersionStatus::Published);
 });
 
-it('téléverse puis retire le logo du thème', function (): void {
+it('téléverse puis retire le logo du thème, en gardant le fichier dans la bibliothèque', function (): void {
     Storage::fake('public');
     [, $admin, $form] = formWithBuilderSettings();
 
@@ -224,8 +225,11 @@ it('téléverse puis retire le logo du thème', function (): void {
 
     $this->actingAs($admin)->delete("/forms/{$form->id}/theme/logo")->assertNoContent();
 
-    Storage::disk('public')->assertMissing($path);
+    // Retirer ne fait que détacher : l'image peut servir ailleurs et reste
+    // dans « Mes images », d'où elle se supprime pour de bon.
+    Storage::disk('public')->assertExists($path);
     expect($form->fresh()->settings['theme']['logo_path'])->toBeNull();
+    expect(OrganizationImage::query()->where('path', $path)->exists())->toBeTrue();
 });
 
 it('refuse une image de thème qui n\'est ni PNG ni JPG, et un type d\'image inconnu', function (): void {

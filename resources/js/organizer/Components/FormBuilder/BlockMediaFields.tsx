@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react';
 import InputError from '../InputError';
 import InputLabel from '../InputLabel';
+import Modal from '../Modal';
 import TextInput from '../TextInput';
 import BuilderIcon from './BuilderIcon';
+import ImageLibrary, { type LibraryImage } from './ImageLibrary';
 import { PANEL_SECTION_TITLE } from './logic';
 import { type FieldConfig } from './types';
 
@@ -15,8 +17,8 @@ interface BlockMediaFieldsProps {
 interface UploadedImage {
     path: string;
     url: string;
-    width: number;
-    height: number;
+    width: number | null;
+    height: number | null;
 }
 
 // Le serveur redimensionne l'image reçue : cette limite ne porte que sur
@@ -42,20 +44,16 @@ function uploadErrorMessage(exception: unknown): string {
 
 /**
  * Image et vidéo d'un bloc « Texte, image, vidéo ». L'image part au serveur
- * dès qu'elle est choisie, qui la redimensionne : la configuration du bloc
- * n'en garde que le chemin. La vidéo n'est qu'un lien YouTube ou Vimeo,
- * chargé seulement au clic de l'invité.
+ * dès qu'elle est choisie, qui la redimensionne et la range dans la
+ * bibliothèque de l'organisation ; le bloc n'en garde que le chemin, et
+ * « Mes images » permet de reprendre une image déjà envoyée. La vidéo n'est
+ * qu'un lien YouTube ou Vimeo, chargé seulement au clic de l'invité.
  */
 export default function BlockMediaFields({ config, formId, onChange }: BlockMediaFieldsProps) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    function forget(path: string | undefined) {
-        if (formId !== null && path) {
-            void window.axios.delete(`/forms/${formId}/block-image`, { data: { path } });
-        }
-    }
+    const [libraryOpen, setLibraryOpen] = useState(false);
 
     async function upload(file: File) {
         if (formId === null) {
@@ -77,12 +75,11 @@ export default function BlockMediaFields({ config, formId, onChange }: BlockMedi
 
         try {
             const response = await window.axios.post<UploadedImage>(`/forms/${formId}/block-image`, body);
-            forget(config.image_path);
             onChange({
                 image_path: response.data.path,
                 image_url: response.data.url,
-                image_width: response.data.width,
-                image_height: response.data.height,
+                image_width: response.data.width ?? undefined,
+                image_height: response.data.height ?? undefined,
             });
         } catch (exception) {
             setError(uploadErrorMessage(exception));
@@ -95,8 +92,20 @@ export default function BlockMediaFields({ config, formId, onChange }: BlockMedi
         }
     }
 
+    function pickFromLibrary(image: LibraryImage) {
+        setError(null);
+        setLibraryOpen(false);
+        onChange({
+            image_path: image.path,
+            image_url: image.url,
+            image_width: image.width ?? undefined,
+            image_height: image.height ?? undefined,
+        });
+    }
+
+    // L'image n'est que détachée : le fichier reste dans « Mes images », d'où
+    // il peut être réutilisé ou supprimé pour de bon.
     function removeImage() {
-        forget(config.image_path);
         setError(null);
         onChange({ image_path: undefined, image_url: undefined, image_width: undefined, image_height: undefined, image_alt: undefined });
     }
@@ -112,6 +121,9 @@ export default function BlockMediaFields({ config, formId, onChange }: BlockMedi
                         <div className="flex flex-wrap items-center gap-3">
                             <button type="button" onClick={() => inputRef.current?.click()} disabled={busy} className="text-sm font-medium text-ink hover:underline disabled:opacity-50">
                                 Remplacer
+                            </button>
+                            <button type="button" onClick={() => setLibraryOpen(true)} disabled={busy} className="text-sm font-medium text-ink hover:underline disabled:opacity-50">
+                                Mes images
                             </button>
                             <button type="button" onClick={removeImage} disabled={busy} className="text-sm font-medium text-danger hover:underline disabled:opacity-50">
                                 Retirer
@@ -130,15 +142,25 @@ export default function BlockMediaFields({ config, formId, onChange }: BlockMedi
                         </div>
                     </>
                 ) : (
-                    <button
-                        type="button"
-                        onClick={() => inputRef.current?.click()}
-                        disabled={busy || formId === null}
-                        className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-line px-4 py-6 text-sm font-medium text-ink hover:border-ink disabled:opacity-50"
-                    >
-                        <BuilderIcon name="media" className="h-5 w-5 text-ink-soft" />
-                        {busy ? 'Envoi en cours…' : 'Choisir une image'}
-                    </button>
+                    <div className="space-y-2">
+                        <button
+                            type="button"
+                            onClick={() => inputRef.current?.click()}
+                            disabled={busy || formId === null}
+                            className="flex w-full items-center justify-center gap-2 rounded-control border border-dashed border-line px-4 py-6 text-sm font-medium text-ink hover:border-ink disabled:opacity-50"
+                        >
+                            <BuilderIcon name="media" className="h-5 w-5 text-ink-soft" />
+                            {busy ? 'Envoi en cours…' : 'Choisir une image'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setLibraryOpen(true)}
+                            disabled={busy || formId === null}
+                            className="w-full text-sm font-medium text-ink hover:underline disabled:opacity-50"
+                        >
+                            Reprendre une image déjà envoyée
+                        </button>
+                    </div>
                 )}
 
                 <input
@@ -159,6 +181,10 @@ export default function BlockMediaFields({ config, formId, onChange }: BlockMedi
                     PNG, JPG ou WEBP. Elle est réduite automatiquement pour rester légère sur le téléphone de vos invités.
                 </p>
                 <InputError message={error ?? undefined} />
+
+                <Modal open={libraryOpen} onClose={() => setLibraryOpen(false)} title="Mes images" size="lg" showCloseButton>
+                    <ImageLibrary onPick={pickFromLibrary} currentUrl={config.image_url} />
+                </Modal>
             </fieldset>
 
             <fieldset>

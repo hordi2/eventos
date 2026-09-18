@@ -8,6 +8,7 @@ use App\Domain\Form\Actions\RemoveFormThemeImage;
 use App\Domain\Form\Actions\SaveFormThemeImage;
 use App\Domain\Form\Models\Form;
 use App\Domain\Form\Support\FormSettings;
+use App\Domain\Organization\Models\OrganizationImage;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\Form\UploadFormThemeImageRequest;
 use App\Models\User;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Storage;
 /**
  * Logo et image de fond du thème d'un formulaire (panneau « Thème du
  * formulaire » du constructeur). La route limite {kind} à logo|background.
+ * L'organisateur envoie une image ou en choisit une dans « Mes images ».
  */
 final class FormThemeImageController extends Controller
 {
@@ -26,8 +28,9 @@ final class FormThemeImageController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
-        /** @var UploadedFile $image */
-        $image = $request->file('image');
+        /** @var UploadedFile|null $file */
+        $file = $request->file('image');
+        $image = $file ?? OrganizationImage::query()->findOrFail($request->integer('image_id'));
 
         $formModel = $saveFormThemeImage->handle(Form::query()->findOrFail($form), $user, $kind, $image);
         $path = (string) FormSettings::resolve($formModel->settings)['theme'][FormSettings::IMAGE_KINDS[$kind]];

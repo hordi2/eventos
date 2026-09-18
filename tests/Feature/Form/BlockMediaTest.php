@@ -7,6 +7,7 @@ use App\Domain\Form\Actions\ReviseForm;
 use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\RegistrationDraft;
 use App\Domain\Organization\Models\MembershipRole;
+use App\Domain\Organization\Models\OrganizationImage;
 use App\Models\User;
 use App\Support\Images\ResizeUploadedImage;
 use App\Support\MultiTenancy\CurrentOrganization;
@@ -23,7 +24,7 @@ it('redimensionne l\'image d\'un bloc à l\'envoi et rend son chemin et son adre
         ->assertJsonStructure(['path', 'url', 'width', 'height']);
 
     expect($response->json('width'))->toBe(ResizeUploadedImage::MAX_WIDTH);
-    expect($response->json('path'))->toStartWith("form-blocks/{$form->id}/");
+    expect($response->json('path'))->toStartWith(OrganizationImage::DIRECTORY."/{$form->organization_id}/");
     Storage::disk('public')->assertExists((string) $response->json('path'));
 });
 

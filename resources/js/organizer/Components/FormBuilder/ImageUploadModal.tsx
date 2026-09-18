@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import Modal from '../Modal';
 import BuilderIcon from './BuilderIcon';
+import ImageLibrary, { type LibraryImage } from './ImageLibrary';
 import SoonBadge from './SoonBadge';
 import { type ImageKind } from './types';
 
@@ -18,11 +19,11 @@ type Tab = 'upload' | 'mine' | 'library';
 const COPY: Record<ImageKind, { title: string; hint: string }> = {
     logo: {
         title: 'Logo du formulaire',
-        hint: 'PNG ou JPG, 2 Mo maximum. Un PNG à fond transparent d’environ 600 × 200 px rend le mieux.',
+        hint: 'PNG ou JPG, 2 Mo maximum. Un PNG à fond transparent d’environ 600 × 200 px rend le mieux. L’image est réduite automatiquement pour rester légère.',
     },
     background: {
         title: 'Image de fond',
-        hint: 'PNG ou JPG, 2 Mo maximum. Une image d’environ 1920 × 1080 px, peu chargée, garde le texte lisible.',
+        hint: 'PNG ou JPG, 2 Mo maximum. Une image d’environ 1920 × 1080 px, peu chargée, garde le texte lisible. Elle est réduite automatiquement pour rester légère.',
     },
 };
 
@@ -57,6 +58,25 @@ export default function ImageUploadModal({ open, kind, formId, currentUrl, onClo
     const [error, setError] = useState<string | null>(null);
     const [over, setOver] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    async function pickFromLibrary(image: LibraryImage) {
+        if (formId === null) {
+            return;
+        }
+
+        setBusy(true);
+        setError(null);
+
+        try {
+            const response = await window.axios.post<{ url: string }>(`/forms/${formId}/theme/${kind}`, { image_id: image.id });
+            onChange(response.data.url);
+            onClose();
+        } catch (exception) {
+            setError(uploadErrorMessage(exception));
+        } finally {
+            setBusy(false);
+        }
+    }
 
     async function upload(file: File) {
         if (formId === null) {
@@ -127,12 +147,12 @@ export default function ImageUploadModal({ open, kind, formId, currentUrl, onClo
                         }`}
                     >
                         {item.label}
-                        {item.value !== 'upload' && <SoonBadge />}
+                        {item.value === 'library' && <SoonBadge />}
                     </button>
                 ))}
             </div>
 
-            {tab === 'upload' && formId === null && (
+            {tab !== 'library' && formId === null && (
                 <p className="rounded-control bg-bg-alt px-4 py-3 text-sm text-ink-soft">
                     Faites d'abord une première modification (une question, un écran) : le formulaire sera créé et vous pourrez ajouter des images.
                 </p>
@@ -198,7 +218,16 @@ export default function ImageUploadModal({ open, kind, formId, currentUrl, onClo
                 </div>
             )}
 
-            {tab === 'mine' && <p className="text-sm text-ink-soft">Bientôt : retrouvez ici les images déjà envoyées pour vos autres événements.</p>}
+            {tab === 'mine' && formId !== null && (
+                <>
+                    <ImageLibrary onPick={(image) => void pickFromLibrary(image)} currentUrl={currentUrl} busy={busy} />
+                    {error && (
+                        <p role="alert" className="mt-3 text-sm text-danger">
+                            {error}
+                        </p>
+                    )}
+                </>
+            )}
             {tab === 'library' && <p className="text-sm text-ink-soft">Bientôt : une bibliothèque de photos libres de droits, prêtes à l'emploi.</p>}
         </Modal>
     );

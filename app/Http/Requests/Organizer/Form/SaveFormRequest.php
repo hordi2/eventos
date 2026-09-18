@@ -65,10 +65,18 @@ final class SaveFormRequest extends FormRequest
             'fields.*.config.file_types' => ['nullable', 'array', 'min:1'],
             'fields.*.config.file_types.*' => [Rule::in(array_keys(FileUploadAnswer::TYPES))],
             'fields.*.config.max_size_mb' => ['nullable', 'integer', 'min:1', 'max:'.FileUploadAnswer::MAX_SIZE_MB],
-            // Bloc « Texte, image, vidéo » : l'image est envoyée à part
-            // (FormBlockImageController), la configuration n'en garde que le
-            // chemin ; son adresse publique est recalculée à l'affichage.
-            'fields.*.config.image_path' => ['nullable', 'string', 'max:255', 'starts_with:form-blocks/', 'not_regex:/\.\./'],
+            // Bloc « Texte, image, vidéo » : la configuration ne garde que le
+            // chemin de l'image, qui doit désigner une image de la
+            // bibliothèque de l'organisation — son adresse publique est
+            // recalculée à l'affichage.
+            'fields.*.config.image_path' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::exists('organization_images', 'path')
+                    ->where('organization_id', app(CurrentOrganization::class)->requireId())
+                    ->whereNull('deleted_at'),
+            ],
             'fields.*.config.image_alt' => ['nullable', 'string', 'max:255'],
             'fields.*.config.image_width' => ['nullable', 'integer', 'min:1'],
             'fields.*.config.image_height' => ['nullable', 'integer', 'min:1'],

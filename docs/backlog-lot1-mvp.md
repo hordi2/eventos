@@ -290,10 +290,26 @@ multiple, oui/non, consentement, menu/repas, texte informatif.
 > « Lire la vidéo ». Le chemin de l'image est validé côté serveur
 > (`form-blocks/` obligatoire, `..` refusé) ; l'adresse publique est recalculée
 > à l'affichage, jamais enregistrée dans la version du formulaire.
-> Limites connues : pas de bibliothèque d'images réutilisables entre blocs
-> (chaque bloc a la sienne) ; les images du thème (logo, fond) ne sont
-> toujours pas redimensionnées ; aucun autre hébergeur vidéo que YouTube et
-> Vimeo.
+> Limites connues : aucun autre hébergeur vidéo que YouTube et Vimeo.
+>
+> **Lot 2, étape I (livrée) — bibliothèque d'images « Mes images »** : chaque
+> image envoyée pour un logo, un fond ou un bloc était enfermée dans son
+> emplacement, et il fallait la renvoyer ailleurs. Toutes passent maintenant
+> par une entrée unique (`StoreOrganizationImage`) : redimensionnées — les
+> images du thème le sont donc enfin —, rangées sous
+> `organization-images/{organisation}` et inscrites dans `organization_images`,
+> d'où l'onglet « Mes images » du constructeur les propose pour le logo, le
+> fond et les blocs. Conséquence assumée : « Retirer » ne fait plus que
+> détacher, le fichier appartenant à la bibliothèque ; la suppression
+> définitive vit dans « Mes images » et est refusée tant que l'image sert
+> quelque part, le message nommant chaque emplacement (toutes les versions de
+> formulaire comptent, §4.7). La migration reprend les images déjà
+> référencées, en ignorant celles dont le fichier a disparu.
+> Limites connues : 60 images les plus récentes affichées, sans pagination ni
+> recherche ; les bannières des pages événement ne rejoignent pas encore la
+> bibliothèque ; l'onglet « Bibliothèque » (photos libres de droits) reste
+> « bientôt » — il demande un prestataire externe, une clé d'API et un cadre
+> de licence.
 
 ---
 

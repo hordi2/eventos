@@ -43,6 +43,7 @@ use App\Http\Controllers\Organizer\FormThemeImageController;
 use App\Http\Controllers\Organizer\HelpController;
 use App\Http\Controllers\Organizer\MessageAutomationController;
 use App\Http\Controllers\Organizer\OrganizationBrandingController;
+use App\Http\Controllers\Organizer\OrganizationImageController;
 use App\Http\Controllers\Organizer\PageController;
 use App\Http\Controllers\Organizer\RegistrationFileController;
 use App\Http\Controllers\Organizer\SeatingController;
@@ -289,7 +290,14 @@ Route::middleware('auth')->group(function (): void {
 
         // Image d'un bloc « Texte, image, vidéo », redimensionnée à l'envoi.
         Route::post('forms/{form}/block-image', [FormBlockImageController::class, 'store'])->name('forms.block-images.store');
-        Route::delete('forms/{form}/block-image', [FormBlockImageController::class, 'destroy'])->name('forms.block-images.destroy');
+
+        // Bibliothèque d'images de l'organisation (onglet « Mes images ») :
+        // même droit que la modification d'un formulaire, puisqu'elle sert à
+        // habiller les pages invité.
+        Route::middleware('can-organization:updateEvents')->group(function (): void {
+            Route::get('images', [OrganizationImageController::class, 'index'])->name('organization-images.index');
+            Route::delete('images/{image}', [OrganizationImageController::class, 'destroy'])->name('organization-images.destroy');
+        });
 
         Route::get('contacts', [ContactController::class, 'index'])->name('contacts.index');
         Route::get('contacts/create', [ContactController::class, 'create'])->name('contacts.create');
