@@ -347,7 +347,12 @@ multiple, oui/non, consentement, menu/repas, texte informatif.
 > à `/media-library`. Le dossier `public/images` (logos du site) faisait
 > servir `/images` par le serveur web avant Laravel : « Mes images » ne
 > chargeait jamais hors des tests. Un test vérifie désormais qu'aucune route
-> ne porte le nom d'un dossier de `public/`.
+> ne porte le nom d'un dossier de `public/`. Autre correctif, trouvé en
+> essayant l'import réel avec la clé Pexels : supprimer une image de « Mes
+> images » renvoyait une erreur 500, la liaison implicite de la route
+> cherchant l'image avant que l'organisation courante soit posée (les tests
+> la laissaient posée depuis leur préparation). L'image est désormais
+> cherchée après les middlewares, comme partout ailleurs dans le projet.
 > Limites connues : une même photo importée deux fois crée deux images dans
 > « Mes images » ; pas de filtre d'orientation ni de couleur.
 

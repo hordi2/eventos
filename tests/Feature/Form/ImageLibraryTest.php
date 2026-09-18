@@ -104,3 +104,19 @@ it('refuse dans un bloc l\'image d\'une autre organisation et interdit la biblio
 
     $this->actingAs($viewer)->getJson('/media-library')->assertForbidden();
 });
+
+it('supprime une image sans compter sur une organisation déjà posée avant la requête', function (): void {
+    Storage::fake('public');
+    [$organization, $admin] = formWithBuilderSettings();
+    $image = OrganizationImage::factory()->create(['organization_id' => $organization->id]);
+    Storage::disk('public')->put($image->path, 'contenu');
+
+    // En vrai, chaque requête part sans organisation courante : c'est le
+    // middleware qui la pose. Laisser celle de la préparation masquerait
+    // une recherche faite trop tôt (liaison implicite de la route).
+    app(CurrentOrganization::class)->clear();
+
+    $this->actingAs($admin)->deleteJson("/media-library/{$image->id}")->assertNoContent();
+
+    Storage::disk('public')->assertMissing($image->path);
+});

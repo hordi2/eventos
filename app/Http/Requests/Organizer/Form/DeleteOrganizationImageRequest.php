@@ -16,6 +16,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 final class DeleteOrganizationImageRequest extends FormRequest
 {
+    private ?OrganizationImage $image = null;
+
     public function authorize(): bool
     {
         return true;
@@ -30,14 +32,21 @@ final class DeleteOrganizationImageRequest extends FormRequest
     }
 
     /**
+     * Cherchée ici, une fois les middlewares passés : l'organisation courante
+     * est posée et le cloisonnement limite la recherche à ses images.
+     */
+    public function image(): OrganizationImage
+    {
+        return $this->image ??= OrganizationImage::query()->findOrFail((int) $this->route('image'));
+    }
+
+    /**
      * @return list<callable>
      */
     public function after(FindOrganizationImageUsage $findOrganizationImageUsage): array
     {
         return [function (Validator $validator) use ($findOrganizationImageUsage): void {
-            /** @var OrganizationImage $image */
-            $image = $this->route('image');
-            $usages = $findOrganizationImageUsage->handle($image);
+            $usages = $findOrganizationImageUsage->handle($this->image());
 
             if ($usages !== []) {
                 $validator->errors()->add('image', 'Cette image est encore utilisée ('.implode(', ', $usages).'). Retirez-la de ces emplacements avant de la supprimer.');
