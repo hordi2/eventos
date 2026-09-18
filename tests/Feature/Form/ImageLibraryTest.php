@@ -18,12 +18,12 @@ it('ne montre à un organisateur que les images de son organisation', function (
     [$autreOrganisation, $autreAdmin] = organizationWithContactRole(MembershipRole::Admin);
     OrganizationImage::factory()->create(['organization_id' => $autreOrganisation->id, 'original_name' => 'affiche-voisine.jpg']);
 
-    $mienne = $this->actingAs($admin)->getJson('/images')->assertOk();
+    $mienne = $this->actingAs($admin)->getJson('/media-library')->assertOk();
     expect($mienne->json('total'))->toBe(1);
     expect($mienne->json('images.0.name'))->toBe('logo.png');
     expect($mienne->json('images.0.path'))->toStartWith(OrganizationImage::DIRECTORY."/{$organization->id}/");
 
-    $voisine = $this->actingAs($autreAdmin)->getJson('/images')->assertOk();
+    $voisine = $this->actingAs($autreAdmin)->getJson('/media-library')->assertOk();
     expect($voisine->json('total'))->toBe(1);
     expect($voisine->json('images.0.name'))->toBe('affiche-voisine.jpg');
 });
@@ -36,12 +36,12 @@ it('refuse de supprimer une image encore utilisée, puis l\'accepte une fois dé
     $path = (string) $form->fresh()->settings['theme']['logo_path'];
     $image = OrganizationImage::query()->where('path', $path)->firstOrFail();
 
-    $refus = $this->actingAs($admin)->deleteJson("/images/{$image->id}")->assertUnprocessable();
+    $refus = $this->actingAs($admin)->deleteJson("/media-library/{$image->id}")->assertUnprocessable();
     expect($refus->json('errors.image.0'))->toContain('logo du formulaire « Inscription »');
     Storage::disk('public')->assertExists($path);
 
     $this->actingAs($admin)->delete("/forms/{$form->id}/theme/logo")->assertNoContent();
-    $this->actingAs($admin)->deleteJson("/images/{$image->id}")->assertNoContent();
+    $this->actingAs($admin)->deleteJson("/media-library/{$image->id}")->assertNoContent();
 
     Storage::disk('public')->assertMissing($path);
     expect(OrganizationImage::query()->find($image->id))->toBeNull();
@@ -61,7 +61,7 @@ it('refuse de supprimer une image utilisée par un bloc, même dans une ancienne
     ])->assertRedirect(route('forms.edit', $form));
 
     $image = OrganizationImage::query()->where('path', $path)->firstOrFail();
-    $refus = $this->actingAs($admin)->deleteJson("/images/{$image->id}")->assertUnprocessable();
+    $refus = $this->actingAs($admin)->deleteJson("/media-library/{$image->id}")->assertUnprocessable();
 
     expect($refus->json('errors.image.0'))->toContain('bloc « Un mot des hôtes »');
 });
@@ -102,5 +102,5 @@ it('refuse dans un bloc l\'image d\'une autre organisation et interdit la biblio
     $viewer = User::factory()->create();
     $viewer->memberships()->create(['organization_id' => $organization->id, 'role' => MembershipRole::Viewer]);
 
-    $this->actingAs($viewer)->getJson('/images')->assertForbidden();
+    $this->actingAs($viewer)->getJson('/media-library')->assertForbidden();
 });

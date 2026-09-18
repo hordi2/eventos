@@ -294,10 +294,12 @@ Route::middleware('auth')->group(function (): void {
 
         // Bibliothèque d'images de l'organisation (onglet « Mes images ») :
         // même droit que la modification d'un formulaire, puisqu'elle sert à
-        // habiller les pages invité.
+        // habiller les pages invité. Pas « /images » : public/images existe
+        // et le serveur web le servirait avant Laravel
+        // (PublicDirectoryCollisionTest).
         Route::middleware('can-organization:updateEvents')->group(function (): void {
-            Route::get('images', [OrganizationImageController::class, 'index'])->name('organization-images.index');
-            Route::delete('images/{image}', [OrganizationImageController::class, 'destroy'])->name('organization-images.destroy');
+            Route::get('media-library', [OrganizationImageController::class, 'index'])->name('organization-images.index');
+            Route::delete('media-library/{image}', [OrganizationImageController::class, 'destroy'])->name('organization-images.destroy');
         });
 
         Route::get('contacts', [ContactController::class, 'index'])->name('contacts.index');

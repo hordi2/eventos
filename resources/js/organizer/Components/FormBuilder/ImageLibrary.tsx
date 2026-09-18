@@ -52,7 +52,7 @@ export default function ImageLibrary({ onPick, currentUrl, busy = false }: Image
         let cancelled = false;
 
         window.axios
-            .get<LibraryResponse>('/images')
+            .get<LibraryResponse>('/media-library')
             .then((response) => {
                 if (!cancelled) {
                     setLibrary(response.data);
@@ -73,7 +73,7 @@ export default function ImageLibrary({ onPick, currentUrl, busy = false }: Image
         setError(null);
 
         try {
-            await window.axios.delete(`/images/${image.id}`);
+            await window.axios.delete(`/media-library/${image.id}`);
             setLibrary((current) => (current === null ? current : { images: current.images.filter((item) => item.id !== image.id), total: current.total - 1 }));
         } catch (exception) {
             setError(deleteErrorMessage(exception));
