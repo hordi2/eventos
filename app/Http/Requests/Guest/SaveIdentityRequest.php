@@ -8,8 +8,12 @@ use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventCategory;
 use App\Domain\Form\Data\CompanionData;
 use App\Domain\Form\Models\Form;
+use App\Domain\Form\Models\RegistrationDraft;
 use App\Domain\Form\Support\FormSettings;
+use App\Support\GuestList\GuestInvitation;
+use App\Support\GuestList\ResolveGuestInvitation;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * En dehors de Domain/Form (App\Http\Requests), donc libre de référencer
@@ -18,6 +22,15 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 final class SaveIdentityRequest extends FormRequest
 {
+    /**
+     * Membres du groupe de l'invité (liste d'invités) qu'il inscrit avec lui.
+     */
+    public const GROUP_MEMBERS_KEY = '_group_members';
+
+    private ?GuestInvitation $invitation = null;
+
+    private bool $invitationResolved = false;
+
     /**
      * @var array<string, array<string, mixed>>|null
      */
@@ -70,9 +83,12 @@ final class SaveIdentityRequest extends FormRequest
             // « Je serai présent(e) » / « Je ne peux pas venir » : demandé
             // seulement si l'organisateur propose le refus.
             'attending' => [$this->settings()['rsvp']['decline_enabled'] ? 'required' : 'nullable', 'boolean'],
-            CompanionData::INPUT_KEY => ['nullable', 'array', 'max:'.(int) $this->settings()['rsvp']['max_companions']],
+            // Invité de la liste : sa propre limite remplace celle du formulaire.
+            CompanionData::INPUT_KEY => ['nullable', 'array', 'max:'.$this->maxCompanions()],
             CompanionData::INPUT_KEY.'.*.first_name' => ['required', 'string', 'max:255'],
             CompanionData::INPUT_KEY.'.*.last_name' => ['nullable', 'string', 'max:255'],
+            self::GROUP_MEMBERS_KEY => ['nullable', 'array'],
+            self::GROUP_MEMBERS_KEY.'.*' => ['integer', Rule::in(array_column($this->invitation()?->selectableMembers() ?? [], 'inviteeId'))],
         ];
     }
 
@@ -87,6 +103,41 @@ final class SaveIdentityRequest extends FormRequest
             CompanionData::INPUT_KEY.'.max' => 'Vous pouvez venir avec :max accompagnant(s) au plus.',
             CompanionData::INPUT_KEY.'.*.first_name.required' => 'Indiquez le prénom de chaque accompagnant.',
         ];
+    }
+
+    /**
+     * Membres du groupe cochés, puis accompagnants saisis.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function companions(): array
+    {
+        $extras = array_values($this->validated(CompanionData::INPUT_KEY, []));
+        $invitation = $this->invitation();
+
+        if ($invitation === null) {
+            return $extras;
+        }
+
+        return $invitation->companionsWith(array_map(intval(...), $this->validated(self::GROUP_MEMBERS_KEY, [])), $extras);
+    }
+
+    private function invitation(): ?GuestInvitation
+    {
+        if (! $this->invitationResolved) {
+            $draft = RegistrationDraft::query()->where('resume_token', (string) $this->route('token'))->first();
+            $this->invitation = $draft === null ? null : app(ResolveGuestInvitation::class)->handle($draft);
+            $this->invitationResolved = true;
+        }
+
+        return $this->invitation;
+    }
+
+    private function maxCompanions(): int
+    {
+        $invitation = $this->invitation();
+
+        return $invitation !== null ? $invitation->maxCompanions : (int) $this->settings()['rsvp']['max_companions'];
     }
 
     private function isPersonalEvent(): bool

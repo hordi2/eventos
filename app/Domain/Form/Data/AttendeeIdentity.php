@@ -16,5 +16,8 @@ final class AttendeeIdentity
         public readonly ?string $firstName = null,
         public readonly ?string $lastName = null,
         public readonly ?string $phone = null,
+        // Contact de l'invitation (liste d'invités) : l'inscription lui est
+        // reliée tel quel, sans passer par l'e-mail saisi, qui peut différer.
+        public readonly ?int $contactId = null,
     ) {}
 }

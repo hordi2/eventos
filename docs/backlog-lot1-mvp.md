@@ -535,12 +535,39 @@ n'existait, et le mode d'accès « liste fermée » n'avait donc aucun effet.
   importer des invités. Un membre en lecture seule consulte la liste sans
   pouvoir l'accepter.
 - Effacement RGPD : l'e-mail en copie est effacé et l'invitation retirée.
-Reste l'étape 2 (parcours de réponse) : en « liste fermée », seuls les
-invités répondent, un groupe répond ensemble, et les accompagnants autorisés
-de chacun remplacent le réglage du formulaire.
 Limites connues : un CSV exporté par un Excel français (séparateur « ; »)
 n'est pas encore reconnu — le classeur .xlsx l'est ; l'e-mail en copie est
 enregistré mais pas encore utilisé par les envois (M4).
+
+**Étape 2 (livrée) — parcours de réponse** : le mode d'accès « liste
+fermée », jusque-là sans effet, s'active par un interrupteur sur la liste
+d'invités (droit de modifier l'événement).
+- Chaque invité a un lien personnel (jeton aléatoire de 40 caractères, jamais
+  un identifiant devinable), à copier depuis la liste ou à envoyer en un clic
+  par WhatsApp (lien wa.me prérempli). Sans ce lien, l'invité se retrouve par
+  son e-mail ou son numéro WhatsApp — jamais par son nom, trop facile à
+  deviner — sur une page au débit limité (10 essais par minute).
+- En liste fermée, tout le parcours exige une invitation identifiée
+  (`ResolveGuestEvent`) ; le brouillon la retient, et le lien de reprise
+  reste valable sur un autre appareil. Hors liste fermée, le lien personnel
+  préremplit simplement la réponse.
+- Le groupe répond ensemble (M3.2) : celui qui répond voit les autres
+  membres cochés comme accompagnants, décoche les absents, et chacun reçoit
+  son QR code et répond aux questions « à chaque personne ». Un membre qui a
+  déjà répondu, seul ou avec un autre, est affiché comme tel et ne peut pas
+  être réinscrit.
+- Les accompagnants autorisés de l'invité remplacent la limite du
+  formulaire (« illimité » = limite de la plateforme, 20) ; les membres du
+  groupe n'y comptent pas.
+- L'inscription et chaque membre du groupe sont reliés à leur contact
+  (`registrations.contact_id`, `attendees.contact_id`), sans passer par
+  l'e-mail saisi : la liste affiche « Confirmé · avec Grace Mbuyi », un
+  invité ne répond pas deux fois, et l'effacement RGPD atteint son nom dans
+  l'inscription d'un autre.
+Limites connues : un lien personnel ne se révoque pas encore (retirer
+l'invité le désactive) ; la réponse exige toujours une adresse e-mail, même
+pour un invité retrouvé par WhatsApp ; l'envoi groupé des liens par e-mail
+ou WhatsApp relève des campagnes (M4).
 
 ---
 

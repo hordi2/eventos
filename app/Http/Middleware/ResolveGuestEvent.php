@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Domain\Contact\Models\EventInvitee;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventAccessMode;
 use App\Domain\Event\Models\EventStatus;
+use App\Domain\Form\Models\RegistrationDraft;
 use App\Domain\Organization\Models\Organization;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Closure;
@@ -33,6 +35,23 @@ final class ResolveGuestEvent
         'guest.registration.password.verify',
     ];
 
+    /**
+     * Routes joignables sans invitation identifiée, quand l'événement est
+     * réservé à sa liste : celles qui servent à la retrouver, la feuille de
+     * style, et les liens signés de modification ou d'annulation d'une
+     * réponse déjà donnée.
+     */
+    private const INVITATION_EXEMPT_ROUTES = [
+        'guest.registration.invitation.find',
+        'guest.registration.invitation.lookup',
+        'guest.registration.invitation.open',
+        'guest.registration.password.show',
+        'guest.registration.password.verify',
+        'guest.registration.theme-style',
+        'guest.registration.edit',
+        'guest.registration.cancel',
+    ];
+
     public function __construct(
         private readonly CurrentOrganization $currentOrganization,
     ) {}
@@ -54,10 +73,53 @@ final class ResolveGuestEvent
             return Redirect::route('guest.registration.password.show', [$organization->slug, $event->slug]);
         }
 
+        // Invitation identifiée (lien personnel, e-mail ou WhatsApp) : elle
+        // personnalise la réponse sur tout événement, et seule ouvre la porte
+        // d'un événement réservé à sa liste.
+        $invitee = $this->identifiedInvitee($request, $event);
+
+        if ($event->access_mode === EventAccessMode::ClosedList
+            && $invitee === null
+            && ! in_array($request->route()?->getName(), self::INVITATION_EXEMPT_ROUTES, true)) {
+            return Redirect::route('guest.registration.invitation.find', [$organization->slug, $event->slug]);
+        }
+
         $request->attributes->set('guestOrganization', $organization);
         $request->attributes->set('guestEvent', $event);
+        $request->attributes->set('guestInvitee', $invitee);
 
         return $next($request);
+    }
+
+    /**
+     * Retenue en session, ou portée par le brouillon ouvert (lien de reprise
+     * suivi sur un autre appareil) : dans ce cas, elle est remise en session.
+     */
+    private function identifiedInvitee(Request $request, Event $event): ?EventInvitee
+    {
+        $sessionKey = "guest_invitee.{$event->id}";
+        $inviteeId = $request->session()->get($sessionKey);
+        $token = $request->route('token');
+
+        if ($inviteeId === null && is_string($token)) {
+            $inviteeId = RegistrationDraft::query()->where('event_id', $event->id)->where('resume_token', $token)->value('event_invitee_id');
+        }
+
+        if ($inviteeId === null) {
+            return null;
+        }
+
+        $invitee = EventInvitee::query()->where('event_id', $event->id)->whereHas('contact')->find($inviteeId);
+
+        if ($invitee === null) {
+            $request->session()->forget($sessionKey);
+
+            return null;
+        }
+
+        $request->session()->put($sessionKey, $invitee->id);
+
+        return $invitee;
     }
 
     /**

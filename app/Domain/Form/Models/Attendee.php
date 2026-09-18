@@ -28,6 +28,7 @@ final class Attendee extends Model
     protected $fillable = [
         'organization_id',
         'registration_id',
+        'contact_id',
         'first_name',
         'last_name',
         'email',

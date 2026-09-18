@@ -24,6 +24,8 @@ const STATUS_MESSAGES: Record<string, string> = {
     'invitee-updated': 'Invité mis à jour.',
     'invitee-removed': 'Invité retiré de la liste. Sa fiche contact est conservée.',
     'sender-agreement-accepted': "Merci : l'accord d'envoi est accepté pour votre organisation.",
+    'guest-list-closed': 'Événement réservé à la liste : seuls vos invités peuvent répondre, avec leur lien personnel, leur e-mail ou leur numéro WhatsApp.',
+    'guest-list-opened': 'Événement ouvert : toute personne qui a le lien peut répondre.',
 };
 
 /**

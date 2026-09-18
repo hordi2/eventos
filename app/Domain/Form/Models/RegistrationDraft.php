@@ -31,6 +31,7 @@ final class RegistrationDraft extends Model
     protected $fillable = [
         'organization_id',
         'event_id',
+        'event_invitee_id',
         'form_version_id',
         'resume_token',
         'identity',

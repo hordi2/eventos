@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 /**
  * Un contact de l'organisation inscrit sur la liste d'invités d'un
@@ -31,6 +32,7 @@ final class EventInvitee extends Model
         'organization_id',
         'event_id',
         'contact_id',
+        'invitation_token',
         'contact_import_id',
         'group_key',
         'companions_allowed',
@@ -47,6 +49,17 @@ final class EventInvitee extends Model
     protected static function newFactory(): EventInviteeFactory
     {
         return EventInviteeFactory::new();
+    }
+
+    /**
+     * Lien personnel : un jeton aléatoire, jamais un identifiant devinable,
+     * posé une fois pour toutes à la création.
+     */
+    protected static function booted(): void
+    {
+        self::creating(function (self $invitee): void {
+            $invitee->invitation_token ??= Str::random(40);
+        });
     }
 
     /**

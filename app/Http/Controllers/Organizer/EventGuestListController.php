@@ -9,10 +9,13 @@ use App\Domain\Contact\Actions\RemoveEventInvitee;
 use App\Domain\Contact\Actions\UpdateEventInvitee;
 use App\Domain\Contact\Models\EventInvitee;
 use App\Domain\Contact\Support\GuestListTemplate;
+use App\Domain\Event\Actions\UpdateEventGuestListAccess;
 use App\Domain\Event\Models\Event;
+use App\Domain\Event\Models\EventAccessMode;
 use App\Domain\Form\Support\FormSettings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\GuestList\SaveEventInviteeRequest;
+use App\Http\Requests\Organizer\GuestList\UpdateGuestListAccessRequest;
 use App\Models\User;
 use App\Support\GuestList\PresentEventGuestList;
 use Illuminate\Http\RedirectResponse;
@@ -42,6 +45,8 @@ final class EventGuestListController extends Controller
             'search' => $search,
             'canEdit' => $canEdit,
             'needsAgreement' => $canEdit && $eventModel->organization->sender_agreement_accepted_at === null,
+            'accessClosed' => $eventModel->access_mode === EventAccessMode::ClosedList,
+            'canChangeAccess' => Gate::allows('update', $eventModel),
             'maxCompanions' => FormSettings::MAX_COMPANIONS,
         ]);
     }
@@ -75,6 +80,16 @@ final class EventGuestListController extends Controller
         $removeEventInvitee->handle($this->findInvitee($event, $invitee), $user);
 
         return back()->with('status', 'invitee-removed');
+    }
+
+    public function access(UpdateGuestListAccessRequest $request, int $event, UpdateEventGuestListAccess $updateEventGuestListAccess): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $updateEventGuestListAccess->handle(Event::query()->findOrFail($event), $user, $request->boolean('closed'));
+
+        return back()->with('status', $request->boolean('closed') ? 'guest-list-closed' : 'guest-list-opened');
     }
 
     public function template(int $event, GuestListTemplate $guestListTemplate): BinaryFileResponse

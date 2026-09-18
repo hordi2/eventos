@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Guest\FormThemeStyleController;
+use App\Http\Controllers\Guest\GuestInvitationController;
 use App\Http\Controllers\Guest\RegistrationController;
 use App\Http\Controllers\Guest\StaticPageController;
 use App\Http\Controllers\Guest\StatusController;
@@ -337,6 +338,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/guest-list', [EventGuestListController::class, 'index'])->name('events.guest-list.index');
         Route::post('events/{event}/guest-list', [EventGuestListController::class, 'store'])->name('events.guest-list.store');
         Route::get('events/{event}/guest-list/template', [EventGuestListController::class, 'template'])->name('events.guest-list.template');
+        Route::patch('events/{event}/guest-list/access', [EventGuestListController::class, 'access'])->name('events.guest-list.access');
         Route::get('events/{event}/guest-list/import', [EventGuestImportController::class, 'create'])->name('events.guest-list.import');
         Route::post('events/{event}/guest-list/import', [EventGuestImportController::class, 'store'])->name('events.guest-list.import.store');
         Route::patch('events/{event}/guest-list/{invitee}', [EventGuestListController::class, 'update'])->whereNumber('invitee')->name('events.guest-list.update');
@@ -424,6 +426,12 @@ Route::middleware('resolve-guest-event')
     ->prefix('r/{organization}/{event}')
     ->name('guest.registration.')
     ->group(function (): void {
+        // Événement réservé à sa liste d'invités : lien personnel, ou
+        // recherche par e-mail ou numéro WhatsApp (débit limité).
+        Route::get('invitation/{invitationToken}', [GuestInvitationController::class, 'open'])->name('invitation.open');
+        Route::get('retrouver-mon-invitation', [GuestInvitationController::class, 'find'])->name('invitation.find');
+        Route::post('retrouver-mon-invitation', [GuestInvitationController::class, 'lookup'])->middleware('throttle:10,1')->name('invitation.lookup');
+
         Route::get('mot-de-passe', [RegistrationController::class, 'passwordShow'])->name('password.show');
         Route::post('mot-de-passe', [RegistrationController::class, 'passwordVerify'])->name('password.verify');
 

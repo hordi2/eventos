@@ -7,7 +7,8 @@ namespace App\Domain\Form\Data;
 /**
  * Une personne qui accompagne le titulaire d'une inscription (T-032).
  * attendeeId n'est connu qu'en modification, pour retrouver le participant
- * déjà enregistré.
+ * déjà enregistré ; contactId, que pour un membre du groupe de l'invité
+ * (liste d'invités), qui répond ainsi à travers lui.
  */
 final class CompanionData
 {
@@ -25,5 +26,6 @@ final class CompanionData
         public readonly ?string $lastName = null,
         public readonly array $answers = [],
         public readonly ?int $attendeeId = null,
+        public readonly ?int $contactId = null,
     ) {}
 }

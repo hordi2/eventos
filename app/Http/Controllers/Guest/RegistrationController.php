@@ -43,6 +43,7 @@ use App\Http\Requests\Guest\SaveIdentityRequest;
 use App\Http\Requests\Guest\UpdateRegistrationRequest;
 use App\Http\Requests\Guest\VerifyEventPasswordRequest;
 use App\Support\Capacity\Actions\GetRemainingCapacity;
+use App\Support\GuestList\ResolveGuestInvitation;
 use App\Support\Page\GetEventPage;
 use App\Support\Registration\BuildGuestSubEventChoices;
 use App\Support\Registration\BuildGuestVisibilityContext;
@@ -129,7 +130,7 @@ final class RegistrationController extends Controller
             return view('guest.registration.closed', ['event' => $eventModel, 'reason' => 'full']);
         }
 
-        $draft = app(StartRegistrationDraft::class)->handle($eventModel->organization_id, $eventModel->id, $form->current_version_id);
+        $draft = app(StartRegistrationDraft::class)->handle($eventModel->organization_id, $eventModel->id, $form->current_version_id, $request->attributes->get('guestInvitee')?->id);
 
         $firstStep = FormSettings::resolve($form->settings)['welcome']['enabled']
             ? 'guest.registration.welcome.show'
@@ -156,9 +157,12 @@ final class RegistrationController extends Controller
     {
         $eventModel = $this->event($request);
 
+        $draft = $this->draft($token);
+
         return view('guest.registration.identity', [
             'event' => $eventModel,
-            'draft' => $this->draft($token),
+            'draft' => $draft,
+            'invitation' => app(ResolveGuestInvitation::class)->handle($draft),
             ...$this->presentation($eventModel),
         ]);
     }
@@ -171,9 +175,9 @@ final class RegistrationController extends Controller
         $attending = ! $declineEnabled || $request->boolean('attending');
 
         $identity = [
-            ...$request->safe()->except(['attending', CompanionData::INPUT_KEY]),
+            ...$request->safe()->except(['attending', CompanionData::INPUT_KEY, SaveIdentityRequest::GROUP_MEMBERS_KEY]),
             'attending' => $attending,
-            'companions' => $attending ? array_values($request->validated(CompanionData::INPUT_KEY, [])) : [],
+            'companions' => $attending ? $request->companions() : [],
         ];
 
         $draft = app(SaveRegistrationDraft::class)->handle($this->draft($token), identity: $identity);
@@ -231,7 +235,7 @@ final class RegistrationController extends Controller
         $version = $this->versionFor($draft);
         $identity = $draft->identity ?? [];
         $companions = array_map(
-            fn (array $companion): CompanionData => new CompanionData($companion['firstName'], $companion['lastName'], $companion['answers']),
+            fn (array $companion): CompanionData => new CompanionData($companion['firstName'], $companion['lastName'], $companion['answers'], contactId: $companion['contactId']),
             $this->draftCompanions($draft, $version),
         );
 
@@ -239,7 +243,7 @@ final class RegistrationController extends Controller
             $result = app(SubmitRegistration::class)->handle(
                 $this->contextFor($eventModel),
                 $version,
-                new AttendeeIdentity($identity['email'] ?? '', $identity['first_name'] ?? null, $identity['last_name'] ?? null, $identity['phone'] ?? null),
+                new AttendeeIdentity($identity['email'] ?? '', $identity['first_name'] ?? null, $identity['last_name'] ?? null, $identity['phone'] ?? null, app(ResolveGuestInvitation::class)->handle($draft)?->contact->id),
                 $this->holderAnswers($draft),
                 new RegistrationSubmissionMetadata(
                     source: $request->session()->get('guest_registration_source'),
@@ -434,7 +438,7 @@ final class RegistrationController extends Controller
      * Accompagnants saisis à l'étape « Coordonnées », avec leurs réponses du
      * brouillon et ce que la logique conditionnelle leur montre.
      *
-     * @return list<array{firstName: string, lastName: ?string, name: string, answers: array<string, mixed>, visibility: array<string, array{visible: bool, required: bool}>}>
+     * @return list<array{firstName: string, lastName: ?string, contactId: ?int, name: string, answers: array<string, mixed>, visibility: array<string, array{visible: bool, required: bool}>}>
      */
     private function draftCompanions(RegistrationDraft $draft, FormVersion $version): array
     {
@@ -451,6 +455,8 @@ final class RegistrationController extends Controller
             $companions[] = [
                 'firstName' => $firstName,
                 'lastName' => $lastName,
+                // Membre du groupe de l'invité (liste d'invités) : relié à son contact.
+                'contactId' => isset($companion['contact_id']) ? (int) $companion['contact_id'] : null,
                 'name' => trim("{$firstName} {$lastName}"),
                 'answers' => $answers,
                 'visibility' => app(EvaluateFormVisibility::class)->handle($version, AskScope::answersFor($version, $holderAnswers, $answers), $context),

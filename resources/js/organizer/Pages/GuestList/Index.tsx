@@ -6,6 +6,7 @@ import InviteeFormModal from '../../Components/GuestList/InviteeFormModal';
 import SenderAgreementModal from '../../Components/GuestList/SenderAgreementModal';
 import { type InviteeRow, type InviteeTag } from '../../Components/GuestList/types';
 import TextInput from '../../Components/TextInput';
+import Toggle from '../../Components/Toggle';
 import EventLayout from '../../Layouts/EventLayout';
 
 interface Paginated<T> {
@@ -25,6 +26,8 @@ interface GuestListPageProps {
     canEdit: boolean;
     needsAgreement: boolean;
     maxCompanions: number;
+    accessClosed: boolean;
+    canChangeAccess: boolean;
 }
 
 const RESPONSE_VARIANTS: Record<string, 'neutral' | 'success' | 'danger'> = {
@@ -53,11 +56,24 @@ function EmptyIllustration() {
     );
 }
 
-export default function Index({ event, invitees, stats, groups, tags, search, canEdit, needsAgreement, maxCompanions }: GuestListPageProps) {
+export default function Index({
+    event,
+    invitees,
+    stats,
+    groups,
+    tags,
+    search,
+    canEdit,
+    needsAgreement,
+    maxCompanions,
+    accessClosed,
+    canChangeAccess,
+}: GuestListPageProps) {
     const [agreementOpen, setAgreementOpen] = useState(needsAgreement);
     const [formOpen, setFormOpen] = useState(false);
     const [editing, setEditing] = useState<InviteeRow | null>(null);
     const [query, setQuery] = useState(search);
+    const [copiedId, setCopiedId] = useState<number | null>(null);
     const listUrl = `/events/${event.id}/guest-list`;
     const isEmpty = stats.invitees === 0 && search === '';
 
@@ -88,6 +104,20 @@ export default function Index({ event, invitees, stats, groups, tags, search, ca
         }
     }
 
+    function setAccess(closed: boolean) {
+        router.patch(`${listUrl}/access`, { closed }, { preserveScroll: true });
+    }
+
+    async function copyLink(invitee: InviteeRow) {
+        try {
+            await navigator.clipboard.writeText(invitee.personalUrl);
+            setCopiedId(invitee.id);
+            window.setTimeout(() => setCopiedId((current) => (current === invitee.id ? null : current)), 2000);
+        } catch {
+            window.prompt('Copiez ce lien personnel :', invitee.personalUrl);
+        }
+    }
+
     function submitSearch(formEvent: FormEvent) {
         formEvent.preventDefault();
         router.get(listUrl, query.trim() === '' ? {} : { q: query.trim() }, { preserveState: true, replace: true });
@@ -115,6 +145,20 @@ export default function Index({ event, invitees, stats, groups, tags, search, ca
                 </p>
                 {!isEmpty && actions}
             </div>
+
+            {canChangeAccess && (
+                <section className="mb-6 flex items-start gap-4 rounded-card bg-bg p-4 ring-1 ring-line">
+                    <Toggle checked={accessClosed} onChange={setAccess} label="Seuls les invités de cette liste peuvent répondre" />
+                    <div className="min-w-0 text-sm">
+                        <p className="text-ink">Seuls les invités de cette liste peuvent répondre</p>
+                        <p className="mt-1 text-ink-soft">
+                            {accessClosed
+                                ? 'Chacun répond avec son lien personnel, ou se retrouve par son e-mail ou son numéro WhatsApp. Un invité répond aussi pour les membres de son groupe.'
+                                : "Pour l'instant, toute personne qui a le lien de l'événement peut répondre. Activez pour le réserver à vos invités."}
+                        </p>
+                    </div>
+                </section>
+            )}
 
             {needsAgreement && !agreementOpen && (
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-card bg-bg p-4 text-sm text-ink ring-1 ring-line">
@@ -173,7 +217,7 @@ export default function Index({ event, invitees, stats, groups, tags, search, ca
                         <p className="rounded-card border border-line bg-bg px-4 py-6 text-sm text-ink-soft">Aucun invité ne correspond à « {search} ».</p>
                     ) : (
                         <div className="overflow-x-auto rounded-card border border-line bg-bg">
-                            <table className="w-full min-w-[820px] text-left text-sm">
+                            <table className="w-full min-w-[980px] text-left text-sm">
                                 <thead className="border-b border-line font-label text-[11px] tracking-[0.12em] text-ink-soft uppercase">
                                     <tr>
                                         <th scope="col" className={HEADER_CELL}>
@@ -231,7 +275,15 @@ export default function Index({ event, invitees, stats, groups, tags, search, ca
                                             </td>
                                             {canEdit && (
                                                 <td className="px-4 py-3 text-right whitespace-nowrap">
-                                                    <button type="button" onClick={() => openForm(invitee)} className="text-sm text-ink hover:underline">
+                                                    <button type="button" onClick={() => void copyLink(invitee)} className="text-sm text-ink hover:underline">
+                                                        {copiedId === invitee.id ? 'Lien copié' : 'Copier le lien'}
+                                                    </button>
+                                                    {invitee.whatsappUrl && (
+                                                        <a href={invitee.whatsappUrl} target="_blank" rel="noreferrer" className="ml-4 text-sm text-ink hover:underline">
+                                                            WhatsApp
+                                                        </a>
+                                                    )}
+                                                    <button type="button" onClick={() => openForm(invitee)} className="ml-4 text-sm text-ink hover:underline">
                                                         Modifier
                                                     </button>
                                                     <button type="button" onClick={() => remove(invitee)} className="ml-4 text-sm text-danger hover:underline">

@@ -11,10 +11,24 @@
 
         @php
             $declineEnabled = (bool) $settings['rsvp']['decline_enabled'];
-            $maxCompanions = (int) $settings['rsvp']['max_companions'];
+            // Invité de la liste : sa propre limite, et ses coordonnées connues.
+            $maxCompanions = $invitation?->maxCompanions ?? (int) $settings['rsvp']['max_companions'];
+            $known = $invitation?->contact;
             $attendingChoice = (string) old('attending', ($draft->identity['attending'] ?? true) ? '1' : '0');
-            $companionRows = array_values(old('_companions', $draft->identity['companions'] ?? []));
+            $draftCompanions = $draft->identity['companions'] ?? [];
+            // Les membres du groupe cochés vivent parmi les accompagnants du brouillon, reconnaissables à leur contact.
+            $companionRows = array_values(old('_companions', array_filter($draftCompanions, fn ($row) => empty($row['contact_id']))));
+            $groupMembers = $invitation?->groupMembers ?? [];
+            $checkedMembers = old('_group_members', $draft->identity === null
+                ? array_column($invitation?->selectableMembers() ?? [], 'inviteeId')
+                : array_column(array_filter($draftCompanions, fn ($row) => ! empty($row['invitee_id'])), 'invitee_id'));
         @endphp
+
+        @if ($known)
+            <p class="mb-6 rounded-card bg-bg px-4 py-3 text-sm text-ink ring-1 ring-line">
+                Bonjour {{ $known->first_name ?? $known->fullName() }}, voici votre invitation. Vérifiez vos coordonnées, puis donnez votre réponse.
+            </p>
+        @endif
 
         <form
             method="POST"
@@ -26,7 +40,7 @@
 
             <div class="mb-6">
                 <label for="email" class="mb-1.5 block text-sm font-medium text-ink">Adresse e-mail *</label>
-                <input type="email" id="email" name="email" value="{{ old('email', $draft->identity['email'] ?? '') }}" required autofocus class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                <input type="email" id="email" name="email" value="{{ old('email', $draft->identity['email'] ?? $known?->email ?? '') }}" required autofocus class="w-full rounded-control border border-line px-3 py-2 text-ink">
                 @error('email')
                     <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -35,18 +49,18 @@
             <div class="mb-6 grid grid-cols-2 gap-4">
                 <div>
                     <label for="first_name" class="mb-1.5 block text-sm font-medium text-ink">Prénom</label>
-                    <input type="text" id="first_name" name="first_name" value="{{ old('first_name', $draft->identity['first_name'] ?? '') }}" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                    <input type="text" id="first_name" name="first_name" value="{{ old('first_name', $draft->identity['first_name'] ?? $known?->first_name ?? '') }}" class="w-full rounded-control border border-line px-3 py-2 text-ink">
                 </div>
                 <div>
                     <label for="last_name" class="mb-1.5 block text-sm font-medium text-ink">Nom</label>
-                    <input type="text" id="last_name" name="last_name" value="{{ old('last_name', $draft->identity['last_name'] ?? '') }}" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                    <input type="text" id="last_name" name="last_name" value="{{ old('last_name', $draft->identity['last_name'] ?? $known?->last_name ?? '') }}" class="w-full rounded-control border border-line px-3 py-2 text-ink">
                 </div>
             </div>
 
             @php $phoneRequired = $event->type->category() === \App\Domain\Event\Models\EventCategory::Personal; @endphp
             <div class="mb-8">
                 <label for="phone" class="mb-1.5 block text-sm font-medium text-ink">Téléphone{{ $phoneRequired ? ' *' : '' }}</label>
-                <input type="tel" id="phone" name="phone" value="{{ old('phone', $draft->identity['phone'] ?? '') }}" placeholder="+243 8xx xxx xxx" @required($phoneRequired) class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                <input type="tel" id="phone" name="phone" value="{{ old('phone', $draft->identity['phone'] ?? $known?->phone_e164 ?? '') }}" placeholder="+243 8xx xxx xxx" @required($phoneRequired) class="w-full rounded-control border border-line px-3 py-2 text-ink">
                 @error('phone')
                     <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -71,6 +85,34 @@
                 </fieldset>
             @endif
 
+            {{-- Groupe de l'invité (liste d'invités) : il répond pour les
+                 membres qui n'ont pas encore répondu ; chacun reçoit son QR
+                 code et ne compte pas dans la limite d'accompagnants. --}}
+            @if ($groupMembers !== [])
+                <fieldset class="mb-8" x-show="attending !== '0'">
+                    <legend class="mb-1 block text-sm font-medium text-ink">Votre groupe</legend>
+                    <p class="mb-4 text-sm text-ink-soft">Vous répondez aussi pour eux : décochez les personnes qui ne viendront pas.</p>
+                    <div class="space-y-2">
+                        @foreach ($groupMembers as $member)
+                            @if ($member['answered'])
+                                <p class="flex items-center justify-between gap-3 rounded-control border border-line bg-bg px-4 py-3 text-sm text-ink-soft">
+                                    <span>{{ $member['name'] }}</span>
+                                    <span class="text-xs">A déjà répondu</span>
+                                </p>
+                            @else
+                                <label class="flex items-center gap-3 rounded-control border border-line bg-bg px-4 py-3 text-ink">
+                                    <input type="checkbox" name="_group_members[]" value="{{ $member['inviteeId'] }}" @checked(in_array($member['inviteeId'], array_map('intval', (array) $checkedMembers), true))>
+                                    {{ $member['name'] }} vient
+                                </label>
+                            @endif
+                        @endforeach
+                    </div>
+                    @error('_group_members.*')
+                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </fieldset>
+            @endif
+
             {{-- Accompagnants (T-032). Sans JavaScript, toutes les lignes
                  s'affichent et une ligne vide est ignorée ; avec, on n'en
                  montre qu'autant que l'invité en ajoute. --}}
@@ -78,7 +120,7 @@
                 <fieldset class="mb-8" x-show="attending !== '0'">
                     <legend class="mb-1 block text-sm font-medium text-ink">Vos accompagnants</legend>
                     <p class="mb-4 text-sm text-ink-soft">
-                        Vous pouvez venir avec {{ $maxCompanions }} {{ $maxCompanions > 1 ? 'personnes' : 'personne' }} au plus. Chacune compte pour une place et reçoit son propre QR code.
+                        Vous pouvez venir avec {{ $maxCompanions }} {{ $maxCompanions > 1 ? 'personnes' : 'personne' }}{{ $groupMembers !== [] ? ' de plus' : '' }} au plus. Chacune compte pour une place et reçoit son propre QR code.
                     </p>
 
                     @error('_companions')

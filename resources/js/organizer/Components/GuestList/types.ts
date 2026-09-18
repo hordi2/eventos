@@ -16,4 +16,6 @@ export interface InviteeRow {
     ccEmail: string | null;
     tags: InviteeTag[];
     response: { status: string; label: string } | null;
+    personalUrl: string;
+    whatsappUrl: string | null;
 }

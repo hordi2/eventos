@@ -86,7 +86,7 @@ final class SubmitRegistration
         $duplicate = Registration::query()
             ->where('event_id', $context->eventId)
             ->where('email', $email)
-            ->first();
+            ->first() ?? $this->answeredByContact($context, $identity->contactId);
 
         if ($duplicate !== null) {
             return SubmitRegistrationResult::duplicateFound($duplicate);
@@ -118,6 +118,7 @@ final class SubmitRegistration
                 'status' => $status,
                 'reservation_key' => $idempotencyKey,
                 'email' => $email,
+                'contact_id' => $identity->contactId,
                 'first_name' => $identity->firstName,
                 'last_name' => $identity->lastName,
                 'phone_e164' => $identity->phone,
@@ -133,6 +134,7 @@ final class SubmitRegistration
             Attendee::query()->create([
                 'organization_id' => $context->organizationId,
                 'registration_id' => $registration->id,
+                'contact_id' => $identity->contactId,
                 'first_name' => $identity->firstName,
                 'last_name' => $identity->lastName,
                 'email' => $email,
@@ -146,6 +148,7 @@ final class SubmitRegistration
                 $attendee = Attendee::query()->create([
                     'organization_id' => $context->organizationId,
                     'registration_id' => $registration->id,
+                    'contact_id' => $companion->contactId,
                     'first_name' => trim($companion->firstName),
                     'last_name' => $companion->lastName !== null ? trim($companion->lastName) : null,
                     'is_primary' => false,
@@ -167,6 +170,22 @@ final class SubmitRegistration
         RegistrationCreated::dispatch($registration);
 
         return SubmitRegistrationResult::created($registration);
+    }
+
+    /**
+     * Un invité de la liste a déjà répondu s'il a sa propre inscription, ou
+     * s'il vient avec un autre membre de son groupe.
+     */
+    private function answeredByContact(EventRegistrationContext $context, ?int $contactId): ?Registration
+    {
+        if ($contactId === null) {
+            return null;
+        }
+
+        return Registration::query()
+            ->where('event_id', $context->eventId)
+            ->where(fn ($query) => $query->where('contact_id', $contactId)->orWhereHas('attendees', fn ($attendees) => $attendees->where('contact_id', $contactId)))
+            ->first();
     }
 
     private function reserveEventPlace(EventRegistrationContext $context, string $idempotencyKey, int $people): RegistrationStatus
