@@ -29,11 +29,12 @@ use Illuminate\Support\Facades\Gate;
  * conservés avec l'inscription et supprimés à l'effacement (décision
  * produit), nom gardé dans la réponse compris.
  *
- * N'anonymise pas les commandes de billetterie (Order.buyer_*) : Domain/Ticketing
- * n'a aucune colonne reliant une commande à un Contact (section 3 du
- * CLAUDE.md), seul un rapprochement par e-mail serait possible, trop
- * fragile pour un effacement légal (faux positifs/négatifs) — signalé
- * comme limite connue plutôt que construit sur une heuristique.
+ * Les commandes suivent, par un lien sûr : registration_id pour un don fait
+ * depuis le formulaire, contact_id pour un achat de billets (posé par
+ * LinkOrderToContact). Acheteur et donateur y sont effacés ; montants,
+ * devise, statut, dates et paiements restent (lignes comptables, règle 4.5).
+ * Les commandes antérieures à contact_id ne sont reliées à rien : un
+ * rapprochement par e-mail serait trop fragile pour un effacement légal.
  */
 final class AnonymizeContact
 {
@@ -81,6 +82,30 @@ final class AnonymizeContact
                 ->whereIn('registration_id', $registrationIds)
                 ->whereIn('form_field_id', DB::table('form_fields')->where('type', FieldType::FileUpload->value)->select('id'))
                 ->update(['value' => json_encode(['name' => 'Fichier supprimé']), 'updated_at' => now()]);
+
+            $orderIds = DB::table('orders')
+                ->where(fn ($query) => $query->whereIn('registration_id', $registrationIds)->orWhere('contact_id', $contact->id))
+                ->pluck('id');
+
+            DB::table('orders')
+                ->whereIn('id', $orderIds)
+                ->update([
+                    // buyer_name et buyer_email sont NOT NULL : même
+                    // traitement que registrations.email.
+                    'buyer_name' => 'Invité anonymisé',
+                    'buyer_email' => '',
+                    'buyer_phone_e164' => null,
+                    'updated_at' => now(),
+                ]);
+
+            DB::table('donations')
+                ->whereIn('order_id', $orderIds)
+                ->update([
+                    'donor_name' => null,
+                    'donor_company' => null,
+                    'donor_address' => null,
+                    'updated_at' => now(),
+                ]);
 
             $contact->forceFill([
                 'first_name' => 'Contact',

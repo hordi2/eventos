@@ -133,6 +133,24 @@ function makeGuestReadyEvent(array $fields = [], array $eventOverrides = [], arr
 }
 
 /**
+ * Événement publié avec un type de billet à 20 € (10 places) — fixture des
+ * parcours d'achat, partagée entre les tests Guest et Ticketing.
+ *
+ * @return array{organization: Organization, event: Event, ticketType: TicketType, tier: PriceTier}
+ */
+function makeGuestTicketedEvent(): array
+{
+    $organization = Organization::factory()->create();
+    app(CurrentOrganization::class)->set($organization);
+    $event = Event::factory()->for($organization)->published()->create();
+    $ticketType = TicketType::factory()->for($organization)->create(['event_id' => $event->id, 'name' => 'Billet standard']);
+    $tier = PriceTier::factory()->for($ticketType)->for($organization)->limited(10)->create(['name' => 'Normal', 'amount' => Money::fromMinorUnits(2000, 'EUR')]);
+    app(CurrentOrganization::class)->clear();
+
+    return ['organization' => $organization, 'event' => $event, 'ticketType' => $ticketType, 'tier' => $tier];
+}
+
+/**
  * Une organisation avec un unique membre du rôle donné — même fixture que
  * organizationWithVenueRole/organizationWithFormBuilderRole, factorisée ici
  * car les tests Contact (T-040) la déclinent sur trois fichiers.

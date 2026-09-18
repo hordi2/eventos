@@ -20,6 +20,8 @@ use App\Domain\Form\Policies\FormPolicy;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Organization\Policies\OrganizationPolicy;
 use App\Domain\Ticketing\Events\OrderPaid;
+use App\Domain\Ticketing\Events\OrderPlaced;
+use App\Listeners\LinkOrderToContact;
 use App\Listeners\LinkRegistrationToContact;
 use App\Listeners\Notifications\NotifyOrganizersOfRegistration;
 use App\Listeners\NotifyGuestOfRejectedFile;
@@ -80,6 +82,7 @@ class AppServiceProvider extends ServiceProvider
         // Ordre important : LinkRegistrationToContact doit s'exécuter en
         // premier, c'est lui qui renseigne contact_id (T-045).
         EventFacade::listen(RegistrationCreated::class, LinkRegistrationToContact::class);
+        EventFacade::listen(OrderPlaced::class, LinkOrderToContact::class);
         EventFacade::listen(RegistrationCreated::class, SendConfirmationEmail::class);
         EventFacade::listen(RegistrationCreated::class, SendConfirmationWhatsapp::class);
 

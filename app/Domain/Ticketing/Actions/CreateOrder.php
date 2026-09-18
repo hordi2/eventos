@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Ticketing\Actions;
 
+use App\Domain\Ticketing\Events\OrderPlaced;
 use App\Domain\Ticketing\Models\Donation;
 use App\Domain\Ticketing\Models\Order;
 use App\Domain\Ticketing\Models\OrderItem;
@@ -136,6 +137,7 @@ final class CreateOrder
         });
 
         ExpireOrderJob::dispatch($order->id, $organizationId)->delay($order->reserved_until);
+        OrderPlaced::dispatch($order);
 
         return $order->fresh(['items', 'donations']);
     }

@@ -675,9 +675,9 @@ via le parcours de paiement existant. Le reçu part par e-mail au paiement
 (événement OrderPaid émis par MarkOrderPaid → SendDonationReceipt). Les
 informations du donateur ne sont exigées que d'un invité qui donne ; le don
 ne se modifie plus depuis le lien « Modifier mon inscription ».
-Limites connues : l'effacement RGPD n'anonymise pas encore commandes et dons
-(même limite qu'Order.buyer_*) ; un don dont le paiement échoue ne peut pas
-être relancé depuis la page de paiement.
+Mises à jour depuis : l'effacement RGPD anonymise désormais les dons et les
+commandes reliées au contact (voir T-075), et un don dont le paiement échoue
+se relance depuis la page de paiement (relance d'un paiement refusé).
 
 ---
 
@@ -1039,8 +1039,21 @@ place ; à traiter par un administrateur base de données si nécessaire,
 hors du périmètre logiciel de ce ticket.
 
 **Critères d'acceptation**
-- [x] Export complet d'une personne en JSON, en un clic — contact, consentements, tags, foyer, inscriptions et réponses de formulaire, participants ; n'inclut pas les commandes de billetterie (aucune colonne ne relie une commande à un Contact, Domain/Ticketing n'a pas de contact_id — limite connue, signalée)
-- [x] Effacement : données identifiantes supprimées, agrégats et lignes comptables conservés — anonymise le Contact et ses Registrations/Attendees liés (statut, date, événement conservés) ; n'anonymise pas les commandes de billetterie (même limite que l'export, ci-dessus) ni les réponses de formulaire libres (aucune façon fiable d'y détecter une identité sans risquer d'effacer une réponse métier légitime)
+- [x] Export complet d'une personne en JSON, en un clic — contact, consentements, tags, foyer, inscriptions et réponses de formulaire, participants ; inclut les commandes (billets et dons) reliées au contact — voir le complément ci-dessous
+- [x] Effacement : données identifiantes supprimées, agrégats et lignes comptables conservés — anonymise le Contact et ses Registrations/Attendees liés (statut, date, événement conservés) ; anonymise aussi l'acheteur et le donateur des commandes reliées au contact (montants, devise, statut, dates et paiements conservés) ; n'anonymise pas les réponses de formulaire libres (aucune façon fiable d'y détecter une identité sans risquer d'effacer une réponse métier légitime)
+
+**Complément (lot 2) — commandes et dons dans l'effacement RGPD** : une
+commande est reliée au contact par un lien sûr — `registration_id` pour un
+don fait depuis le formulaire, `orders.contact_id` pour un achat de billets.
+Ce dernier est posé à chaque achat par `LinkOrderToContact` (événement
+`OrderPlaced`, émis une seule fois par commande) : l'acheteur est retrouvé
+par son e-mail ou ajouté aux contacts (consentement d'origine
+`ticket_order`), un contact connu gardant ses noms. L'effacement vide alors
+nom, e-mail et téléphone de l'acheteur, nom, entreprise et adresse du
+donateur ; l'export RGPD restitue ces commandes.
+Limite connue : les commandes de billets passées avant `orders.contact_id`
+ne sont reliées à rien — un rapprochement par e-mail serait trop fragile
+pour un effacement légal (décision produit).
 - [x] Job planifié de purge selon les durées configurées — `config/gdpr.php` (durée par défaut : 36 mois depuis la dernière inscription, ou la création si aucune), tâche quotidienne
 - [x] Registre des traitements généré — page + export PDF, durée de conservation injectée depuis la configuration en vigueur
 

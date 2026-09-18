@@ -20,18 +20,6 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
-function makeGuestTicketedEvent(): array
-{
-    $organization = Organization::factory()->create();
-    app(CurrentOrganization::class)->set($organization);
-    $event = Event::factory()->for($organization)->published()->create();
-    $ticketType = TicketType::factory()->for($organization)->create(['event_id' => $event->id, 'name' => 'Billet standard']);
-    $tier = PriceTier::factory()->for($ticketType)->for($organization)->limited(10)->create(['name' => 'Normal', 'amount' => Money::fromMinorUnits(2000, 'EUR')]);
-    app(CurrentOrganization::class)->clear();
-
-    return ['organization' => $organization, 'event' => $event, 'ticketType' => $ticketType, 'tier' => $tier];
-}
-
 it('affiche les types de billets disponibles sur la page publique', function (): void {
     ['organization' => $organization, 'event' => $event] = makeGuestTicketedEvent();
 

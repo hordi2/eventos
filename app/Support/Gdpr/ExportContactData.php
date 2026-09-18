@@ -18,8 +18,9 @@ use Illuminate\Support\Facades\DB;
  * pouvoir restituer à la personne concernée, contrairement à
  * AnonymizeContact qui évite volontairement d'y toucher en écriture.
  *
- * N'inclut pas les commandes de billetterie : même limite que
- * AnonymizeContact, aucune colonne ne relie une commande à un Contact.
+ * Les commandes (billets et dons) sont incluses par les mêmes liens sûrs
+ * qu'AnonymizeContact : registration_id ou contact_id. Celles antérieures à
+ * contact_id ne sont reliées à rien et n'y figurent donc pas.
  */
 final class ExportContactData
 {
@@ -51,7 +52,35 @@ final class ExportContactData
             'tags' => $contact->tags()->pluck('name'),
             'foyer' => $contact->household?->only(['id', 'name']),
             'inscriptions' => $this->registrations($contact),
+            'commandes' => $this->orders($contact),
         ];
+    }
+
+    /**
+     * Montants en unités mineures avec leur devise, comme en base : l'export
+     * restitue la donnée, sans l'arrondir pour l'affichage.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function orders(Contact $contact): array
+    {
+        $registrationIds = DB::table('registrations')->where('contact_id', $contact->id)->pluck('id');
+
+        $orders = DB::table('orders')
+            ->where(fn ($query) => $query->whereIn('registration_id', $registrationIds)->orWhere('contact_id', $contact->id))
+            ->orderBy('id')
+            ->get(['id', 'event_id', 'buyer_name', 'buyer_email', 'buyer_phone_e164', 'status', 'total_amount_minor', 'total_currency', 'paid_at', 'created_at']);
+
+        return $orders->map(fn (object $order): array => [
+            'événement_id' => $order->event_id,
+            'acheteur' => ['nom' => $order->buyer_name, 'email' => $order->buyer_email, 'téléphone' => $order->buyer_phone_e164],
+            'statut' => $order->status,
+            'total' => ['montant_unités_mineures' => $order->total_amount_minor, 'devise' => $order->total_currency],
+            'payée_le' => $order->paid_at,
+            'passée_le' => $order->created_at,
+            'billets' => DB::table('order_items')->where('order_id', $order->id)->get(['name', 'quantity']),
+            'dons' => DB::table('donations')->where('order_id', $order->id)->get(['amount_minor', 'currency', 'cause', 'donor_name', 'donor_company', 'donor_address', 'is_anonymous']),
+        ])->all();
     }
 
     /**

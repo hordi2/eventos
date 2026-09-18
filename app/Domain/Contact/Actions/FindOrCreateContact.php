@@ -14,7 +14,7 @@ use Carbon\CarbonImmutable;
  */
 final class FindOrCreateContact
 {
-    public function handle(int $organizationId, string $email, ?string $firstName, ?string $lastName, ?string $phone): Contact
+    public function handle(int $organizationId, string $email, ?string $firstName, ?string $lastName, ?string $phone, string $consentSource = 'registration'): Contact
     {
         $email = mb_strtolower(trim($email));
 
@@ -34,7 +34,7 @@ final class FindOrCreateContact
             'email' => $email,
             'phone_e164' => $phone,
             'email_consent' => true,
-            'email_consent_source' => 'registration',
+            'email_consent_source' => $consentSource,
             'email_consent_at' => CarbonImmutable::now(),
         ]);
     }
