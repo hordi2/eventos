@@ -43,6 +43,24 @@ it('parcourt les trois étapes et confirme une inscription', function (): void {
     $confirmationPage->assertSee('Inscription confirmée');
 });
 
+it('affiche en français l\'erreur d\'une question obligatoire laissée vide', function (): void {
+    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent([
+        ['key' => 'allergies', 'type' => 'short_text', 'label' => 'Allergies', 'is_required' => true],
+    ], ['type' => EventType::Conference]);
+
+    $this->get("/r/{$organization->slug}/{$event->slug}/commencer");
+    $token = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->firstOrFail()->resume_token;
+    $base = "/r/{$organization->slug}/{$event->slug}/{$token}";
+    $this->post("{$base}/identite", ['email' => 'invite@example.com']);
+
+    $this->from("{$base}/reponses")
+        ->followingRedirects()
+        ->post("{$base}/reponses", ['allergies' => ''])
+        ->assertOk()
+        ->assertSee('Le champ allergies est obligatoire.')
+        ->assertDontSee('field is required');
+});
+
 it('redirige vers la page « déjà inscrit » en cas de doublon', function (): void {
     // Type fixé (au lieu du tirage aléatoire par défaut de EventFactory) :
     // ce test soumet l'identité sans téléphone, obligatoire depuis T-045
