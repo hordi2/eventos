@@ -99,4 +99,11 @@ return [
         'timeout' => (int) env('CLAMAV_TIMEOUT', 30),
     ],
 
+    // Photos libres de droits de l'onglet « Bibliothèque » du constructeur
+    // (https://www.pexels.com/api/). Sans clé, l'onglet l'explique au lieu
+    // d'échouer.
+    'pexels' => [
+        'key' => env('PEXELS_API_KEY'),
+    ],
+
 ];

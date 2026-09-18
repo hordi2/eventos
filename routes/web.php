@@ -56,6 +56,7 @@ use App\Http\Controllers\Organizer\Settings\ProfileController;
 use App\Http\Controllers\Organizer\Settings\ReferralController;
 use App\Http\Controllers\Organizer\Settings\SecurityController;
 use App\Http\Controllers\Organizer\Settings\WhiteLabelController;
+use App\Http\Controllers\Organizer\StockPhotoController;
 use App\Http\Controllers\Organizer\SubEventController;
 use App\Http\Controllers\Organizer\SwitchOrganizationController;
 use App\Http\Controllers\Organizer\TagController;
@@ -300,6 +301,11 @@ Route::middleware('auth')->group(function (): void {
         Route::middleware('can-organization:updateEvents')->group(function (): void {
             Route::get('media-library', [OrganizationImageController::class, 'index'])->name('organization-images.index');
             Route::delete('media-library/{image}', [OrganizationImageController::class, 'destroy'])->name('organization-images.destroy');
+
+            // Photos libres de droits (Pexels) : débit limité, le quota
+            // gratuit de l'API étant partagé par toute l'installation.
+            Route::get('media-library/stock', [StockPhotoController::class, 'index'])->middleware('throttle:30,1')->name('stock-photos.index');
+            Route::post('media-library/stock/{photo}', [StockPhotoController::class, 'store'])->whereNumber('photo')->middleware('throttle:20,1')->name('stock-photos.store');
         });
 
         Route::get('contacts', [ContactController::class, 'index'])->name('contacts.index');

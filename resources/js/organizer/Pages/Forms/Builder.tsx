@@ -294,9 +294,6 @@ export default function FormBuilder({
             case 'screen':
                 openScreen(action.screen);
                 break;
-            case 'soon':
-                setNotice({ message: `« ${entry.label} » arrive bientôt dans Itaza.` });
-                break;
         }
     }
 

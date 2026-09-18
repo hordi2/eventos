@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import Modal from '../Modal';
 import BuilderIcon from './BuilderIcon';
 import ImageLibrary, { type LibraryImage } from './ImageLibrary';
-import SoonBadge from './SoonBadge';
+import StockPhotoLibrary from './StockPhotoLibrary';
 import { type ImageKind } from './types';
 
 interface ImageUploadModalProps {
@@ -147,12 +147,11 @@ export default function ImageUploadModal({ open, kind, formId, currentUrl, onClo
                         }`}
                     >
                         {item.label}
-                        {item.value === 'library' && <SoonBadge />}
                     </button>
                 ))}
             </div>
 
-            {tab !== 'library' && formId === null && (
+            {formId === null && (
                 <p className="rounded-control bg-bg-alt px-4 py-3 text-sm text-ink-soft">
                     Faites d'abord une première modification (une question, un écran) : le formulaire sera créé et vous pourrez ajouter des images.
                 </p>
@@ -228,7 +227,16 @@ export default function ImageUploadModal({ open, kind, formId, currentUrl, onClo
                     )}
                 </>
             )}
-            {tab === 'library' && <p className="text-sm text-ink-soft">Bientôt : une bibliothèque de photos libres de droits, prêtes à l'emploi.</p>}
+            {tab === 'library' && formId !== null && (
+                <>
+                    <StockPhotoLibrary onPick={(image) => void pickFromLibrary(image)} busy={busy} />
+                    {error && (
+                        <p role="alert" className="mt-3 text-sm text-danger">
+                            {error}
+                        </p>
+                    )}
+                </>
+            )}
         </Modal>
     );
 }

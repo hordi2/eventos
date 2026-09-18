@@ -307,9 +307,7 @@ multiple, oui/non, consentement, menu/repas, texte informatif.
 > référencées, en ignorant celles dont le fichier a disparu.
 > Limites connues : 60 images les plus récentes affichées, sans pagination ni
 > recherche ; les bannières des pages événement ne rejoignent pas encore la
-> bibliothèque ; l'onglet « Bibliothèque » (photos libres de droits) reste
-> « bientôt » — il demande un prestataire externe, une clé d'API et un cadre
-> de licence.
+> bibliothèque.
 >
 > **Lot 2, étape J (livrée) — CSS personnalisé** : dernière fonction du
 > constructeur marquée « bientôt ». Champ CSS par formulaire, réservé aux
@@ -331,6 +329,27 @@ multiple, oui/non, consentement, menu/repas, texte informatif.
 > rétrogradage ne retire pas un CSS déjà enregistré (même comportement que les
 > questions avancées déjà publiées) ; pas d'aperçu du CSS dans le constructeur ;
 > trois repères seulement, à élargir si les organisateurs le demandent.
+>
+> **Lot 2, étape K (livrée) — onglet « Bibliothèque » (photos libres Pexels)** :
+> recherche en français dans les photos libres de droits de Pexels (sélection
+> du moment à l'ouverture, « Plus de photos », crédit du photographe et lien
+> vers Pexels affichés), depuis la fenêtre du logo et du fond comme depuis le
+> bloc « Texte, image, vidéo ». La photo choisie est téléchargée par le
+> serveur puis copiée dans « Mes images » par le chemin habituel
+> (redimensionnée, nommée « Photo de … (Pexels) ») : la page invité ne
+> contacte jamais Pexels. Le serveur ne télécharge qu'à partir de l'adresse
+> renvoyée par l'API, et seulement sur images.pexels.com. Recherches mises en
+> cache une heure et débit limité (le quota gratuit est de 200 requêtes par
+> heure pour toute l'installation). Configuration : `PEXELS_API_KEY`, clé
+> gratuite à créer sur pexels.com/api ; sans clé, l'onglet l'explique.
+> Le constructeur n'a plus aucune fonction marquée « bientôt ».
+> Correctif au passage : les adresses de la bibliothèque passent de `/images`
+> à `/media-library`. Le dossier `public/images` (logos du site) faisait
+> servir `/images` par le serveur web avant Laravel : « Mes images » ne
+> chargeait jamais hors des tests. Un test vérifie désormais qu'aucune route
+> ne porte le nom d'un dossier de `public/`.
+> Limites connues : une même photo importée deux fois crée deux images dans
+> « Mes images » ; pas de filtre d'orientation ni de couleur.
 
 ---
 

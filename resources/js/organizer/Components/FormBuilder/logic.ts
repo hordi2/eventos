@@ -120,8 +120,7 @@ export type PaletteAction =
     | { kind: 'custom' }
     | { kind: 'subEvents' }
     | { kind: 'donation' }
-    | { kind: 'screen'; screen: ScreenKey }
-    | { kind: 'soon' };
+    | { kind: 'screen'; screen: ScreenKey };
 
 export interface PaletteEntry {
     id: string;

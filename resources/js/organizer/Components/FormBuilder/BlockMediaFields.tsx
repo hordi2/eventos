@@ -5,6 +5,7 @@ import Modal from '../Modal';
 import TextInput from '../TextInput';
 import BuilderIcon from './BuilderIcon';
 import ImageLibrary, { type LibraryImage } from './ImageLibrary';
+import StockPhotoLibrary from './StockPhotoLibrary';
 import { PANEL_SECTION_TITLE } from './logic';
 import { type FieldConfig } from './types';
 
@@ -54,6 +55,7 @@ export default function BlockMediaFields({ config, formId, onChange }: BlockMedi
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [libraryOpen, setLibraryOpen] = useState(false);
+    const [libraryTab, setLibraryTab] = useState<'mine' | 'stock'>('mine');
 
     async function upload(file: File) {
         if (formId === null) {
@@ -123,7 +125,7 @@ export default function BlockMediaFields({ config, formId, onChange }: BlockMedi
                                 Remplacer
                             </button>
                             <button type="button" onClick={() => setLibraryOpen(true)} disabled={busy} className="text-sm font-medium text-ink hover:underline disabled:opacity-50">
-                                Mes images
+                                Bibliothèques
                             </button>
                             <button type="button" onClick={removeImage} disabled={busy} className="text-sm font-medium text-danger hover:underline disabled:opacity-50">
                                 Retirer
@@ -158,7 +160,7 @@ export default function BlockMediaFields({ config, formId, onChange }: BlockMedi
                             disabled={busy || formId === null}
                             className="w-full text-sm font-medium text-ink hover:underline disabled:opacity-50"
                         >
-                            Reprendre une image déjà envoyée
+                            Choisir dans « Mes images » ou la bibliothèque de photos
                         </button>
                     </div>
                 )}
@@ -182,8 +184,32 @@ export default function BlockMediaFields({ config, formId, onChange }: BlockMedi
                 </p>
                 <InputError message={error ?? undefined} />
 
-                <Modal open={libraryOpen} onClose={() => setLibraryOpen(false)} title="Mes images" size="lg" showCloseButton>
-                    <ImageLibrary onPick={pickFromLibrary} currentUrl={config.image_url} />
+                <Modal open={libraryOpen} onClose={() => setLibraryOpen(false)} title="Choisir une image" size="lg" showCloseButton>
+                    <div className="mb-5 flex flex-wrap gap-2 border-b border-line pb-3">
+                        {(
+                            [
+                                { value: 'mine', label: 'Mes images' },
+                                { value: 'stock', label: 'Bibliothèque' },
+                            ] as const
+                        ).map((item) => (
+                            <button
+                                key={item.value}
+                                type="button"
+                                aria-pressed={libraryTab === item.value}
+                                onClick={() => setLibraryTab(item.value)}
+                                className={`rounded-pill px-3 py-1.5 text-sm font-medium ${
+                                    libraryTab === item.value ? 'bg-ink text-bg' : 'text-ink-soft hover:text-ink'
+                                }`}
+                            >
+                                {item.label}
+                            </button>
+                        ))}
+                    </div>
+                    {libraryTab === 'mine' ? (
+                        <ImageLibrary onPick={pickFromLibrary} currentUrl={config.image_url} />
+                    ) : (
+                        <StockPhotoLibrary onPick={pickFromLibrary} />
+                    )}
                 </Modal>
             </fieldset>
 
