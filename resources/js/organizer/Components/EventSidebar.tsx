@@ -58,7 +58,7 @@ function buildSections(nav: EventNav): SidebarSection[] {
                     children: [
                         { label: 'Invités', linkKey: 'guests' },
                         { label: 'Importation', linkKey: 'import' },
-                        { label: 'Décors', soon: true },
+                        { label: 'Plan de table', linkKey: 'seating' },
                     ],
                 },
             ],
