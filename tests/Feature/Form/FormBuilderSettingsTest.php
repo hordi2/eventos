@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use App\Domain\Contact\Models\Tag;
 use App\Domain\Event\Models\Event;
+use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormVersionStatus;
+use App\Domain\Form\Models\RegistrationDraft;
 use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Organization\Models\OrganizationImage;
@@ -255,4 +257,31 @@ it('interdit de changer le thème à un membre en lecture seule', function (): v
         ->assertForbidden();
 
     expect($form->fresh()->settings)->toBeNull();
+});
+
+it('montre les textes par défaut quand un titre ou un message est laissé vide', function (): void {
+    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent();
+
+    // Un champ vidé dans le constructeur arrive vide (null) : c'est ce qu'enregistre la sauvegarde.
+    app(CurrentOrganization::class)->set($organization);
+    Form::query()->where('event_id', $event->id)->sole()->update(['settings' => [
+        'confirmation' => ['title' => null, 'message' => null],
+        'welcome' => ['enabled' => true, 'title' => null, 'message' => null, 'button_label' => null],
+    ]]);
+    app(CurrentOrganization::class)->clear();
+
+    $base = "/r/{$organization->slug}/{$event->slug}";
+    $this->get("{$base}/commencer");
+    $token = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->latest('id')->firstOrFail()->resume_token;
+
+    $this->get("{$base}/{$token}/accueil")->assertOk()->assertSee('Commencer');
+
+    $this->post("{$base}/{$token}/identite", ['email' => 'awa@example.com', 'first_name' => 'Awa']);
+    $this->post("{$base}/{$token}/reponses", []);
+    $this->post("{$base}/{$token}/recap");
+
+    $this->get("{$base}/{$token}/confirmation")
+        ->assertOk()
+        ->assertSee('Inscription confirmée')
+        ->assertSee("Merci, votre inscription à {$event->title} est enregistrée.", false);
 });

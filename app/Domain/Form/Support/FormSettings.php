@@ -94,7 +94,9 @@ final class FormSettings
 
     /**
      * Chaque clé connue avec sa valeur enregistrée, ou sa valeur par défaut.
-     * Une clé inconnue est ignorée.
+     * Une clé inconnue est ignorée. Un texte vidé dans le constructeur arrive
+     * vide (null) : il reprend son texte par défaut, jamais un titre ou un
+     * bouton sans libellé.
      *
      * @param  array<string, mixed>|null  $settings
      * @return array<string, array<string, mixed>>
@@ -110,10 +112,12 @@ final class FormSettings
                 continue;
             }
 
-            foreach (array_keys($defaults) as $key) {
-                if (array_key_exists($key, $given)) {
-                    $resolved[$section][$key] = $given[$key];
+            foreach ($defaults as $key => $default) {
+                if (! array_key_exists($key, $given) || (is_string($default) && ! is_string($given[$key]))) {
+                    continue;
                 }
+
+                $resolved[$section][$key] = $given[$key];
             }
         }
 
