@@ -7,7 +7,9 @@ namespace App\Domain\Contact\Data;
 /**
  * Invité tel que l'organisateur le saisit dans la liste d'un événement.
  * Un nom complet et/ou une adresse e-mail suffisent à l'identifier.
- * companionsAllowed nul = illimité (CompanionAllowance).
+ * companionsAllowed nul = illimité (CompanionAllowance). whatsappConsent :
+ * l'invité a accepté de recevoir des messages WhatsApp (sans cet accord,
+ * aucune invitation ne lui part par ce canal).
  */
 final class InviteeData
 {
@@ -23,5 +25,6 @@ final class InviteeData
         public readonly ?int $companionsAllowed,
         public readonly ?string $ccEmail,
         public readonly array $tags = [],
+        public readonly bool $whatsappConsent = false,
     ) {}
 }

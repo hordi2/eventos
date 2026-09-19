@@ -6,6 +6,7 @@ namespace App\Domain\Contact\Actions;
 
 use App\Domain\Contact\Data\InviteeData;
 use App\Domain\Contact\Models\EventInvitee;
+use App\Domain\Contact\Support\RecordWhatsappConsent;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -36,6 +37,7 @@ final class UpdateEventInvitee
                 'last_name' => $data->lastName,
                 'email' => $email !== '' ? $email : null,
                 'phone_e164' => $data->phone,
+                ...($data->whatsappConsent !== $invitee->contact->whatsapp_consent ? RecordWhatsappConsent::attributes($data->whatsappConsent) : []),
             ]);
 
             $invitee->update([

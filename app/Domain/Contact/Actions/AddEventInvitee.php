@@ -7,6 +7,7 @@ namespace App\Domain\Contact\Actions;
 use App\Domain\Contact\Data\InviteeData;
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Contact\Models\EventInvitee;
+use App\Domain\Contact\Support\RecordWhatsappConsent;
 use App\Domain\Organization\Models\Organization;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +44,11 @@ final class AddEventInvitee
 
             $tagIds = $this->resolveTagsByName->handle($organization->id, $data->tags);
             $contact->tags()->syncWithoutDetaching(array_fill_keys($tagIds, ['organization_id' => $organization->id]));
+
+            // Un ajout ne retire jamais un accord déjà donné : il ne peut que l'enregistrer.
+            if ($data->whatsappConsent && ! $contact->whatsapp_consent) {
+                $contact->update(RecordWhatsappConsent::attributes(true));
+            }
 
             return $invitee;
         });

@@ -48,6 +48,7 @@ final class SaveEventInviteeRequest extends FormRequest
             'cc_email' => ['nullable', 'email', 'max:255'],
             'tags' => ['nullable', 'array', 'max:20'],
             'tags.*' => ['string', 'max:50'],
+            'whatsapp_consent' => ['nullable', 'boolean'],
         ];
     }
 
@@ -91,6 +92,7 @@ final class SaveEventInviteeRequest extends FormRequest
             companionsAllowed: $this->companionsAllowed,
             ccEmail: $this->filled('cc_email') ? mb_strtolower(trim((string) $this->input('cc_email'))) : null,
             tags: is_array($tags) ? array_values(array_filter($tags, is_string(...))) : [],
+            whatsappConsent: $this->boolean('whatsapp_consent'),
         );
     }
 

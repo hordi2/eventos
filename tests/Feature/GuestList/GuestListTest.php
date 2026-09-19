@@ -289,3 +289,30 @@ it('fait mener « Invités » et « Importation » du menu à la liste de l\'év
         ->where('eventNav.links.guests', route('events.guest-list.index', $event->id))
         ->where('eventNav.links.import', route('events.guest-list.import', $event->id)));
 });
+
+it('enregistre l\'accord WhatsApp coché, avec sa source et sa date, et le retire en modification', function (): void {
+    [$organization, $admin, $event] = guestListFixture();
+
+    $this->actingAs($admin)->post("/events/{$event->id}/guest-list", ['first_name' => 'Fatou', 'last_name' => 'Sow', 'phone' => '+221771234567', 'whatsapp_consent' => true]);
+
+    $contact = Contact::query()->sole();
+    expect($contact->whatsapp_consent)->toBeTrue();
+    expect($contact->whatsapp_consent_source)->toBe('guest_list');
+    expect($contact->whatsapp_consent_at)->not->toBeNull();
+
+    $invitee = EventInvitee::query()->sole();
+    $this->actingAs($admin)->patch("/events/{$event->id}/guest-list/{$invitee->id}", ['first_name' => 'Fatou', 'last_name' => 'Sow', 'phone' => '+221771234567', 'whatsapp_consent' => false]);
+
+    expect($contact->fresh()->whatsapp_consent)->toBeFalse();
+    expect($contact->fresh()->whatsapp_consent_at)->toBeNull();
+});
+
+it('ne retire jamais un accord WhatsApp déjà donné en ajoutant un contact connu', function (): void {
+    [$organization, $admin, $event] = guestListFixture();
+    $connu = Contact::factory()->for($organization)->create(['email' => 'awa@exemple.sn', 'whatsapp_consent' => true, 'whatsapp_consent_source' => 'registration']);
+
+    $this->actingAs($admin)->post("/events/{$event->id}/guest-list", ['email' => 'awa@exemple.sn']);
+
+    expect($connu->fresh()->whatsapp_consent)->toBeTrue();
+    expect($connu->fresh()->whatsapp_consent_source)->toBe('registration');
+});

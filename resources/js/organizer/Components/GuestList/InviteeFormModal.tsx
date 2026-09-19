@@ -44,6 +44,7 @@ export default function InviteeFormModal({ open, onClose, eventId, invitee, grou
         companions: companionsValue(invitee),
         cc_email: invitee?.ccEmail ?? '',
         tags: invitee?.tags.map((tag) => tag.name) ?? ([] as string[]),
+        whatsapp_consent: invitee?.whatsappConsent ?? false,
     });
     const formErrors = errors as Record<string, string | undefined>;
 
@@ -128,6 +129,22 @@ export default function InviteeFormModal({ open, onClose, eventId, invitee, grou
                     </div>
                 </div>
                 <p className="-mt-2 text-xs text-ink-soft">Un nom complet et/ou une adresse e-mail suffisent.</p>
+
+                <label className={`flex items-start gap-3 rounded-control bg-bg-alt px-4 py-3 ${data.phone.trim() === '' ? 'opacity-60' : 'cursor-pointer'}`}>
+                    <input
+                        type="checkbox"
+                        checked={data.whatsapp_consent}
+                        disabled={data.phone.trim() === ''}
+                        onChange={(e) => setData('whatsapp_consent', e.target.checked)}
+                        className="mt-0.5"
+                    />
+                    <span className="text-sm">
+                        <span className="block text-ink">Cet invité accepte de recevoir des messages WhatsApp</span>
+                        <span className="block text-xs text-ink-soft">
+                            Sans son accord, aucune invitation ne lui part par WhatsApp. La date de l'accord est conservée.
+                        </span>
+                    </span>
+                </label>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                     <div>

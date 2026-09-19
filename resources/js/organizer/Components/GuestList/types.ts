@@ -10,6 +10,7 @@ export interface InviteeRow {
     fullName: string;
     email: string | null;
     phone: string | null;
+    whatsappConsent: boolean;
     groupKey: string | null;
     companionsAllowed: number | null;
     companionsLabel: string;

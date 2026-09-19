@@ -100,6 +100,7 @@ final class PresentEventGuestList
             'fullName' => $invitee->contact->fullName(),
             'email' => $invitee->contact->email,
             'phone' => $invitee->contact->phone_e164,
+            'whatsappConsent' => $invitee->contact->whatsapp_consent,
             'groupKey' => $invitee->group_key,
             'companionsAllowed' => $invitee->companions_allowed,
             'companionsLabel' => CompanionAllowance::label($invitee->companions_allowed),
