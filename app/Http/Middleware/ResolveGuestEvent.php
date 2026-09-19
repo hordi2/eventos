@@ -92,32 +92,33 @@ final class ResolveGuestEvent
     }
 
     /**
-     * Retenue en session, ou portée par le brouillon ouvert (lien de reprise
-     * suivi sur un autre appareil) : dans ce cas, elle est remise en session.
+     * Retenue en session avec le jeton du lien qui l'a ouverte : un lien
+     * renouvelé (RenewInvitationLink) ne laisse plus entrer le navigateur qui
+     * avait ouvert l'ancien. À défaut, portée par le brouillon ouvert (lien de
+     * reprise suivi sur un autre appareil) — un renouvellement détache aussi
+     * ces brouillons —, puis remise en session.
      */
     private function identifiedInvitee(Request $request, Event $event): ?EventInvitee
     {
         $sessionKey = "guest_invitee.{$event->id}";
-        $inviteeId = $request->session()->get($sessionKey);
-        $token = $request->route('token');
+        $remembered = $request->session()->get($sessionKey);
+        $inviteeId = is_array($remembered) ? ($remembered['id'] ?? null) : null;
+        $expectedToken = is_array($remembered) ? ($remembered['token'] ?? null) : null;
+        $draftToken = $request->route('token');
 
-        if ($inviteeId === null && is_string($token)) {
-            $inviteeId = RegistrationDraft::query()->where('event_id', $event->id)->where('resume_token', $token)->value('event_invitee_id');
+        if ($inviteeId === null && is_string($draftToken)) {
+            $inviteeId = RegistrationDraft::query()->where('event_id', $event->id)->where('resume_token', $draftToken)->value('event_invitee_id');
         }
 
-        if ($inviteeId === null) {
-            return null;
-        }
+        $invitee = $inviteeId === null ? null : EventInvitee::query()->where('event_id', $event->id)->whereHas('contact')->find($inviteeId);
 
-        $invitee = EventInvitee::query()->where('event_id', $event->id)->whereHas('contact')->find($inviteeId);
-
-        if ($invitee === null) {
+        if ($invitee === null || ($expectedToken !== null && $expectedToken !== $invitee->invitation_token)) {
             $request->session()->forget($sessionKey);
 
             return null;
         }
 
-        $request->session()->put($sessionKey, $invitee->id);
+        $request->session()->put($sessionKey, ['id' => $invitee->id, 'token' => $invitee->invitation_token]);
 
         return $invitee;
     }

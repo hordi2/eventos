@@ -349,3 +349,38 @@ it('refuse un don en ligne à qui répond sans e-mail', function (): void {
     // Sans don, la réponse passe.
     $this->post("{$base}/{$token}/reponses", ['don' => ['choice' => '']])->assertRedirect("{$base}/{$token}/recap");
 });
+
+it('renouvelle un lien personnel : l\'ancien n\'ouvre plus rien, même dans un navigateur qui l\'avait suivi', function (): void {
+    ['organization' => $organization, 'event' => $event, 'base' => $base, 'admin' => $admin, 'grace' => $grace] = closedListEvent();
+    $ancien = $grace->invitation_token;
+
+    // Quelqu'un a suivi le lien et commencé à répondre.
+    $this->get("{$base}/invitation/{$ancien}");
+    $this->get("{$base}/commencer");
+    $brouillon = closedListDraft($event);
+
+    $this->actingAs($admin)->post("/events/{$event->id}/guest-list/{$grace->id}/renew-link")->assertSessionHas('status', 'invitation-link-renewed');
+    auth()->logout();
+
+    $nouveau = $grace->fresh()->invitation_token;
+    expect($nouveau)->not->toBe($ancien);
+    expect($brouillon->fresh()->event_invitee_id)->toBeNull();
+
+    $this->get("{$base}/commencer")->assertRedirect("{$base}/retrouver-mon-invitation");
+    $this->get("{$base}/{$brouillon->resume_token}/identite")->assertRedirect("{$base}/retrouver-mon-invitation");
+    $this->get("{$base}/invitation/{$ancien}")->assertRedirect("{$base}/retrouver-mon-invitation")->assertSessionHasErrors('identifier');
+
+    $this->get("{$base}/invitation/{$nouveau}")->assertRedirect($base);
+    $this->get("{$base}/commencer")->assertRedirect();
+    expect(closedListDraft($event)->event_invitee_id)->toBe($grace->id);
+});
+
+it('réserve le renouvellement d\'un lien à qui peut modifier la liste', function (): void {
+    ['organization' => $organization, 'event' => $event, 'grace' => $grace] = closedListEvent();
+    $viewer = User::factory()->create();
+    $viewer->memberships()->create(['organization_id' => $organization->id, 'role' => MembershipRole::Viewer]);
+
+    $this->actingAs($viewer)->post("/events/{$event->id}/guest-list/{$grace->id}/renew-link")->assertForbidden();
+
+    expect($grace->fresh()->invitation_token)->toBe($grace->invitation_token);
+});

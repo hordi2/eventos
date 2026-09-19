@@ -3,8 +3,9 @@ import { useState, type FormEvent } from 'react';
 import Badge from '../../Components/Badge';
 import Button from '../../Components/Button';
 import InviteeFormModal from '../../Components/GuestList/InviteeFormModal';
+import SendInvitationsModal from '../../Components/GuestList/SendInvitationsModal';
 import SenderAgreementModal from '../../Components/GuestList/SenderAgreementModal';
-import { type InviteeRow, type InviteeTag } from '../../Components/GuestList/types';
+import { type InviteeRow, type InviteeTag, type TemplateOption } from '../../Components/GuestList/types';
 import TextInput from '../../Components/TextInput';
 import Toggle from '../../Components/Toggle';
 import EventLayout from '../../Layouts/EventLayout';
@@ -28,6 +29,19 @@ interface GuestListPageProps {
     maxCompanions: number;
     accessClosed: boolean;
     canChangeAccess: boolean;
+    canSend: boolean;
+    emailTemplates: TemplateOption[];
+    whatsappTemplates: TemplateOption[];
+}
+
+function formatInvitedAt(iso: string | null, via: string | null): string {
+    if (iso === null) {
+        return 'Pas encore envoyée';
+    }
+
+    const date = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(new Date(iso));
+
+    return `${date} · ${via === 'whatsapp' ? 'WhatsApp' : 'E-mail'}`;
 }
 
 const RESPONSE_VARIANTS: Record<string, 'neutral' | 'success' | 'danger'> = {
@@ -68,12 +82,37 @@ export default function Index({
     maxCompanions,
     accessClosed,
     canChangeAccess,
+    canSend,
+    emailTemplates,
+    whatsappTemplates,
 }: GuestListPageProps) {
     const [agreementOpen, setAgreementOpen] = useState(needsAgreement);
     const [formOpen, setFormOpen] = useState(false);
     const [editing, setEditing] = useState<InviteeRow | null>(null);
     const [query, setQuery] = useState(search);
     const [copiedId, setCopiedId] = useState<number | null>(null);
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [sendOpen, setSendOpen] = useState(false);
+    const pageIds = invitees.data.map((invitee) => invitee.id);
+    const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
+
+    function toggleSelected(id: number) {
+        setSelectedIds((current) => (current.includes(id) ? current.filter((selected) => selected !== id) : [...current, id]));
+    }
+
+    function togglePage() {
+        setSelectedIds((current) => (allPageSelected ? current.filter((id) => !pageIds.includes(id)) : [...new Set([...current, ...pageIds])]));
+    }
+
+    function openSend() {
+        if (needsAgreement) {
+            setAgreementOpen(true);
+
+            return;
+        }
+
+        setSendOpen(true);
+    }
     const listUrl = `/events/${event.id}/guest-list`;
     const isEmpty = stats.invitees === 0 && search === '';
 
@@ -108,6 +147,12 @@ export default function Index({
         router.patch(`${listUrl}/access`, { closed }, { preserveScroll: true });
     }
 
+    function renewLink(invitee: InviteeRow) {
+        if (window.confirm(`Créer un nouveau lien pour ${invitee.fullName} ? L'ancien n'ouvrira plus son invitation.`)) {
+            router.post(`${listUrl}/${invitee.id}/renew-link`, {}, { preserveScroll: true });
+        }
+    }
+
     async function copyLink(invitee: InviteeRow) {
         try {
             await navigator.clipboard.writeText(invitee.personalUrl);
@@ -125,7 +170,12 @@ export default function Index({
 
     const actions = canEdit && (
         <div className="flex flex-col gap-3 sm:flex-row">
-            <Button type="button" onClick={openImport} className="sm:w-auto">
+            {canSend && stats.invitees > 0 && (
+                <Button type="button" onClick={openSend} className="sm:w-auto">
+                    Envoyer les invitations{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
+                </Button>
+            )}
+            <Button type="button" variant={canSend && stats.invitees > 0 ? 'secondary' : 'primary'} onClick={openImport} className="sm:w-auto">
                 Importer une liste
             </Button>
             <Button type="button" variant="secondary" onClick={() => openForm(null)} className="sm:w-auto">
@@ -217,9 +267,14 @@ export default function Index({
                         <p className="rounded-card border border-line bg-bg px-4 py-6 text-sm text-ink-soft">Aucun invité ne correspond à « {search} ».</p>
                     ) : (
                         <div className="overflow-x-auto rounded-card border border-line bg-bg">
-                            <table className="w-full min-w-[980px] text-left text-sm">
+                            <table className="w-full min-w-[1120px] text-left text-sm">
                                 <thead className="border-b border-line font-label text-[11px] tracking-[0.12em] text-ink-soft uppercase">
                                     <tr>
+                                        {canSend && (
+                                            <th scope="col" className="w-10 px-4 py-3">
+                                                <input type="checkbox" checked={allPageSelected} onChange={togglePage} aria-label="Cocher tous les invités de la page" />
+                                            </th>
+                                        )}
                                         <th scope="col" className={HEADER_CELL}>
                                             Invité
                                         </th>
@@ -231,6 +286,9 @@ export default function Index({
                                         </th>
                                         <th scope="col" className={HEADER_CELL}>
                                             Tags
+                                        </th>
+                                        <th scope="col" className={HEADER_CELL}>
+                                            Invitation
                                         </th>
                                         <th scope="col" className={HEADER_CELL}>
                                             Réponse
@@ -245,6 +303,16 @@ export default function Index({
                                 <tbody>
                                     {invitees.data.map((invitee) => (
                                         <tr key={invitee.id} className="border-b border-line align-top last:border-0">
+                                            {canSend && (
+                                                <td className="px-4 py-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.includes(invitee.id)}
+                                                        onChange={() => toggleSelected(invitee.id)}
+                                                        aria-label={`Cocher ${invitee.fullName}`}
+                                                    />
+                                                </td>
+                                            )}
                                             <td className={`border-l-2 px-4 py-3 ${invitee.groupKey ? 'border-accent' : 'border-transparent'}`}>
                                                 <p className="text-ink">{invitee.fullName}</p>
                                                 <p className="text-xs text-ink-soft">{[invitee.email, invitee.phone].filter(Boolean).join(' · ') || '—'}</p>
@@ -266,6 +334,7 @@ export default function Index({
                                                     </ul>
                                                 )}
                                             </td>
+                                            <td className="px-4 py-3 text-xs whitespace-nowrap text-ink-soft">{formatInvitedAt(invitee.lastInvitedAt, invitee.lastInvitedVia)}</td>
                                             <td className="px-4 py-3">
                                                 {invitee.response ? (
                                                     <Badge variant={RESPONSE_VARIANTS[invitee.response.status] ?? 'neutral'}>{invitee.response.label}</Badge>
@@ -283,6 +352,9 @@ export default function Index({
                                                             WhatsApp
                                                         </a>
                                                     )}
+                                                    <button type="button" onClick={() => renewLink(invitee)} className="ml-4 text-sm text-ink-soft hover:text-ink hover:underline">
+                                                        Nouveau lien
+                                                    </button>
                                                     <button type="button" onClick={() => openForm(invitee)} className="ml-4 text-sm text-ink hover:underline">
                                                         Modifier
                                                     </button>
@@ -324,6 +396,18 @@ export default function Index({
                     groups={groups}
                     tags={tags}
                     maxCompanions={maxCompanions}
+                />
+            )}
+
+            {sendOpen && (
+                <SendInvitationsModal
+                    open={sendOpen}
+                    onClose={() => setSendOpen(false)}
+                    eventId={event.id}
+                    emailTemplates={emailTemplates}
+                    whatsappTemplates={whatsappTemplates}
+                    selectedIds={selectedIds}
+                    hasGroups={stats.groups > 0}
                 />
             )}
 

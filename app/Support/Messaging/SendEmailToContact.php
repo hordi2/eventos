@@ -32,6 +32,7 @@ final class SendEmailToContact
         string $bodyHtml,
         bool $isTransactional = true,
         ?string $icsAttachment = null,
+        ?string $ccEmail = null,
     ): ?EmailMessage {
         if ($contact->email === null) {
             return null;
@@ -56,6 +57,7 @@ final class SendEmailToContact
             $isTransactional,
             $unsubscribeUrl,
             $icsAttachment,
+            $ccEmail,
         );
     }
 }

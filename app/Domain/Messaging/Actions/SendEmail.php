@@ -27,11 +27,13 @@ final class SendEmail
         bool $isTransactional,
         ?string $unsubscribeUrl,
         ?string $icsAttachment = null,
+        ?string $ccEmail = null,
     ): EmailMessage {
         $emailMessage = EmailMessage::query()->create([
             'organization_id' => $organization->id,
             'contact_id' => $contactId,
             'to_email' => $toEmail,
+            'cc_email' => $ccEmail,
             'subject' => $subject,
             'is_transactional' => $isTransactional,
             'status' => EmailMessageStatus::Queued,

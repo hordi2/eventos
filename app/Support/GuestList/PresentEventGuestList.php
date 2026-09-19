@@ -10,6 +10,8 @@ use App\Domain\Contact\Support\CompanionAllowance;
 use App\Domain\Event\Models\Event;
 use App\Domain\Form\Models\Attendee;
 use App\Domain\Form\Models\Registration;
+use App\Domain\Messaging\Models\EmailTemplate;
+use App\Domain\Messaging\Models\WhatsappTemplate;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +30,7 @@ final class PresentEventGuestList
     public const PER_PAGE = 50;
 
     /**
-     * @return array{invitees: LengthAwarePaginator<int, array<string, mixed>>, stats: array{invitees: int, groups: int, responded: int}, groups: array<int, string>, tags: array<int, array{name: string, color: string}>}
+     * @return array{invitees: LengthAwarePaginator<int, array<string, mixed>>, stats: array{invitees: int, groups: int, responded: int}, groups: array<int, string>, tags: array<int, array{name: string, color: string}>, emailTemplates: array<int, array{id: int, name: string}>, whatsappTemplates: array<int, array{id: int, name: string}>}
      */
     public function handle(Event $event, string $search): array
     {
@@ -62,6 +64,9 @@ final class PresentEventGuestList
             'stats' => $this->stats($event),
             'groups' => $this->baseQuery($event)->whereNotNull('event_invitees.group_key')->orderBy('event_invitees.group_key')->pluck('event_invitees.group_key')->map(fn (mixed $key): string => (string) $key)->unique()->values()->all(),
             'tags' => Tag::query()->orderBy('name')->get(['name', 'color'])->map(fn (Tag $tag): array => ['name' => $tag->name, 'color' => $tag->color])->all(),
+            // Modèles proposés à l'envoi groupé des invitations.
+            'emailTemplates' => EmailTemplate::query()->orderBy('name')->get(['id', 'name'])->map(fn (EmailTemplate $template): array => ['id' => $template->id, 'name' => $template->name])->all(),
+            'whatsappTemplates' => WhatsappTemplate::query()->orderBy('name')->get(['id', 'name'])->map(fn (WhatsappTemplate $template): array => ['id' => $template->id, 'name' => $template->name])->all(),
         ];
     }
 
@@ -99,6 +104,8 @@ final class PresentEventGuestList
             'companionsAllowed' => $invitee->companions_allowed,
             'companionsLabel' => CompanionAllowance::label($invitee->companions_allowed),
             'ccEmail' => $invitee->cc_email,
+            'lastInvitedAt' => $invitee->last_invited_at?->toIso8601String(),
+            'lastInvitedVia' => $invitee->last_invited_via,
             'tags' => $invitee->contact->tags->map(fn (Tag $tag): array => ['name' => $tag->name, 'color' => $tag->color])->values()->all(),
             'response' => $registration === null ? null : ['status' => $registration->status->value, 'label' => $registration->status->label()],
         ];

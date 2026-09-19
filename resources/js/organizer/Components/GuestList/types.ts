@@ -18,4 +18,11 @@ export interface InviteeRow {
     response: { status: string; label: string } | null;
     personalUrl: string;
     whatsappUrl: string | null;
+    lastInvitedAt: string | null;
+    lastInvitedVia: 'email' | 'whatsapp' | null;
+}
+
+export interface TemplateOption {
+    id: number;
+    name: string;
 }

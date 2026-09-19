@@ -33,6 +33,7 @@ final class EmailMessage extends Model
         'organization_id',
         'contact_id',
         'to_email',
+        'cc_email',
         'subject',
         'is_transactional',
         'status',

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support\Messaging;
 
 use App\Domain\Contact\Models\Contact;
+use App\Domain\Contact\Models\EventInvitee;
 use App\Domain\Event\Models\Event;
 use App\Support\CheckIn\GetContactTableName;
 
@@ -73,7 +74,7 @@ final class ResolveMergeVariables
             'first_name' => $contact->first_name,
             'last_name' => $contact->last_name,
             'full_name' => $contact->fullName(),
-            'rsvp_link' => $event !== null ? $this->rsvpLink($event) : null,
+            'rsvp_link' => $event !== null ? $this->rsvpLink($event, $contact) : null,
             'event_date' => $event !== null ? $this->eventDate($event) : null,
             'event_location' => $event !== null ? $this->eventLocation($event) : null,
             'table' => $event !== null
@@ -90,11 +91,23 @@ final class ResolveMergeVariables
         return $values;
     }
 
-    private function rsvpLink(Event $event): string
+    /**
+     * Invité de la liste de l'événement : son lien personnel, qui ouvre
+     * directement son invitation (et seul ouvre un événement réservé à sa
+     * liste). Tout autre contact reçoit le lien public.
+     */
+    private function rsvpLink(Event $event, Contact $contact): string
     {
         $event->loadMissing('organization');
 
-        return route('guest.registration.start', [$event->organization->slug, $event->slug]);
+        $token = EventInvitee::query()
+            ->where('event_id', $event->id)
+            ->where('contact_id', $contact->id)
+            ->value('invitation_token');
+
+        return $token !== null
+            ? route('guest.registration.invitation.open', [$event->organization->slug, $event->slug, $token])
+            : route('guest.registration.start', [$event->organization->slug, $event->slug]);
     }
 
     private function eventDate(Event $event): string

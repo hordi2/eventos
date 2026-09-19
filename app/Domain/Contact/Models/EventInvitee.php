@@ -37,12 +37,15 @@ final class EventInvitee extends Model
         'group_key',
         'companions_allowed',
         'cc_email',
+        'last_invited_at',
+        'last_invited_via',
     ];
 
     protected function casts(): array
     {
         return [
             'companions_allowed' => 'integer',
+            'last_invited_at' => 'immutable_datetime',
         ];
     }
 

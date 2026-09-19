@@ -18,6 +18,7 @@ use App\Http\Requests\Organizer\GuestList\SaveEventInviteeRequest;
 use App\Http\Requests\Organizer\GuestList\UpdateGuestListAccessRequest;
 use App\Models\User;
 use App\Support\GuestList\PresentEventGuestList;
+use App\Support\GuestList\RenewInvitationLink;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -36,18 +37,14 @@ final class EventGuestListController extends Controller
     {
         $eventModel = Event::query()->findOrFail($event);
         Gate::authorize('viewGuests', $eventModel->organization);
-        $canEdit = Gate::allows('updateGuests', $eventModel->organization);
         $search = trim((string) $request->query('q', ''));
 
         return Inertia::render('GuestList/Index', [
             'event' => ['id' => $eventModel->id, 'title' => $eventModel->title],
             ...$presentEventGuestList->handle($eventModel, $search),
             'search' => $search,
-            'canEdit' => $canEdit,
-            'needsAgreement' => $canEdit && $eventModel->organization->sender_agreement_accepted_at === null,
-            'accessClosed' => $eventModel->access_mode === EventAccessMode::ClosedList,
-            'canChangeAccess' => Gate::allows('update', $eventModel),
             'maxCompanions' => FormSettings::MAX_COMPANIONS,
+            ...$this->abilities($eventModel),
         ]);
     }
 
@@ -82,6 +79,16 @@ final class EventGuestListController extends Controller
         return back()->with('status', 'invitee-removed');
     }
 
+    public function renewLink(Request $request, int $event, int $invitee, RenewInvitationLink $renewInvitationLink): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $renewInvitationLink->handle($this->findInvitee($event, $invitee), $user);
+
+        return back()->with('status', 'invitation-link-renewed');
+    }
+
     public function access(UpdateGuestListAccessRequest $request, int $event, UpdateEventGuestListAccess $updateEventGuestListAccess): RedirectResponse
     {
         /** @var User $user */
@@ -97,6 +104,22 @@ final class EventGuestListController extends Controller
         Gate::authorize('viewGuests', Event::query()->findOrFail($event)->organization);
 
         return response()->download($guestListTemplate->write(), 'modele-liste-invites-itaza.xlsx')->deleteFileAfterSend();
+    }
+
+    /**
+     * @return array{canEdit: bool, needsAgreement: bool, accessClosed: bool, canChangeAccess: bool, canSend: bool}
+     */
+    private function abilities(Event $event): array
+    {
+        $canEdit = Gate::allows('updateGuests', $event->organization);
+
+        return [
+            'canEdit' => $canEdit,
+            'needsAgreement' => $canEdit && $event->organization->sender_agreement_accepted_at === null,
+            'accessClosed' => $event->access_mode === EventAccessMode::ClosedList,
+            'canChangeAccess' => Gate::allows('update', $event),
+            'canSend' => Gate::allows('sendCommunications', $event->organization),
+        ];
     }
 
     private function findInvitee(int $event, int $invitee): EventInvitee

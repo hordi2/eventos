@@ -60,7 +60,14 @@ final class SendEmailMessageJob implements ShouldQueue
         $organization = Organization::query()->find($this->organizationId);
 
         try {
-            $sent = Mail::to($emailMessage->to_email)->send(new GenericMail(
+            $mailer = Mail::to($emailMessage->to_email);
+
+            // Adresse en copie (invité de la liste : une assistante, un conjoint).
+            if ($emailMessage->cc_email !== null) {
+                $mailer->cc($emailMessage->cc_email);
+            }
+
+            $sent = $mailer->send(new GenericMail(
                 $emailMessage->subject,
                 $this->bodyHtml,
                 $this->unsubscribeUrl,

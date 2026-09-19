@@ -573,10 +573,31 @@ d'invités (droit de modifier l'événement).
   don en ligne reste refusé sans e-mail (carte et Mobile Money l'exigent),
   avec un message qui l'explique ; aucun reçu n'est envoyé à une adresse
   vide.
-Limites connues : un lien personnel ne se révoque pas encore (retirer
-l'invité le désactive) ; la confirmation par WhatsApp dépend des
-automatisations et du consentement WhatsApp du contact ; l'envoi groupé des
-liens par e-mail ou WhatsApp relève des campagnes (M4).
+- Renouveler un lien personnel (lien transmis à la mauvaise personne) :
+  l'ancien cesse aussitôt d'ouvrir l'invitation, y compris dans un
+  navigateur qui l'avait suivi — la session retient le jeton du lien, pas
+  seulement l'invité —, et les réponses commencées avec lui mais pas
+  envoyées en sont détachées. Le véritable invité se retrouve toujours par
+  son e-mail ou son numéro WhatsApp.
+- Envoi groupé des invitations, depuis la liste : canal (e-mail ou
+  WhatsApp), modèle existant, destinataires (sans réponse, tous, ou invités
+  cochés), et un message par invité ou par groupe (M3.2) — dans ce cas au
+  premier membre joignable, qui répond pour tous. Un aperçu donne, avant de
+  confirmer, le nombre de messages et les invités écartés avec leur raison
+  (sans coordonnée, désabonnés, sans accord WhatsApp). {{rsvp_link}} devient
+  le lien personnel de chaque invité de la liste, dans les e-mails comme dans
+  WhatsApp (et dans les automatisations). L'e-mail porte le fichier
+  d'agenda, un lien de désabonnement et l'adresse en copie de l'invité.
+  Envoi en file d'attente (une seule tentative : pas de double envoi),
+  double confirmation sans effet (clé d'envoi), débit limité, envoi de masse
+  journalisé (`guest_list.invitations_sent`) ; la liste note la date et le
+  canal du dernier envoi de chaque invité. Réservé au droit
+  `sendCommunications`, accord d'envoi exigé.
+Limites connues : la confirmation par WhatsApp dépend des
+automatisations et du consentement WhatsApp du contact ; les automatisations
+planifiées ne ciblent pas encore la liste d'invités (seulement les
+segments) ; l'accord WhatsApp d'un invité ne se coche pas encore depuis la
+liste (import : colonne « Consentement WhatsApp »).
 
 ---
 

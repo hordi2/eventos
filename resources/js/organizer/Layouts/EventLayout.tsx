@@ -26,6 +26,8 @@ const STATUS_MESSAGES: Record<string, string> = {
     'sender-agreement-accepted': "Merci : l'accord d'envoi est accepté pour votre organisation.",
     'guest-list-closed': 'Événement réservé à la liste : seuls vos invités peuvent répondre, avec leur lien personnel, leur e-mail ou leur numéro WhatsApp.',
     'guest-list-opened': 'Événement ouvert : toute personne qui a le lien peut répondre.',
+    'invitation-link-renewed': "Nouveau lien créé : l'ancien n'ouvre plus l'invitation. Pensez à envoyer le nouveau.",
+    'invitations-sending': "Invitations en cours d'envoi. La colonne « Invitation » se met à jour au fil des envois.",
 };
 
 /**

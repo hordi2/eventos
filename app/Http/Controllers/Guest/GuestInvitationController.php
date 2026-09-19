@@ -51,7 +51,7 @@ final class GuestInvitationController extends Controller
 
     private function remember(Request $request, EventInvitee $invitee, string $organization, string $event): RedirectResponse
     {
-        $request->session()->put("guest_invitee.{$invitee->event_id}", $invitee->id);
+        $request->session()->put("guest_invitee.{$invitee->event_id}", ['id' => $invitee->id, 'token' => $invitee->invitation_token]);
 
         return redirect()->route('guest.registration.start', [$organization, $event]);
     }

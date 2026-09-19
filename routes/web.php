@@ -37,6 +37,7 @@ use App\Http\Controllers\Organizer\EventController;
 use App\Http\Controllers\Organizer\EventDashboardController;
 use App\Http\Controllers\Organizer\EventGuestImportController;
 use App\Http\Controllers\Organizer\EventGuestListController;
+use App\Http\Controllers\Organizer\EventInvitationSendController;
 use App\Http\Controllers\Organizer\EventPublicationController;
 use App\Http\Controllers\Organizer\EventReportController;
 use App\Http\Controllers\Organizer\EventSegmentController;
@@ -339,10 +340,14 @@ Route::middleware('auth')->group(function (): void {
         Route::post('events/{event}/guest-list', [EventGuestListController::class, 'store'])->name('events.guest-list.store');
         Route::get('events/{event}/guest-list/template', [EventGuestListController::class, 'template'])->name('events.guest-list.template');
         Route::patch('events/{event}/guest-list/access', [EventGuestListController::class, 'access'])->name('events.guest-list.access');
+        // Envoi groupé des invitations : aperçu, puis envoi (débit limité, §7).
+        Route::get('events/{event}/guest-list/send/preview', [EventInvitationSendController::class, 'preview'])->name('events.guest-list.send.preview');
+        Route::post('events/{event}/guest-list/send', [EventInvitationSendController::class, 'store'])->middleware('throttle:10,1')->name('events.guest-list.send');
         Route::get('events/{event}/guest-list/import', [EventGuestImportController::class, 'create'])->name('events.guest-list.import');
         Route::post('events/{event}/guest-list/import', [EventGuestImportController::class, 'store'])->name('events.guest-list.import.store');
         Route::patch('events/{event}/guest-list/{invitee}', [EventGuestListController::class, 'update'])->whereNumber('invitee')->name('events.guest-list.update');
         Route::delete('events/{event}/guest-list/{invitee}', [EventGuestListController::class, 'destroy'])->whereNumber('invitee')->name('events.guest-list.destroy');
+        Route::post('events/{event}/guest-list/{invitee}/renew-link', [EventGuestListController::class, 'renewLink'])->whereNumber('invitee')->name('events.guest-list.renew-link');
         Route::post('sender-agreement', [SenderAgreementController::class, 'store'])->name('sender-agreement.store');
 
         Route::get('events/{event}/segments', [EventSegmentController::class, 'index'])->name('events.segments.index');
