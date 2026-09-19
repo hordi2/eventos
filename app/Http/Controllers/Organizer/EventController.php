@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Organizer;
 use App\Domain\Event\Actions\CreateEvent;
 use App\Domain\Event\Actions\DuplicateEvent;
 use App\Domain\Event\Actions\UpdateEvent;
+use App\Domain\Event\Data\EventDuplicationPart;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventAudience;
 use App\Domain\Event\Models\EventType;
@@ -65,6 +66,7 @@ final class EventController extends Controller
             // refusée aux collaborateurs, même administrateurs de celui-ci
             // (RestrictCollaboratorToSharedEvents).
             'canDuplicate' => ! $collaboratorAccess->isCollaborator($user, $event->organization_id),
+            'duplicationParts' => EventDuplicationPart::options(),
         ]);
     }
 
@@ -80,7 +82,7 @@ final class EventController extends Controller
         $source = $this->findEvent($event);
         $newStartAt = CarbonImmutable::parse($request->validated('new_start_at'), $source->timezone);
 
-        $duplicate = $action->handle($source, $request->user(), $newStartAt);
+        $duplicate = $action->handle($source, $request->user(), $newStartAt, $request->parts());
 
         return redirect()->route('events.edit', $duplicate);
     }

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domain\Contact\Listeners\CopyGuestListToDuplicatedEvent;
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Contact\Policies\ContactPolicy;
+use App\Domain\Event\Events\EventDuplicated;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\Venue;
 use App\Domain\Event\Policies\EventPolicy;
@@ -15,12 +17,16 @@ use App\Domain\Form\Events\RegistrationCreated;
 use App\Domain\Form\Events\RegistrationFileRejected;
 use App\Domain\Form\Events\RegistrationUpdated;
 use App\Domain\Form\Listeners\ConfirmPromotedRegistration;
+use App\Domain\Form\Listeners\CopyFormsToDuplicatedEvent;
 use App\Domain\Form\Models\Form;
 use App\Domain\Form\Policies\FormPolicy;
+use App\Domain\Messaging\Listeners\CopyAutomationsToDuplicatedEvent;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Organization\Policies\OrganizationPolicy;
+use App\Domain\Page\Listeners\CopyPageToDuplicatedEvent;
 use App\Domain\Ticketing\Events\OrderPaid;
 use App\Domain\Ticketing\Events\OrderPlaced;
+use App\Domain\Ticketing\Listeners\CopyTicketTypesToDuplicatedEvent;
 use App\Listeners\LinkOrderToContact;
 use App\Listeners\LinkRegistrationToContact;
 use App\Listeners\Notifications\NotifyOrganizersOfRegistration;
@@ -107,6 +113,13 @@ class AppServiceProvider extends ServiceProvider
 
         // Fichier joint refusé par l'antivirus après l'inscription : l'invité est prévenu.
         EventFacade::listen(RegistrationFileRejected::class, NotifyGuestOfRejectedFile::class);
+
+        // T-014 : chaque module recopie sa partie d'un événement dupliqué.
+        EventFacade::listen(EventDuplicated::class, CopyFormsToDuplicatedEvent::class);
+        EventFacade::listen(EventDuplicated::class, CopyPageToDuplicatedEvent::class);
+        EventFacade::listen(EventDuplicated::class, CopyTicketTypesToDuplicatedEvent::class);
+        EventFacade::listen(EventDuplicated::class, CopyGuestListToDuplicatedEvent::class);
+        EventFacade::listen(EventDuplicated::class, CopyAutomationsToDuplicatedEvent::class);
 
         // T-076 : fait échouer /up (bootstrap/app.php) quand la base ou
         // Redis ne répond pas.

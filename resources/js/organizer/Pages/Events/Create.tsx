@@ -50,6 +50,13 @@ interface CreateEventPageProps {
     timezones: Record<string, string>;
     venues: VenueOption[];
     canDuplicate?: boolean;
+    duplicationParts?: DuplicationPartOption[];
+}
+
+interface DuplicationPartOption {
+    value: string;
+    label: string;
+    hint: string;
 }
 
 function toDatetimeLocalValue(isoString: string, timeZone: string): string {
@@ -88,7 +95,7 @@ function addHoursToLocalValue(value: string, hours: number): string {
     return `${shifted.getFullYear()}-${pad(shifted.getMonth() + 1)}-${pad(shifted.getDate())}T${pad(shifted.getHours())}:${pad(shifted.getMinutes())}`;
 }
 
-export default function CreateEvent({ event, eventTypes, eventAudiences, timezones, venues, canDuplicate = false }: CreateEventPageProps) {
+export default function CreateEvent({ event, eventTypes, eventAudiences, timezones, venues, canDuplicate = false, duplicationParts = [] }: CreateEventPageProps) {
     const [step, setStep] = useState<1 | 2 | 3>(event ? 3 : 1);
     const [endTouched, setEndTouched] = useState(Boolean(event));
     const [venueMode, setVenueMode] = useState<'none' | 'existing' | 'new'>(event?.venueId ? 'existing' : 'none');
@@ -97,7 +104,16 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
     // Un événement existant a déjà son menu latéral ; la création n'en a pas encore.
     const PageLayout = event ? EventLayout : OrganizerLayout;
 
-    const duplicateForm = useForm({ new_start_at: '' });
+    // Tout est emporté par défaut : on duplique d'abord pour réutiliser.
+    const duplicateForm = useForm<{ new_start_at: string; parts: string[] }>({
+        new_start_at: '',
+        parts: duplicationParts.map((part) => part.value),
+    });
+
+    function toggleDuplicationPart(value: string) {
+        const parts = duplicateForm.data.parts;
+        duplicateForm.setData('parts', parts.includes(value) ? parts.filter((part) => part !== value) : [...parts, value]);
+    }
 
     function submitDuplicate(formEvent: FormEvent) {
         formEvent.preventDefault();
@@ -473,6 +489,32 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                                     copiées telles quelles.
                                 </p>
                             </div>
+
+                            {duplicationParts.length > 0 && (
+                                <fieldset>
+                                    <legend className="mb-2 block font-label text-xs tracking-[0.1em] text-ink-soft uppercase">À reprendre aussi</legend>
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                        {duplicationParts.map((part) => (
+                                            <label
+                                                key={part.value}
+                                                className={`flex cursor-pointer items-start gap-3 rounded-control border px-4 py-3 ${duplicateForm.data.parts.includes(part.value) ? 'border-ink' : 'border-line'}`}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={duplicateForm.data.parts.includes(part.value)}
+                                                    onChange={() => toggleDuplicationPart(part.value)}
+                                                    className="mt-1"
+                                                />
+                                                <span>
+                                                    <span className="block text-sm text-ink">{part.label}</span>
+                                                    <span className="block text-xs text-ink-soft">{part.hint}</span>
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                    <InputError message={duplicateForm.errors.parts} />
+                                </fieldset>
+                            )}
 
                             <Button type="submit" disabled={duplicateForm.processing}>
                                 Confirmer la duplication
