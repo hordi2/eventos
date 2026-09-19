@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Organizer;
 
-use App\Domain\Event\Actions\PublishEvent;
 use App\Domain\Event\Actions\UnpublishEvent;
 use App\Domain\Event\InvalidEventTransitionException;
 use App\Domain\Event\Models\Event;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\Events\PublishEventWithForm;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -18,7 +18,7 @@ use Illuminate\Http\Request;
  */
 final class EventPublicationController extends Controller
 {
-    public function publish(Request $request, int $event, PublishEvent $publishEvent): RedirectResponse
+    public function publish(Request $request, int $event, PublishEventWithForm $publishEvent): RedirectResponse
     {
         /** @var User $user */
         $user = $request->user();

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventStatus;
+use App\Domain\Form\Actions\CreateForm;
 use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Organization\Models\Organization;
 use App\Models\User;
@@ -37,6 +38,25 @@ it('publie un événement depuis le menu de statut', function (): void {
     $response->assertSessionHas('status', 'event-published');
     app(CurrentOrganization::class)->set($organization);
     expect($event->fresh()->status)->toBe(EventStatus::Published);
+});
+
+it('refuse de publier un événement sans formulaire publié, avec un message clair', function (): void {
+    [$organization, $owner] = organizationWithContactRole(MembershipRole::Owner);
+    $event = Event::factory()->for($organization)->create();
+
+    $this->actingAs($owner)->post("/events/{$event->id}/publish")
+        ->assertSessionHasErrors(['status' => "Créez et publiez d'abord le formulaire d'inscription : sans lui, vos invités ne pourraient pas répondre."]);
+
+    // Un formulaire encore en brouillon ne suffit pas : c'est lui que le lien ouvrirait.
+    app(CurrentOrganization::class)->set($organization);
+    app(CreateForm::class)->handle($organization, $event->id, $owner, ['name' => 'Inscription au gala', 'fields' => []]);
+    app(CurrentOrganization::class)->clear();
+
+    $this->actingAs($owner)->post("/events/{$event->id}/publish")
+        ->assertSessionHasErrors(['status' => "Publiez d'abord le formulaire « Inscription au gala » : c'est lui qu'ouvre le lien de l'événement."]);
+
+    app(CurrentOrganization::class)->set($organization);
+    expect($event->fresh()->status)->toBe(EventStatus::Draft);
 });
 
 it('dépublie un événement : sa page publique redevient introuvable', function (): void {

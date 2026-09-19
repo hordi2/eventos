@@ -20,9 +20,9 @@ final class PublishEvent
             throw InvalidEventTransitionException::cannotPublish($event->status->value);
         }
 
-        // À ajouter dès que le module Formulaires existera (T-020) :
-        // refuser la publication si l'événement n'a aucun formulaire actif
-        // (critère du CDC, non implémentable avant que Form n'existe).
+        // Le formulaire publié exigé par le CDC (M1.2) est vérifié avant cette
+        // action par App\Support\Events\PublishEventWithForm : Domain/Event
+        // ne lit jamais les modèles de Domain/Form (section 3 du CLAUDE.md).
 
         $event->update(['status' => EventStatus::Published]);
 

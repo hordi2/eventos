@@ -29,11 +29,6 @@ Le projet n'est pas encore hébergé : ces réglages se posent chez l'hébergeur
 
 ## Dans le code (tickets à créer)
 
-- [ ] **Publier un événement sans formulaire** : la publication d'un
-      événement n'exige pas encore un formulaire publié (critère du cahier
-      des charges, M1.2). Un commentaire l'annonce dans `PublishEvent` depuis
-      le début du projet ; un invité tombe aujourd'hui sur une page
-      introuvable.
 - [ ] **Rapports par formulaire** : avec plusieurs formulaires, « Réponses
       aux questions », « Préférences alimentaires » et l'export réunissent
       les questions de tous les formulaires (rapprochées par clé). Un filtre
