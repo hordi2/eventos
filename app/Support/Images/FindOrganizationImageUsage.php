@@ -37,6 +37,10 @@ final class FindOrganizationImageUsage
             if ($theme['background_image_path'] === $image->path) {
                 $usages[] = "image de fond du formulaire « {$form->name} »";
             }
+
+            if ($theme['header_image_path'] === $image->path) {
+                $usages[] = "bandeau du formulaire « {$form->name} »";
+            }
         }
 
         $fields = FormField::query()

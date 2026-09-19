@@ -122,7 +122,7 @@ it('partage la navigation de l\'événement avec toutes ses pages', function ():
         ->where('eventNav.publicUrl', null)
         ->where('eventNav.previewUrl', fn (?string $url): bool => is_string($url) && str_contains($url, 'signature='))
         ->where('eventNav.links.checklist', route('events.show', $draft->id))
-        ->where('eventNav.links.form', route('forms.create', $draft->id))
+        ->where('eventNav.links.form', route('forms.index', $draft->id))
         ->where('eventNav.canChangeStatus', true));
 });
 

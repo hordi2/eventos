@@ -35,13 +35,22 @@
         @endif
     @endisset
 </head>
-{{-- itaza-page, itaza-field et itaza-progress sont les repères offerts au
+{{-- itaza-page, itaza-header, itaza-field et itaza-progress sont les repères offerts au
      CSS personnalisé : ce sont des noms stables, contrairement aux classes
      utilitaires qui changent à chaque construction des styles. --}}
 <body class="itaza-page min-h-screen bg-bg-alt antialiased">
+    @yield('notice')
+    @php($headerUrl = isset($formTheme) ? ($formTheme['headerUrl'] ?? null) : null)
+    @if ($headerUrl)
+        {{-- Bandeau du formulaire, au-dessus de tout : chargé en priorité, il
+             est la première chose que voit l'invité (image déjà réduite à l'envoi). --}}
+        <div class="itaza-header">
+            <img src="{{ $headerUrl }}" alt="" fetchpriority="high" class="h-44 w-full object-cover sm:h-64">
+        </div>
+    @endif
     @if (isset($formTheme) && $formTheme['logoUrl'])
-        <div class="flex justify-center px-4 pt-10">
-            <img src="{{ $formTheme['logoUrl'] }}" alt="" class="h-14 w-auto max-w-[240px] object-contain">
+        <div class="relative flex justify-center px-4 {{ $headerUrl ? '-mt-10' : 'pt-10' }}">
+            <img src="{{ $formTheme['logoUrl'] }}" alt="" class="h-14 w-auto max-w-[240px] object-contain {{ $headerUrl ? 'h-20 rounded-card bg-bg p-2 shadow-sm' : '' }}">
         </div>
     @endif
     @yield('content')

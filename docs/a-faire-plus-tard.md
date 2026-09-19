@@ -27,6 +27,18 @@ Le projet n'est pas encore hébergé : ces réglages se posent chez l'hébergeur
       images), `upload_max_filesize` ≥ 12M et `post_max_size` ≥ 64M (fichiers
       joints). Déjà réglés dans l'image Docker du projet.
 
+## Dans le code (tickets à créer)
+
+- [ ] **Publier un événement sans formulaire** : la publication d'un
+      événement n'exige pas encore un formulaire publié (critère du cahier
+      des charges, M1.2). Un commentaire l'annonce dans `PublishEvent` depuis
+      le début du projet ; un invité tombe aujourd'hui sur une page
+      introuvable.
+- [ ] **Rapports par formulaire** : avec plusieurs formulaires, « Réponses
+      aux questions », « Préférences alimentaires » et l'export réunissent
+      les questions de tous les formulaires (rapprochées par clé). Un filtre
+      « un seul formulaire » pourra venir si le besoin se présente.
+
 ## Sur le Mac
 
 - [ ] **Sortir le projet d'iCloud** : le dossier est dans « Documents »,

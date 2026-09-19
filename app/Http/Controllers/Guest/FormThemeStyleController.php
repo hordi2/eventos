@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Guest;
 
 use App\Domain\Event\Models\Event;
-use App\Domain\Form\Models\Form;
 use App\Domain\Form\Support\CustomCss;
+use App\Domain\Form\Support\EventForms;
 use App\Domain\Form\Support\FormSettings;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -25,7 +25,8 @@ final class FormThemeStyleController extends Controller
     {
         /** @var Event $event */
         $event = $request->attributes->get('guestEvent');
-        $form = Form::query()->where('event_id', $event->id)->first();
+        $slug = $request->query('formulaire');
+        $form = app(EventForms::class)->forLink($event->id, is_string($slug) ? $slug : null);
         $css = CustomCss::forDelivery(FormSettings::resolve($form?->settings)['theme']['custom_css']);
 
         return response($css, 200, [

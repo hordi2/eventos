@@ -27,6 +27,10 @@ final class FormFactory extends Factory
             'event_id' => Event::factory(),
             'created_by' => User::factory(),
             'name' => "Formulaire d'inscription",
+            'slug' => fake()->unique()->slug(2),
+            // Les fixtures d'inscription créent parfois plusieurs formulaires
+            // pour un même événement : un seul peut être celui par défaut.
+            'is_default' => false,
         ];
     }
 }

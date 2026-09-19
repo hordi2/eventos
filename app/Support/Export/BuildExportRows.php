@@ -8,9 +8,9 @@ use App\Domain\Analytics\Models\ExportType;
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Event\Models\Event;
 use App\Domain\Form\Models\FieldType;
-use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormField;
 use App\Domain\Form\Models\Registration;
+use App\Domain\Form\Support\EventForms;
 use App\Domain\Ticketing\Models\Order;
 use App\Domain\Ticketing\Models\OrderStatus;
 use App\Support\CheckIn\GetEventGuestList;
@@ -39,6 +39,7 @@ final class BuildExportRows
         private readonly ComputeEventSegmentContacts $computeEventSegmentContacts,
         private readonly GetEventGuestList $getEventGuestList,
         private readonly CollectRegistrationAnswers $collectRegistrationAnswers,
+        private readonly EventForms $eventForms,
     ) {}
 
     /**
@@ -91,28 +92,14 @@ final class BuildExportRows
     }
 
     /**
-     * Une colonne par question du formulaire, préfixée pour ne jamais
+     * Une colonne par question des formulaires, préfixée pour ne jamais
      * entrer en collision avec les colonnes fixes ci-dessus.
      *
      * @return array<string, string>
      */
     private function questionColumns(Event $event): array
     {
-        $form = Form::query()->where('event_id', $event->id)->first();
-
-        if ($form === null) {
-            return [];
-        }
-
-        $version = $form->currentVersion ?? $form->latestVersion();
-
-        if ($version === null) {
-            return [];
-        }
-
-        $version->loadMissing('fields');
-
-        return $version->fields
+        return $this->eventForms->referenceFields($event->id)
             ->reject(fn (FormField $field): bool => $field->type === FieldType::InformationalText)
             ->mapWithKeys(fn (FormField $field): array => [self::QUESTION_PREFIX.$field->key => $field->label])
             ->all();

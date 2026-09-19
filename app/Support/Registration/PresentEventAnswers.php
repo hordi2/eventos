@@ -9,12 +9,11 @@ use App\Domain\Form\Actions\FormatFieldAnswerForExport;
 use App\Domain\Form\Actions\SyncSubEventRegistrations;
 use App\Domain\Form\Models\FieldOption;
 use App\Domain\Form\Models\FieldType;
-use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormField;
-use App\Domain\Form\Models\FormVersion;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationAnswer;
 use App\Domain\Form\Support\DonationAnswer;
+use App\Domain\Form\Support\EventForms;
 use App\Support\Capacity\Actions\GetRemainingCapacity;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
@@ -40,6 +39,7 @@ final class PresentEventAnswers
         private readonly FormatFieldAnswerForExport $formatAnswer,
         private readonly GetRemainingCapacity $getRemainingCapacity,
         private readonly CollectRegistrationAnswers $collectRegistrationAnswers,
+        private readonly EventForms $eventForms,
     ) {}
 
     /**
@@ -51,13 +51,7 @@ final class PresentEventAnswers
      */
     public function handle(Event $event, int $guestLimit = 50): array
     {
-        $version = $this->referenceVersion($event);
-
-        if ($version === null) {
-            return ['questions' => [], 'guests' => [], 'totalGuests' => 0, 'shownGuests' => 0];
-        }
-
-        $fields = $version->fields
+        $fields = $this->eventForms->referenceFields($event->id)
             ->reject(fn (FormField $field): bool => $field->type === FieldType::InformationalText)
             ->values();
 
@@ -85,20 +79,6 @@ final class PresentEventAnswers
             'totalGuests' => $registrations->count(),
             'shownGuests' => min($guestLimit, $registrations->count()),
         ];
-    }
-
-    private function referenceVersion(Event $event): ?FormVersion
-    {
-        $form = Form::query()->where('event_id', $event->id)->first();
-
-        if ($form === null) {
-            return null;
-        }
-
-        $version = $form->currentVersion ?? $form->latestVersion();
-        $version?->loadMissing('fields.options');
-
-        return $version;
     }
 
     /**

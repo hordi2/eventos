@@ -9,12 +9,12 @@ use App\Domain\Form\Actions\FormatFieldAnswerForExport;
 use App\Domain\Form\Models\Attendee;
 use App\Domain\Form\Models\FieldOption;
 use App\Domain\Form\Models\FieldType;
-use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormField;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationAnswer;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Form\Support\AskScope;
+use App\Domain\Form\Support\EventForms;
 use App\Support\Capacity\Actions\GetRemainingCapacity;
 use Illuminate\Support\Collection;
 
@@ -30,6 +30,7 @@ final class PresentMealPreferences
     public function __construct(
         private readonly GetRemainingCapacity $getRemainingCapacity,
         private readonly FormatFieldAnswerForExport $formatAnswer,
+        private readonly EventForms $eventForms,
     ) {}
 
     /**
@@ -73,27 +74,13 @@ final class PresentMealPreferences
     }
 
     /**
-     * Questions « Menu / repas » de la version de référence du formulaire.
+     * Questions « Menu / repas » des formulaires de l'événement.
      *
      * @return Collection<int, FormField>
      */
     private function mealQuestions(Event $event): Collection
     {
-        $form = Form::query()->where('event_id', $event->id)->first();
-
-        if ($form === null) {
-            return collect();
-        }
-
-        $version = $form->currentVersion ?? $form->latestVersion();
-
-        if ($version === null) {
-            return collect();
-        }
-
-        $version->loadMissing('fields.options');
-
-        return $version->fields
+        return $this->eventForms->referenceFields($event->id)
             ->filter(fn (FormField $field): bool => $field->type === FieldType::MealChoice)
             ->values();
     }

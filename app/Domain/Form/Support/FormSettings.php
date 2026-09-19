@@ -40,6 +40,8 @@ final class FormSettings
     public const IMAGE_KINDS = [
         'logo' => 'logo_path',
         'background' => 'background_image_path',
+        // Bandeau en tête du parcours, derrière le logo.
+        'header' => 'header_image_path',
     ];
 
     /**
@@ -85,6 +87,7 @@ final class FormSettings
             'body_font' => 'jakarta',
             'logo_path' => null,
             'background_image_path' => null,
+            'header_image_path' => null,
             'custom_css' => null,
         ],
     ];

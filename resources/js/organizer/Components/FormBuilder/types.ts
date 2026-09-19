@@ -115,6 +115,7 @@ export interface ThemeSettings {
     body_font: string;
     logo_url?: string | null;
     background_image_url?: string | null;
+    header_image_url?: string | null;
     custom_css?: string | null;
 }
 
@@ -128,7 +129,7 @@ export interface FormSettings {
 
 export type ScreenKey = 'welcome' | 'rsvp' | 'confirmation' | 'decline_screen';
 
-export type ImageKind = 'logo' | 'background';
+export type ImageKind = 'logo' | 'background' | 'header';
 
 export type ThemeColorKey = 'background_color' | 'text_color' | 'accent_color' | 'button_color' | 'button_text_color';
 
@@ -163,4 +164,15 @@ export interface FormPayload {
     fields: FieldData[];
     rules: RuleData[];
     settings: FormSettings;
+}
+
+/** Bloc « Partager » d'un formulaire publié (PresentFormSharing). */
+export interface FormSharing {
+    available: boolean;
+    url: string | null;
+    isPreview: boolean;
+    previewDays: number;
+    qrCode: string | null;
+    whatsappUrl: string | null;
+    mailtoUrl: string | null;
 }

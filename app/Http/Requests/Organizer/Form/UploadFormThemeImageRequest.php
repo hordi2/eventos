@@ -26,7 +26,9 @@ final class UploadFormThemeImageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'image' => ['required_without:image_id', 'file', 'mimes:png,jpg,jpeg', 'max:2048'],
+            // Réduite dès l'envoi (StoreOrganizationImage) : une photo prise au
+            // téléphone passe telle quelle.
+            'image' => ['required_without:image_id', 'file', 'mimes:png,jpg,jpeg,webp', 'extensions:png,jpg,jpeg,webp', 'max:8192'],
             'image_id' => [
                 'required_without:image',
                 'integer',
@@ -44,8 +46,9 @@ final class UploadFormThemeImageRequest extends FormRequest
     {
         return [
             'image.required_without' => 'Choisissez une image à envoyer ou une image de votre bibliothèque.',
-            'image.mimes' => "L'image doit être au format PNG ou JPG.",
-            'image.max' => "L'image ne doit pas dépasser 2 Mo.",
+            'image.mimes' => "L'image doit être au format PNG, JPG ou WEBP.",
+            'image.extensions' => "L'image doit être au format PNG, JPG ou WEBP.",
+            'image.max' => "L'image ne doit pas dépasser 8 Mo.",
             'image_id.exists' => "Cette image n'est plus dans votre bibliothèque.",
         ];
     }

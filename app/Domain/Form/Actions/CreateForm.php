@@ -7,6 +7,7 @@ namespace App\Domain\Form\Actions;
 use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormVersion;
 use App\Domain\Form\Models\FormVersionStatus;
+use App\Domain\Form\Support\EventForms;
 use App\Domain\Organization\Models\Organization;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,7 @@ final class CreateForm
     public function __construct(
         private readonly WriteFormFields $writeFormFields,
         private readonly WriteConditionalRules $writeConditionalRules,
+        private readonly EventForms $eventForms,
     ) {}
 
     /**
@@ -37,6 +39,9 @@ final class CreateForm
                 'event_id' => $eventId,
                 'created_by' => $creator->id,
                 'name' => $data['name'],
+                'slug' => $this->eventForms->uniqueSlug($eventId, $data['name']),
+                // Le premier formulaire répond au lien de l'événement.
+                'is_default' => ! $this->eventForms->hasDefault($eventId),
             ]);
 
             $version = FormVersion::query()->create([

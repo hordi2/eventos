@@ -2,6 +2,7 @@ import { type RequestPayload } from '@inertiajs/core';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { type DragEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import Badge from '../../Components/Badge';
+import EventIcon from '../../Components/EventIcon';
 import BuilderIcon from '../../Components/FormBuilder/BuilderIcon';
 import Canvas from '../../Components/FormBuilder/Canvas';
 import ImageUploadModal from '../../Components/FormBuilder/ImageUploadModal';
@@ -11,6 +12,7 @@ import {
     createField,
     donationBlueprint,
     duplicateField,
+    IMAGE_URL_KEYS,
     MOVE_DRAG_TYPE,
     normalizeSettings,
     PALETTE,
@@ -25,6 +27,7 @@ import Palette from '../../Components/FormBuilder/Palette';
 import QuestionDrawer from '../../Components/FormBuilder/QuestionDrawer';
 import QuestionTypeModal from '../../Components/FormBuilder/QuestionTypeModal';
 import ScreenDrawer from '../../Components/FormBuilder/ScreenDrawer';
+import ShareFormModal from '../../Components/FormBuilder/ShareFormModal';
 import ThemeDrawer from '../../Components/FormBuilder/ThemeDrawer';
 import {
     type BuilderField,
@@ -34,6 +37,7 @@ import {
     type FontOption,
     type FormPayload,
     type FormSettings,
+    type FormSharing,
     type ImageKind,
     type PreviewDevice,
     type RuleData,
@@ -50,6 +54,9 @@ import { type SharedProps } from '../../types';
 interface BuilderPageProps {
     event: { id: number; title: string; phoneRequired: boolean };
     form: FormPayload | null;
+    suggestedName?: string;
+    previewUrl?: string;
+    sharing?: FormSharing;
     fieldTypes: FieldTypeOption[];
     fonts: FontOption[];
     tags: TagOption[];
@@ -74,6 +81,9 @@ const AUTOSAVE_DELAY_MS = 1200;
 export default function FormBuilder({
     event,
     form,
+    suggestedName,
+    previewUrl,
+    sharing,
     fieldTypes,
     fonts,
     tags,
@@ -88,7 +98,7 @@ export default function FormBuilder({
 }: BuilderPageProps) {
     const { errors: pageErrors, settingsAccess } = usePage<SharedProps & { errors: Record<string, string> }>().props;
 
-    const [name, setName] = useState(form?.name ?? `Inscription — ${event.title}`);
+    const [name, setName] = useState(form?.name ?? suggestedName ?? `Inscription — ${event.title}`);
     const [fields, setFields] = useState<BuilderField[]>(() => (form?.fields ?? []).map(toBuilderField));
     const [rules, setRules] = useState<RuleData[]>(form?.rules ?? []);
     const [settings, setSettings] = useState<FormSettings>(() => normalizeSettings(form?.settings ?? defaultSettings));
@@ -99,6 +109,7 @@ export default function FormBuilder({
     const [dragging, setDragging] = useState(false);
     const [typeModalAt, setTypeModalAt] = useState<number | null>(null);
     const [imageKind, setImageKind] = useState<ImageKind | null>(null);
+    const [shareOpen, setShareOpen] = useState(false);
     const [notice, setNotice] = useState<Notice | null>(null);
     const [revision, setRevision] = useState(0);
     const [savedRevision, setSavedRevision] = useState(0);
@@ -232,6 +243,8 @@ export default function FormBuilder({
             {
                 preserveState: true,
                 preserveScroll: true,
+                // Le lien n'a d'intérêt qu'une fois publié : il est proposé aussitôt.
+                onSuccess: () => setShareOpen(true),
                 onFinish: () => {
                     selfVisitRef.current = false;
                 },
@@ -426,7 +439,7 @@ export default function FormBuilder({
     function setImageUrl(kind: ImageKind, url: string | null) {
         setSettings((previous) => ({
             ...previous,
-            theme: kind === 'logo' ? { ...previous.theme, logo_url: url } : { ...previous.theme, background_image_url: url },
+            theme: { ...previous.theme, [IMAGE_URL_KEYS[kind]]: url },
         }));
     }
 
@@ -537,8 +550,12 @@ export default function FormBuilder({
     }
 
     return (
-        <EventLayout title="Formulaire d'inscription" wide>
-            <Head title={`Formulaire d'inscription — ${event.title}`} />
+        <EventLayout title="Formulaire" wide>
+            <Head title={`${name} — ${event.title}`} />
+
+            <Link href={`/events/${event.id}/forms`} className="mb-4 inline-flex items-center gap-1 text-sm text-ink-soft hover:text-ink">
+                ← Tous les formulaires
+            </Link>
 
             <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-3">
                 <Badge variant={form?.status === 'published' ? 'success' : 'neutral'}>{statusLabel}</Badge>
@@ -558,16 +575,50 @@ export default function FormBuilder({
                         className="w-56 min-w-0 border-0 border-b border-line bg-transparent px-1 py-1 text-sm text-ink focus:border-accent focus:outline-none"
                     />
                 </label>
-                <button
-                    type="button"
-                    onClick={publish}
-                    disabled={formId === null || dirty || saving || form?.status === 'published'}
-                    className="ml-auto inline-flex min-h-10 items-center gap-2 rounded-pill bg-ink px-6 py-2 text-sm font-medium text-bg transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                    <BuilderIcon name="upload" className="h-4 w-4" />
-                    {publishLabel}
-                </button>
+                <div className="ml-auto flex flex-wrap items-center gap-2">
+                    {previewUrl && (
+                        <a
+                            href={previewUrl}
+                            target="_blank"
+                            rel="noopener"
+                            aria-disabled={dirty || saving}
+                            onClick={(clickEvent) => {
+                                if (dirty || saving) {
+                                    clickEvent.preventDefault();
+                                }
+                            }}
+                            title={dirty || saving ? "L'aperçu s'ouvrira une fois les modifications enregistrées." : undefined}
+                            className={`inline-flex min-h-10 items-center gap-2 rounded-pill border border-line px-5 py-2 text-sm font-medium text-ink hover:border-ink ${dirty || saving ? 'cursor-not-allowed opacity-40' : ''}`}
+                        >
+                            <EventIcon name="eye" className="h-4 w-4" />
+                            Prévisualiser
+                        </a>
+                    )}
+                    {sharing?.available && (
+                        <button
+                            type="button"
+                            onClick={() => setShareOpen(true)}
+                            className="inline-flex min-h-10 items-center gap-2 rounded-pill border border-line px-5 py-2 text-sm font-medium text-ink hover:border-ink"
+                        >
+                            <EventIcon name="link" className="h-4 w-4" />
+                            Partager
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        onClick={publish}
+                        disabled={formId === null || dirty || saving || form?.status === 'published'}
+                        className="inline-flex min-h-10 items-center gap-2 rounded-pill bg-ink px-6 py-2 text-sm font-medium text-bg transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                        <BuilderIcon name="upload" className="h-4 w-4" />
+                        {publishLabel}
+                    </button>
+                </div>
             </div>
+
+            {sharing?.available && (
+                <ShareFormModal open={shareOpen} onClose={() => setShareOpen(false)} eventId={event.id} sharing={sharing} publishError={pageErrors.status} />
+            )}
 
             {pageErrors.publish && (
                 <div role="alert" className="mb-5 rounded-card bg-danger-bg p-4 text-sm text-danger ring-1 ring-danger/30">
@@ -652,6 +703,7 @@ export default function FormBuilder({
                     onToggleWelcome={(enabled) => updateSettings({ welcome: { ...settings.welcome, enabled } })}
                     onToggleDecline={(enabled) => updateSettings({ rsvp: { ...settings.rsvp, decline_enabled: enabled } })}
                     onLogoClick={() => setImageKind('logo')}
+                    onHeaderClick={() => setImageKind('header')}
                     onDuplicate={duplicate}
                     onMove={moveField}
                     onRemove={removeField}
@@ -676,7 +728,7 @@ export default function FormBuilder({
                 open={imageKind !== null}
                 kind={imageKind ?? 'logo'}
                 formId={formId}
-                currentUrl={imageKind === 'background' ? settings.theme.background_image_url : settings.theme.logo_url}
+                currentUrl={settings.theme[IMAGE_URL_KEYS[imageKind ?? 'logo']]}
                 onClose={() => setImageKind(null)}
                 onChange={(url) => setImageUrl(imageKind ?? 'logo', url)}
             />

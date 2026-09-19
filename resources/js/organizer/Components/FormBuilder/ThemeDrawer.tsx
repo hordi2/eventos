@@ -3,7 +3,7 @@ import InputLabel from '../InputLabel';
 import Select from '../Select';
 import BuilderIcon from './BuilderIcon';
 import ColorField from './ColorField';
-import { COLOR_FIELDS, fontStackFor, IMAGE_SLOTS, MAX_CUSTOM_CSS, PANEL_SECTION_TITLE } from './logic';
+import { COLOR_FIELDS, fontStackFor, IMAGE_SLOTS, IMAGE_URL_KEYS, MAX_CUSTOM_CSS, PANEL_SECTION_TITLE } from './logic';
 import PremiumBadge from './PremiumBadge';
 import SidePanel from './SidePanel';
 import { type FontOption, type ImageKind, type ThemeColorKey, type ThemeSettings } from './types';
@@ -50,7 +50,7 @@ export default function ThemeDrawer({ theme, fonts, isFreePlan, error, onChange,
                 <h3 className={PANEL_SECTION_TITLE}>Images</h3>
                 <div className="space-y-3">
                     {IMAGE_SLOTS.map((slot) => {
-                        const url = slot.kind === 'logo' ? theme.logo_url : theme.background_image_url;
+                        const url = theme[IMAGE_URL_KEYS[slot.kind]];
 
                         return (
                             <div key={slot.kind} className="flex items-center gap-3">
@@ -142,7 +142,7 @@ export default function ThemeDrawer({ theme, fonts, isFreePlan, error, onChange,
                 <p className="mt-2 text-xs text-ink-soft">
                     {isFreePlan
                         ? 'Réservé aux plans payants : passez à un plan payant pour habiller vos pages au-delà des couleurs et des polices.'
-                        : 'Appliqué à toutes les pages du parcours invité, après le thème. Ciblez les repères .itaza-page, .itaza-field et .itaza-progress : ils ne changent pas. Les @import et les adresses extérieures sont refusés ; pour une image, passez par « Mes images ».'}
+                        : 'Appliqué à toutes les pages du parcours invité, après le thème. Ciblez les repères .itaza-page, .itaza-header, .itaza-field et .itaza-progress : ils ne changent pas. Les @import et les adresses extérieures sont refusés ; pour une image, passez par « Mes images ».'}
                 </p>
             </section>
         </SidePanel>

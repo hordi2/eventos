@@ -35,6 +35,7 @@ use App\Http\Controllers\Organizer\EventAnswerController;
 use App\Http\Controllers\Organizer\EventChecklistController;
 use App\Http\Controllers\Organizer\EventController;
 use App\Http\Controllers\Organizer\EventDashboardController;
+use App\Http\Controllers\Organizer\EventFormController;
 use App\Http\Controllers\Organizer\EventGuestImportController;
 use App\Http\Controllers\Organizer\EventGuestListController;
 use App\Http\Controllers\Organizer\EventInvitationSendController;
@@ -44,6 +45,7 @@ use App\Http\Controllers\Organizer\EventSegmentController;
 use App\Http\Controllers\Organizer\ExportController;
 use App\Http\Controllers\Organizer\FormBlockImageController;
 use App\Http\Controllers\Organizer\FormController;
+use App\Http\Controllers\Organizer\FormPreviewController;
 use App\Http\Controllers\Organizer\FormThemeImageController;
 use App\Http\Controllers\Organizer\HelpController;
 use App\Http\Controllers\Organizer\MessageAutomationController;
@@ -285,14 +287,21 @@ Route::middleware('auth')->group(function (): void {
             Route::post('events/{event}/form', [FormController::class, 'store'])->name('forms.store');
         });
 
+        // Plusieurs formulaires par événement, chacun avec son lien.
+        Route::get('events/{event}/forms', [EventFormController::class, 'index'])->name('forms.index');
+        Route::post('forms/{form}/default', [EventFormController::class, 'makeDefault'])->name('forms.default');
+        Route::delete('forms/{form}', [EventFormController::class, 'destroy'])->name('forms.destroy');
+
         Route::get('forms/{form}/edit', [FormController::class, 'edit'])->name('forms.edit');
         Route::patch('forms/{form}', [FormController::class, 'update'])->name('forms.update');
         Route::post('forms/{form}/publish', [FormController::class, 'publish'])->name('forms.publish');
+        // Aperçu du formulaire tel que les invités le verront ; rien ne s'y enregistre.
+        Route::get('forms/{form}/preview', [FormPreviewController::class, 'show'])->name('forms.preview');
         Route::post('forms/{form}/theme/{kind}', [FormThemeImageController::class, 'store'])
-            ->whereIn('kind', ['logo', 'background'])
+            ->whereIn('kind', ['logo', 'background', 'header'])
             ->name('forms.theme-images.store');
         Route::delete('forms/{form}/theme/{kind}', [FormThemeImageController::class, 'destroy'])
-            ->whereIn('kind', ['logo', 'background'])
+            ->whereIn('kind', ['logo', 'background', 'header'])
             ->name('forms.theme-images.destroy');
 
         // Image d'un bloc « Texte, image, vidéo », redimensionnée à l'envoi.
@@ -442,6 +451,8 @@ Route::middleware('resolve-guest-event')
 
         Route::get('/', [RegistrationController::class, 'start'])->name('start');
         Route::get('commencer', [RegistrationController::class, 'begin'])->name('begin');
+        // Lien propre d'un formulaire, quand l'événement en a plusieurs.
+        Route::get('f/{formSlug}', [RegistrationController::class, 'startForm'])->name('form');
 
         // CSS personnalisé du thème (plans payants), servi comme feuille de
         // style pour être mis en cache d'un écran à l'autre du parcours.

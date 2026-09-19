@@ -34,6 +34,8 @@ final class Form extends Model
         'event_id',
         'created_by',
         'name',
+        'slug',
+        'is_default',
         'current_version_id',
         'settings',
     ];
@@ -42,6 +44,7 @@ final class Form extends Model
     {
         return [
             'settings' => 'array',
+            'is_default' => 'boolean',
         ];
     }
 

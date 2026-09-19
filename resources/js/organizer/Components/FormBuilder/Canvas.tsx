@@ -3,6 +3,7 @@ import BuilderIcon from './BuilderIcon';
 import DropZone from './DropZone';
 import IdentityBlock from './IdentityBlock';
 import { computeVisibility, previewTheme } from './logic';
+import HeaderSlot from './HeaderSlot';
 import LogoSlot from './LogoSlot';
 import QuestionBlock from './QuestionBlock';
 import ScreenBlock from './ScreenBlock';
@@ -40,6 +41,7 @@ interface CanvasProps {
     onToggleWelcome: (enabled: boolean) => void;
     onToggleDecline: (enabled: boolean) => void;
     onLogoClick: () => void;
+    onHeaderClick: () => void;
     onDuplicate: (uid: string) => void;
     onMove: (uid: string, direction: -1 | 1) => void;
     onRemove: (uid: string) => void;
@@ -93,6 +95,7 @@ export default function Canvas(props: CanvasProps) {
 
             <div className="overflow-hidden rounded-card ring-1 ring-line" style={theme.page}>
                 <div className={`mx-auto space-y-5 px-4 py-8 sm:py-10 sm:pr-8 sm:pl-16 ${device === 'mobile' ? 'max-w-[460px]' : 'max-w-3xl'}`}>
+                    <HeaderSlot headerUrl={settings.theme.header_image_url} onClick={props.onHeaderClick} />
                     <LogoSlot logoUrl={settings.theme.logo_url} onClick={props.onLogoClick} />
 
                     <ScreenBlock

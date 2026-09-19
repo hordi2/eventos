@@ -102,9 +102,17 @@ export const COLOR_FIELDS: { key: ThemeColorKey; label: string; fallback: string
 ];
 
 export const IMAGE_SLOTS: { kind: ImageKind; label: string }[] = [
-    { kind: 'background', label: 'Image de fond' },
+    { kind: 'header', label: "Bandeau d'en-tête" },
     { kind: 'logo', label: 'Logo' },
+    { kind: 'background', label: 'Image de fond' },
 ];
+
+// Clé de l'aperçu de chaque image dans les réglages du thème.
+export const IMAGE_URL_KEYS: Record<ImageKind, 'logo_url' | 'background_image_url' | 'header_image_url'> = {
+    logo: 'logo_url',
+    background: 'background_image_url',
+    header: 'header_image_url',
+};
 
 export interface BlockBlueprint {
     type: string;

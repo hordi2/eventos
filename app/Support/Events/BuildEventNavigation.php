@@ -76,7 +76,6 @@ final class BuildEventNavigation
     {
         $organization = $event->organization;
         $isCollaborator = $this->collaboratorAccess->isCollaborator($user, $organization->id);
-        $formId = Form::query()->where('event_id', $event->id)->value('id');
         $link = fn (bool $allowed, string $url): ?string => $allowed ? $url : null;
 
         return [
@@ -85,14 +84,13 @@ final class BuildEventNavigation
             // Un seul niveau de hiérarchie : une session n'a pas ses propres sessions.
             'subEvents' => $link($canUpdate && ! $event->isSubEvent(), route('events.sub-events.index', $event->id)),
             'answers' => $link($gate->allows('viewGuests', $organization), route('events.answers.index', $event->id)),
-            'files' => $link($gate->allows('viewGuests', $organization) && $this->asksFor($formId, FieldType::FileUpload), route('events.files.index', $event->id)),
+            'files' => $link($gate->allows('viewGuests', $organization) && $this->asksFor($event->id, FieldType::FileUpload), route('events.files.index', $event->id)),
             // Rapports : proposés seulement quand le formulaire pose la question.
-            'meals' => $link($gate->allows('viewGuests', $organization) && $this->asksFor($formId, FieldType::MealChoice), route('events.meals.index', $event->id)),
-            'donations' => $link($gate->allows('viewGuests', $organization) && $this->asksFor($formId, FieldType::Donation), route('events.donations.index', $event->id)),
+            'meals' => $link($gate->allows('viewGuests', $organization) && $this->asksFor($event->id, FieldType::MealChoice), route('events.meals.index', $event->id)),
+            'donations' => $link($gate->allows('viewGuests', $organization) && $this->asksFor($event->id, FieldType::Donation), route('events.donations.index', $event->id)),
             'guests' => $link($gate->allows('viewGuests', $organization), route('events.guest-list.index', $event->id)),
-            'form' => $formId !== null
-                ? $link($canUpdate, route('forms.edit', $formId))
-                : $link($gate->allows('create', [Form::class, $organization]), route('forms.create', $event->id)),
+            // Les formulaires de l'événement : un par public, chacun son lien.
+            'form' => $link($canUpdate, route('forms.index', $event->id)),
             'website' => $link($canUpdate, route('events.page.edit', $event->id)),
             'settings' => $link($canUpdate, route('events.edit', $event->id)),
             'import' => $link(! $isCollaborator && $gate->allows('create', [Contact::class, $organization]) && $gate->allows('updateGuests', $organization), route('events.guest-list.import', $event->id)),
@@ -109,14 +107,14 @@ final class BuildEventNavigation
 
     /**
      * « Fichiers reçus », « Préférences alimentaires » et « Dons et cadeaux »
-     * n'ont de sens que pour un formulaire qui pose, ou a posé dans l'une de
+     * n'ont de sens que si l'un des formulaires pose, ou a posé dans l'une de
      * ses versions, la question correspondante.
      */
-    private function asksFor(mixed $formId, FieldType $type): bool
+    private function asksFor(int $eventId, FieldType $type): bool
     {
-        return $formId !== null && FormField::query()
+        return FormField::query()
             ->where('type', $type)
-            ->whereHas('formVersion', fn ($query) => $query->where('form_id', $formId))
+            ->whereHas('formVersion', fn ($query) => $query->whereIn('form_id', Form::query()->where('event_id', $eventId)->select('id')))
             ->exists();
     }
 }

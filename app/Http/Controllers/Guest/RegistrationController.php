@@ -29,8 +29,8 @@ use App\Domain\Form\OptionFullException;
 use App\Domain\Form\RegistrationClosedException;
 use App\Domain\Form\SubEventFullException;
 use App\Domain\Form\Support\AskScope;
-use App\Domain\Form\Support\CustomCss;
 use App\Domain\Form\Support\EvaluateFormVisibility;
+use App\Domain\Form\Support\EventForms;
 use App\Domain\Form\Support\FileUploadAnswer;
 use App\Domain\Form\Support\FormSettings;
 use App\Domain\Form\Support\IsRegistrationWindowOpen;
@@ -49,6 +49,7 @@ use App\Support\Registration\BuildGuestSubEventChoices;
 use App\Support\Registration\BuildGuestVisibilityContext;
 use App\Support\Registration\BuildSubEventContexts;
 use App\Support\Registration\OpenRegistrationDonation;
+use App\Support\Registration\PresentGuestPresentation;
 use App\Support\Registration\PresentRegistrationDonation;
 use App\Support\Registration\RenderAttendeeQrCodes;
 use Carbon\CarbonImmutable;
@@ -57,7 +58,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -98,28 +98,23 @@ final class RegistrationController extends Controller
      */
     public function start(Request $request, string $organization, string $event): View
     {
-        $eventModel = $this->event($request);
-        $this->requirePublishedForm($eventModel);
+        return $this->eventPage($request, $organization, $event, null);
+    }
 
-        if (! app(IsRegistrationWindowOpen::class)->handle($this->contextFor($eventModel))) {
-            return view('guest.registration.closed', ['event' => $eventModel, 'reason' => 'window']);
-        }
-
-        if ($this->isFull($eventModel)) {
-            return view('guest.registration.closed', ['event' => $eventModel, 'reason' => 'full']);
-        }
-
-        return view('guest.event-page', [
-            'event' => $eventModel,
-            'page' => app(GetEventPage::class)->handle($eventModel),
-            'beginUrl' => route('guest.registration.begin', [$organization, $event]),
-        ]);
+    /**
+     * Lien propre d'un formulaire de l'événement (/f/{slug}) : même page,
+     * mais c'est ce formulaire qui s'ouvre.
+     */
+    public function startForm(Request $request, string $organization, string $event, string $formSlug): View
+    {
+        return $this->eventPage($request, $organization, $event, $formSlug);
     }
 
     public function begin(Request $request, string $organization, string $event): View|RedirectResponse
     {
         $eventModel = $this->event($request);
-        $form = $this->requirePublishedForm($eventModel);
+        $slug = $request->query('formulaire');
+        $form = $this->requirePublishedForm($eventModel, is_string($slug) ? $slug : null);
         $this->captureAcquisitionMetadata($request);
 
         if (! app(IsRegistrationWindowOpen::class)->handle($this->contextFor($eventModel))) {
@@ -146,10 +141,12 @@ final class RegistrationController extends Controller
     {
         $eventModel = $this->event($request);
 
+        $draft = $this->draft($token);
+
         return view('guest.registration.welcome', [
             'event' => $eventModel,
-            'draft' => $this->draft($token),
-            ...$this->presentation($eventModel),
+            'draft' => $draft,
+            ...$this->presentation($eventModel, $this->formOf($draft->form_version_id)),
         ]);
     }
 
@@ -163,13 +160,14 @@ final class RegistrationController extends Controller
             'event' => $eventModel,
             'draft' => $draft,
             'invitation' => app(ResolveGuestInvitation::class)->handle($draft),
-            ...$this->presentation($eventModel),
+            ...$this->presentation($eventModel, $this->formOf($draft->form_version_id)),
         ]);
     }
 
     public function identityStore(SaveIdentityRequest $request, string $organization, string $event, string $token): RedirectResponse
     {
-        $declineEnabled = (bool) $this->presentation($this->event($request))['settings']['rsvp']['decline_enabled'];
+        $draft = $this->draft($token);
+        $declineEnabled = (bool) $this->presentation($this->event($request), $this->formOf($draft->form_version_id))['settings']['rsvp']['decline_enabled'];
         // Sans réponse « Je ne peux pas venir » proposée, tout invité vient ;
         // un invité qui décline ne vient avec personne.
         $attending = ! $declineEnabled || $request->boolean('attending');
@@ -180,7 +178,7 @@ final class RegistrationController extends Controller
             'companions' => $attending ? $request->companions() : [],
         ];
 
-        $draft = app(SaveRegistrationDraft::class)->handle($this->draft($token), identity: $identity);
+        $draft = app(SaveRegistrationDraft::class)->handle($draft, identity: $identity);
 
         return redirect()->route('guest.registration.answers.show', [$organization, $event, $draft->resume_token]);
     }
@@ -199,7 +197,7 @@ final class RegistrationController extends Controller
             'companions' => $this->draftCompanions($draft, $version),
             'subEventChoices' => app(BuildGuestSubEventChoices::class)->handle($eventModel),
             'uploadedFiles' => app(PresentRegistrationFiles::class)->handle($this->holderAnswers($draft)),
-            ...$this->presentation($eventModel),
+            ...$this->presentation($eventModel, $this->formOf($draft->form_version_id)),
         ]);
     }
 
@@ -224,7 +222,7 @@ final class RegistrationController extends Controller
             'attending' => $this->attending($draft),
             'companions' => $this->draftCompanions($draft, $version),
             'uploadedFiles' => app(PresentRegistrationFiles::class)->handle($this->holderAnswers($draft)),
-            ...$this->presentation($eventModel),
+            ...$this->presentation($eventModel, $this->formOf($draft->form_version_id)),
         ]);
     }
 
@@ -289,7 +287,7 @@ final class RegistrationController extends Controller
             'cancelUrl' => $hideLinks ? null : $this->signedCancelUrl($organization, $event, $eventModel, $registration),
             'qrCodes' => app(RenderAttendeeQrCodes::class)->handle($eventModel, $registration),
             'donation' => app(PresentRegistrationDonation::class)->handle($organization, $event, $registration),
-            ...$this->presentation($eventModel),
+            ...$this->presentation($eventModel, $this->formOf($draft->form_version_id)),
         ]);
     }
 
@@ -330,7 +328,7 @@ final class RegistrationController extends Controller
             'companions' => $this->registrationCompanions($registrationModel, $version, $answers, $context),
             'subEventChoices' => app(BuildGuestSubEventChoices::class)->handle($eventModel),
             'uploadedFiles' => app(PresentRegistrationFiles::class)->handle($answers),
-            ...$this->presentation($eventModel),
+            ...$this->presentation($eventModel, $this->formOf($registrationModel->form_version_id)),
         ]);
     }
 
@@ -385,33 +383,19 @@ final class RegistrationController extends Controller
     }
 
     /**
-     * Réglages d'écrans et thème du formulaire de l'événement, pour les vues
-     * du parcours et la mise en page invitée.
+     * Réglages d'écrans et thème du formulaire suivi par l'invité, pour les
+     * vues du parcours et la mise en page invitée.
      *
-     * @return array{settings: array<string, array<string, mixed>>, formTheme: array{variables: array<string, string>, logoUrl: ?string, backgroundUrl: ?string, customCssUrl: ?string}}
+     * @return array{settings: array<string, array<string, mixed>>, formTheme: array{variables: array<string, string>, logoUrl: ?string, backgroundUrl: ?string, headerUrl: ?string, customCssUrl: ?string}}
      */
-    private function presentation(Event $event): array
+    private function presentation(Event $event, ?Form $form): array
     {
-        $form = Form::query()->where('event_id', $event->id)->first();
-        $settings = FormSettings::resolve($form?->settings);
-        $theme = $settings['theme'];
-        $customCss = CustomCss::forDelivery($theme['custom_css']);
+        return app(PresentGuestPresentation::class)->handle($event, $form);
+    }
 
-        return [
-            'settings' => $settings,
-            'formTheme' => [
-                'variables' => FormSettings::cssVariables($settings),
-                'logoUrl' => is_string($theme['logo_path']) ? Storage::disk('public')->url($theme['logo_path']) : null,
-                'backgroundUrl' => is_string($theme['background_image_path']) ? Storage::disk('public')->url($theme['background_image_path']) : null,
-                // L'empreinte du contenu sert de version : la feuille est mise
-                // en cache longtemps, mais une modification arrive tout de suite.
-                'customCssUrl' => $customCss === '' ? null : route('guest.registration.theme-style', [
-                    $event->organization->slug,
-                    $event->slug,
-                    'v' => substr(sha1($customCss), 0, 8),
-                ]),
-            ],
-        ];
+    private function formOf(int $formVersionId): ?Form
+    {
+        return app(EventForms::class)->forVersion($formVersionId);
     }
 
     private function versionFor(RegistrationDraft $draft): FormVersion
@@ -573,13 +557,33 @@ final class RegistrationController extends Controller
         return RegistrationDraft::query()->where('resume_token', $token)->firstOrFail();
     }
 
-    private function requirePublishedForm(Event $event): Form
+    private function requirePublishedForm(Event $event, ?string $slug): Form
     {
-        $form = Form::query()->where('event_id', $event->id)->firstOrFail();
+        $form = app(EventForms::class)->forLink($event->id, $slug);
 
-        abort_if(! $form->hasPublishedVersion(), 404);
+        abort_if($form === null || ! $form->hasPublishedVersion(), 404);
 
         return $form;
+    }
+
+    private function eventPage(Request $request, string $organization, string $event, ?string $formSlug): View
+    {
+        $eventModel = $this->event($request);
+        $form = $this->requirePublishedForm($eventModel, $formSlug);
+
+        if (! app(IsRegistrationWindowOpen::class)->handle($this->contextFor($eventModel))) {
+            return view('guest.registration.closed', ['event' => $eventModel, 'reason' => 'window']);
+        }
+
+        if ($this->isFull($eventModel)) {
+            return view('guest.registration.closed', ['event' => $eventModel, 'reason' => 'full']);
+        }
+
+        return view('guest.event-page', [
+            'event' => $eventModel,
+            'page' => app(GetEventPage::class)->handle($eventModel),
+            'beginUrl' => route('guest.registration.begin', [$organization, $event, ...($form->is_default ? [] : ['formulaire' => $form->slug])]),
+        ]);
     }
 
     private function captureAcquisitionMetadata(Request $request): void

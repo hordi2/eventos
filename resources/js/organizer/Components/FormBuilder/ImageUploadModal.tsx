@@ -19,11 +19,15 @@ type Tab = 'upload' | 'mine' | 'library';
 const COPY: Record<ImageKind, { title: string; hint: string }> = {
     logo: {
         title: 'Logo du formulaire',
-        hint: 'PNG ou JPG, 2 Mo maximum. Un PNG à fond transparent d’environ 600 × 200 px rend le mieux. L’image est réduite automatiquement pour rester légère.',
+        hint: 'PNG, JPG ou WEBP, 8 Mo maximum. Un PNG à fond transparent d’environ 600 × 200 px rend le mieux. L’image est réduite automatiquement pour rester légère.',
     },
     background: {
         title: 'Image de fond',
-        hint: 'PNG ou JPG, 2 Mo maximum. Une image d’environ 1920 × 1080 px, peu chargée, garde le texte lisible. Elle est réduite automatiquement pour rester légère.',
+        hint: 'PNG, JPG ou WEBP, 8 Mo maximum. Une image peu chargée garde le texte lisible. Elle est réduite automatiquement pour rester légère.',
+    },
+    header: {
+        title: "Bandeau d'en-tête",
+        hint: 'PNG, JPG ou WEBP, 8 Mo maximum. Une photo en largeur (par exemple 1600 × 600 px) s’affiche en haut du formulaire, le logo posé par-dessus. Elle est réduite automatiquement.',
     },
 };
 
@@ -33,7 +37,7 @@ const TABS: { value: Tab; label: string }[] = [
     { value: 'library', label: 'Bibliothèque' },
 ];
 
-const MAX_BYTES = 2 * 1024 * 1024;
+const MAX_BYTES = 8 * 1024 * 1024;
 
 function uploadErrorMessage(exception: unknown): string {
     if (window.axios.isAxiosError(exception)) {
@@ -83,14 +87,14 @@ export default function ImageUploadModal({ open, kind, formId, currentUrl, onClo
             return;
         }
 
-        if (file.type !== 'image/png' && file.type !== 'image/jpeg') {
-            setError('Choisissez une image PNG ou JPG.');
+        if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+            setError('Choisissez une image PNG, JPG ou WEBP.');
 
             return;
         }
 
         if (file.size > MAX_BYTES) {
-            setError('Cette image dépasse 2 Mo : réduisez-la puis réessayez.');
+            setError('Cette image dépasse 8 Mo : réduisez-la puis réessayez.');
 
             return;
         }
@@ -186,7 +190,7 @@ export default function ImageUploadModal({ open, kind, formId, currentUrl, onClo
                             ref={inputRef}
                             id={`theme_image_${kind}`}
                             type="file"
-                            accept="image/png,image/jpeg"
+                            accept="image/png,image/jpeg,image/webp"
                             className="sr-only"
                             disabled={busy}
                             onChange={(event) => {

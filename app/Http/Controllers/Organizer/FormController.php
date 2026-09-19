@@ -28,6 +28,7 @@ use App\Domain\Organization\Models\PlanTier;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\Form\SaveFormRequest;
 use App\Models\User;
+use App\Support\Forms\PresentFormSharing;
 use App\Support\MultiTenancy\CurrentOrganization;
 use App\Support\Registration\ResolveSubEventFieldConfig;
 use Illuminate\Http\RedirectResponse;
@@ -44,9 +45,12 @@ final class FormController extends Controller
 
         Gate::authorize('create', [Form::class, $this->currentOrganization()]);
 
+        $existing = Form::query()->where('event_id', $event->id)->count();
+
         return Inertia::render('Forms/Builder', [
             'event' => $this->presentEvent($event),
             'form' => null,
+            'suggestedName' => $existing === 0 ? "Inscription — {$event->title}" : 'Formulaire '.($existing + 1),
             ...$this->builderOptions($event),
         ]);
     }
@@ -81,6 +85,8 @@ final class FormController extends Controller
         return Inertia::render('Forms/Builder', [
             'event' => $this->presentEvent($event),
             'form' => $this->presentForm($form),
+            'previewUrl' => route('forms.preview', $form->id),
+            'sharing' => app(PresentFormSharing::class)->handle($form, $event),
             ...$this->builderOptions($event),
         ]);
     }
@@ -244,6 +250,7 @@ final class FormController extends Controller
 
         $settings['theme']['logo_url'] = is_string($theme['logo_path']) ? Storage::disk('public')->url($theme['logo_path']) : null;
         $settings['theme']['background_image_url'] = is_string($theme['background_image_path']) ? Storage::disk('public')->url($theme['background_image_path']) : null;
+        $settings['theme']['header_image_url'] = is_string($theme['header_image_path']) ? Storage::disk('public')->url($theme['header_image_path']) : null;
 
         return $settings;
     }

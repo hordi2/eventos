@@ -7,8 +7,8 @@ namespace App\Http\Requests\Guest;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventCategory;
 use App\Domain\Form\Data\CompanionData;
-use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\RegistrationDraft;
+use App\Domain\Form\Support\EventForms;
 use App\Domain\Form\Support\FormSettings;
 use App\Support\GuestList\GuestInvitation;
 use App\Support\GuestList\ResolveGuestInvitation;
@@ -155,7 +155,8 @@ final class SaveIdentityRequest extends FormRequest
     private function settings(): array
     {
         if ($this->formSettings === null) {
-            $form = Form::query()->where('event_id', $this->guestEvent()->id)->first();
+            $draft = RegistrationDraft::query()->where('resume_token', (string) $this->route('token'))->first();
+            $form = $draft === null ? null : app(EventForms::class)->forVersion($draft->form_version_id);
             $this->formSettings = FormSettings::resolve($form?->settings);
         }
 
