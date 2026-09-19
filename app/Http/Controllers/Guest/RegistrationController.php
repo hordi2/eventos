@@ -230,6 +230,13 @@ final class RegistrationController extends Controller
     {
         $eventModel = $this->event($request);
         $draft = $this->draft($token);
+
+        // Simulation de l'organisateur : ni inscription, ni place retenue, ni message.
+        if ($draft->is_test) {
+            $draft->update(['submitted_at' => CarbonImmutable::now()]);
+
+            return redirect()->route('guest.registration.simulation-done', [$organization, $event, $draft->resume_token]);
+        }
         $version = $this->versionFor($draft);
         $identity = $draft->identity ?? [];
         $companions = array_map(
@@ -288,6 +295,27 @@ final class RegistrationController extends Controller
             'qrCodes' => app(RenderAttendeeQrCodes::class)->handle($eventModel, $registration),
             'donation' => app(PresentRegistrationDonation::class)->handle($organization, $event, $registration),
             ...$this->presentation($eventModel, $this->formOf($draft->form_version_id)),
+        ]);
+    }
+
+    /**
+     * Fin d'une simulation : l'écran de confirmation que verrait l'invité,
+     * avec de quoi recommencer ou revenir au constructeur.
+     */
+    public function simulationDone(Request $request, string $organization, string $event, string $token): View
+    {
+        $draft = $this->draft($token);
+        abort_unless($draft->is_test, 404);
+        $eventModel = $this->event($request);
+        $form = $this->formOf($draft->form_version_id);
+
+        return view('guest.registration.simulation-done', [
+            'event' => $eventModel,
+            'draft' => $draft,
+            'attending' => $this->attending($draft),
+            'restartUrl' => $form === null ? null : route('forms.preview', $form->id),
+            'builderUrl' => $form === null ? null : route('forms.edit', $form->id),
+            ...$this->presentation($eventModel, $form),
         ]);
     }
 

@@ -12,8 +12,9 @@ final class StartRegistrationDraft
     /**
      * $eventInviteeId : invitation identifiée d'un événement réservé à sa
      * liste d'invités ; le brouillon la garde jusqu'à la soumission.
+     * $isTest : simulation de l'organisateur, jamais soumise.
      */
-    public function handle(int $organizationId, int $eventId, int $formVersionId, ?int $eventInviteeId = null): RegistrationDraft
+    public function handle(int $organizationId, int $eventId, int $formVersionId, ?int $eventInviteeId = null, bool $isTest = false): RegistrationDraft
     {
         return RegistrationDraft::query()->create([
             'organization_id' => $organizationId,
@@ -21,6 +22,7 @@ final class StartRegistrationDraft
             'event_invitee_id' => $eventInviteeId,
             'form_version_id' => $formVersionId,
             'resume_token' => Str::random(40),
+            'is_test' => $isTest,
         ]);
     }
 }

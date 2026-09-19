@@ -80,7 +80,8 @@ final class ResolveGuestEvent
 
         if ($event->access_mode === EventAccessMode::ClosedList
             && $invitee === null
-            && ! in_array($request->route()?->getName(), self::INVITATION_EXEMPT_ROUTES, true)) {
+            && ! in_array($request->route()?->getName(), self::INVITATION_EXEMPT_ROUTES, true)
+            && ! $this->isSimulation($request, $event)) {
             return Redirect::route('guest.registration.invitation.find', [$organization->slug, $event->slug]);
         }
 
@@ -121,6 +122,21 @@ final class ResolveGuestEvent
         $request->session()->put($sessionKey, ['id' => $invitee->id, 'token' => $invitee->invitation_token]);
 
         return $invitee;
+    }
+
+    /**
+     * Simulation d'inscription de l'organisateur (FormPreviewController) :
+     * elle traverse un événement réservé à sa liste sans invitation.
+     */
+    private function isSimulation(Request $request, Event $event): bool
+    {
+        $draftToken = $request->route('token');
+
+        return is_string($draftToken) && RegistrationDraft::query()
+            ->where('event_id', $event->id)
+            ->where('resume_token', $draftToken)
+            ->where('is_test', true)
+            ->exists();
     }
 
     /**

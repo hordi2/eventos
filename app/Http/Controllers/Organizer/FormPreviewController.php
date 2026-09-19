@@ -5,35 +5,35 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Organizer;
 
 use App\Domain\Event\Models\Event;
+use App\Domain\Form\Actions\StartRegistrationDraft;
 use App\Domain\Form\Models\Form;
-use App\Domain\Form\Models\FormVersionStatus;
+use App\Domain\Form\Support\FormSettings;
 use App\Http\Controllers\Controller;
-use App\Support\Registration\BuildGuestSubEventChoices;
-use App\Support\Registration\PresentGuestPresentation;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\View\View;
 
 /**
- * Aperçu d'un formulaire tel que ses invités le verront : même mise en page,
- * même thème (bandeau, logo, couleurs, CSS personnalisé), mêmes questions —
- * celles de la dernière version, publiée ou non. Rien ne s'y enregistre.
+ * « Prévisualiser » : une simulation d'inscription dans le vrai parcours
+ * invité, depuis son premier écran, avec la dernière version du formulaire
+ * — publiée ou non. Rien ne s'enregistre à la fin, aucun message ne part.
  */
 final class FormPreviewController extends Controller
 {
-    public function show(int $form, PresentGuestPresentation $presentGuestPresentation, BuildGuestSubEventChoices $buildGuestSubEventChoices): View
+    public function show(Request $request, int $form, StartRegistrationDraft $startRegistrationDraft): RedirectResponse
     {
         $formModel = Form::query()->findOrFail($form);
         Gate::authorize('update', $formModel);
-        $event = Event::query()->findOrFail($formModel->event_id);
-        $version = $formModel->latestVersion()?->load('fields.options');
+        $event = Event::query()->with('organization')->findOrFail($formModel->event_id);
+        $version = $formModel->latestVersion() ?? abort(404);
+        $draft = $startRegistrationDraft->handle($event->organization_id, $event->id, $version->id, isTest: true);
 
-        return view('guest.registration.preview', [
-            'event' => $event,
-            'form' => $formModel,
-            'fields' => $version !== null ? $version->fields : collect(),
-            'isUnpublished' => $version?->status !== FormVersionStatus::Published,
-            'subEventChoices' => $buildGuestSubEventChoices->handle($event),
-            ...$presentGuestPresentation->handle($event, $formModel),
-        ]);
+        // L'organisateur passe les portes de son propre événement : encore « Inédit », ou protégé par mot de passe.
+        $request->session()->put("guest_event_preview.{$event->id}", true);
+        $request->session()->put("guest_event_password_verified.{$event->id}", true);
+
+        $firstStep = FormSettings::resolve($formModel->settings)['welcome']['enabled'] ? 'guest.registration.welcome.show' : 'guest.registration.identity.show';
+
+        return redirect()->route($firstStep, [$event->organization->slug, $event->slug, $draft->resume_token]);
     }
 }

@@ -471,6 +471,7 @@ Route::middleware('resolve-guest-event')
         Route::post('{token}/recap', [RegistrationController::class, 'reviewConfirm'])->name('review.confirm');
 
         Route::get('{token}/confirmation', [RegistrationController::class, 'confirmation'])->name('confirmation');
+        Route::get('{token}/simulation-terminee', [RegistrationController::class, 'simulationDone'])->name('simulation-done');
         Route::get('{token}/deja-inscrit', [RegistrationController::class, 'duplicate'])->name('duplicate');
 
         // Lien signé (T-033) : la signature protège {registration} contre

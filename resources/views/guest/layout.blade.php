@@ -39,7 +39,12 @@
      CSS personnalisé : ce sont des noms stables, contrairement aux classes
      utilitaires qui changent à chaque construction des styles. --}}
 <body class="itaza-page min-h-screen bg-bg-alt antialiased">
-    @yield('notice')
+    @if (isset($draft) && $draft instanceof \App\Domain\Form\Models\RegistrationDraft && $draft->is_test)
+        {{-- Simulation lancée par « Prévisualiser » dans le constructeur. --}}
+        <div role="status" class="sticky top-0 z-20 bg-ink px-4 py-2 text-center text-xs text-bg">
+            Simulation d'inscription : rien ne sera enregistré et aucun message ne partira.
+        </div>
+    @endif
     @php($headerUrl = isset($formTheme) ? ($formTheme['headerUrl'] ?? null) : null)
     @if ($headerUrl)
         {{-- Bandeau du formulaire, au-dessus de tout : chargé en priorité, il

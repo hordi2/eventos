@@ -34,6 +34,7 @@ final class RegistrationDraft extends Model
         'event_invitee_id',
         'form_version_id',
         'resume_token',
+        'is_test',
         'identity',
         'answers',
         'registration_id',
@@ -46,6 +47,7 @@ final class RegistrationDraft extends Model
             'identity' => 'array',
             'answers' => 'array',
             'submitted_at' => 'immutable_datetime',
+            'is_test' => 'boolean',
         ];
     }
 
