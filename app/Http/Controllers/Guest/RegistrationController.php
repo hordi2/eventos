@@ -272,8 +272,12 @@ final class RegistrationController extends Controller
             return redirect()->route('guest.registration.duplicate', [$organization, $event, $draft->resume_token]);
         }
 
-        // Don promis dans le formulaire : une commande à régler (T-056).
-        app(OpenRegistrationDonation::class)->handle($eventModel, $result->registration);
+        // Don promis dans le formulaire : une commande à régler (T-056). Une
+        // inscription qui attend la validation attend aussi pour son don
+        // (OpenDonationOnApprovedRegistration).
+        if ($result->registration->status !== RegistrationStatus::Pending) {
+            app(OpenRegistrationDonation::class)->handle($eventModel, $result->registration);
+        }
 
         return redirect()->route('guest.registration.confirmation', [$organization, $event, $draft->resume_token]);
     }
@@ -649,6 +653,7 @@ final class RegistrationController extends Controller
             registrationClosedMessage: $event->registration_closed_message,
             organizationMonthlyRegistrationQuota: $quotas->registrationsPerMonth,
             subEvents: app(BuildSubEventContexts::class)->handle($event),
+            requiresApproval: $event->requires_approval,
         );
     }
 }

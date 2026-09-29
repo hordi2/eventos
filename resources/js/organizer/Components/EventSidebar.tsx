@@ -36,6 +36,7 @@ function buildSections(nav: EventNav): SidebarSection[] {
                     icon: 'chart',
                     children: [
                         { label: 'Toutes les réponses', linkKey: 'responses' },
+                        { label: 'Inscriptions à valider', linkKey: 'approvals' },
                         { label: 'Réponses aux questions', linkKey: 'answers' },
                         { label: 'Événements secondaires', linkKey: 'subEvents' },
                         { label: 'Questions personnalisées', linkKey: 'form' },

@@ -39,7 +39,7 @@ final class PresentSubEvents
 
         $counts = Registration::query()
             ->whereIn('event_id', $ids)
-            ->whereIn('status', [RegistrationStatus::Confirmed->value, RegistrationStatus::Waitlisted->value])
+            ->whereIn('status', [RegistrationStatus::Confirmed->value, RegistrationStatus::Pending->value, RegistrationStatus::Waitlisted->value])
             ->groupBy('event_id', 'status')
             ->selectRaw('event_id, status, count(*) as total')
             ->toBase()
@@ -68,7 +68,8 @@ final class PresentSubEvents
                 'capacity' => $subEvent->capacity,
                 'allowWaitlist' => $subEvent->allow_waitlist,
                 'people' => (int) ($people[(string) $subEvent->id] ?? 0),
-                'confirmed' => $countFor(RegistrationStatus::Confirmed),
+                // Une demande en attente tient déjà sa place dans la session.
+                'confirmed' => $countFor(RegistrationStatus::Confirmed) + $countFor(RegistrationStatus::Pending),
                 'waitlisted' => $countFor(RegistrationStatus::Waitlisted),
                 'conflicts' => $conflicts[$subEvent->id] ?? [],
                 'checkInUrl' => route('events.check-in.index', $subEvent->id),

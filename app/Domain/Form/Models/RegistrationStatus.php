@@ -14,6 +14,11 @@ enum RegistrationStatus: string
     // place. Distinct de Cancelled, qui annule une inscription confirmée.
     case Declined = 'declined';
 
+    // Validation manuelle (M1.2, « approbation ») : la place est retenue
+    // jusqu'à ce que l'organisateur accepte (Confirmed) ou refuse (Rejected).
+    case Pending = 'pending';
+    case Rejected = 'rejected';
+
     public function label(): string
     {
         return match ($this) {
@@ -21,6 +26,8 @@ enum RegistrationStatus: string
             self::Waitlisted => "Liste d'attente",
             self::Cancelled => 'Annulé',
             self::Declined => 'Décliné',
+            self::Pending => 'À valider',
+            self::Rejected => 'Refusé',
         };
     }
 }

@@ -143,8 +143,21 @@ final class SyncSubEventRegistrations
     {
         return Registration::query()
             ->where('parent_registration_id', $parent->id)
-            ->whereIn('status', [RegistrationStatus::Confirmed->value, RegistrationStatus::Waitlisted->value])
+            ->whereIn('status', [RegistrationStatus::Confirmed->value, RegistrationStatus::Pending->value, RegistrationStatus::Waitlisted->value])
             ->get();
+    }
+
+    /**
+     * Une session suit l'inscription principale : tant que celle-ci attend
+     * la validation de l'organisateur, sa place de session attend aussi.
+     */
+    private function childStatus(Registration $parent, ReservationOutcome $outcome): RegistrationStatus
+    {
+        if ($outcome !== ReservationOutcome::Accepted) {
+            return RegistrationStatus::Waitlisted;
+        }
+
+        return $parent->status === RegistrationStatus::Pending ? RegistrationStatus::Pending : RegistrationStatus::Confirmed;
     }
 
     private function register(Registration $parent, SubEventContext $subEvent): void
@@ -178,7 +191,7 @@ final class SyncSubEventRegistrations
             'form_version_id' => $parent->form_version_id,
             'parent_registration_id' => $parent->id,
             'contact_id' => $parent->contact_id,
-            'status' => $outcome->outcome === ReservationOutcome::Accepted ? RegistrationStatus::Confirmed : RegistrationStatus::Waitlisted,
+            'status' => $this->childStatus($parent, $outcome->outcome),
             'reservation_key' => $reservationKey,
             'email' => $parent->email,
             'first_name' => $parent->first_name,

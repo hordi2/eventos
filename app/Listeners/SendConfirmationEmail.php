@@ -6,7 +6,9 @@ namespace App\Listeners;
 
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Event\Models\Event;
+use App\Domain\Form\Events\RegistrationApproved;
 use App\Domain\Form\Events\RegistrationCreated;
+use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Messaging\Models\MessageAutomation;
 use App\Domain\Messaging\Models\MessageAutomationStatus;
@@ -46,7 +48,20 @@ final class SendConfirmationEmail
 
     public function handle(RegistrationCreated $registrationCreated): void
     {
-        $registration = $registrationCreated->registration;
+        $this->send($registrationCreated->registration);
+    }
+
+    /**
+     * Validation manuelle (M1.2) : la confirmation part à l'acceptation,
+     * pas à la réponse de l'invité.
+     */
+    public function approved(RegistrationApproved $approved): void
+    {
+        $this->send($approved->registration);
+    }
+
+    private function send(Registration $registration): void
+    {
 
         if ($registration->status !== RegistrationStatus::Confirmed || $registration->contact_id === null) {
             return;

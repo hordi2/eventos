@@ -20,5 +20,6 @@ final class DashboardStatsData
         public readonly int $rsvpDeclinedCount,
         public readonly int $rsvpNoResponseCount,
         public readonly int $rsvpWaitlistedCount,
+        public readonly int $rsvpPendingCount,
     ) {}
 }

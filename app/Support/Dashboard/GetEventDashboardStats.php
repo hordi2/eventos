@@ -52,16 +52,23 @@ final class GetEventDashboardStats
             rsvpConfirmedCount: $this->computeEventSegmentContacts->query($event, EventSegment::Confirmes)->count(),
             rsvpDeclinedCount: $this->computeEventSegmentContacts->query($event, EventSegment::Declines)->count(),
             rsvpNoResponseCount: $this->computeEventSegmentContacts->query($event, EventSegment::SansReponse)->count(),
-            rsvpWaitlistedCount: $this->waitlistedCount($event),
+            rsvpWaitlistedCount: $this->countWithStatus($event, RegistrationStatus::Waitlisted),
+            rsvpPendingCount: $this->countWithStatus($event, RegistrationStatus::Pending),
         );
     }
 
-    private function waitlistedCount(Event $event): int
+    /**
+     * Inscriptions principales dans un état donné : la liste d'attente et,
+     * en validation manuelle, les demandes encore en attente.
+     */
+    private function countWithStatus(Event $event, RegistrationStatus $status): int
     {
         return DB::table('registrations')
             ->where('organization_id', $event->organization_id)
             ->where('event_id', $event->id)
-            ->where('status', RegistrationStatus::Waitlisted->value)
+            ->where('status', $status->value)
+            // Les sessions d'un invité ne comptent pas à part.
+            ->whereNull('parent_registration_id')
             ->whereNull('deleted_at')
             ->count();
     }

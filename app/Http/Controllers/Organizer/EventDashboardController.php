@@ -117,6 +117,7 @@ final class EventDashboardController extends Controller
             'rsvp_declined_count' => $stats->rsvpDeclinedCount,
             'rsvp_no_response_count' => $stats->rsvpNoResponseCount,
             'rsvp_waitlisted_count' => $stats->rsvpWaitlistedCount,
+            'rsvp_pending_count' => $stats->rsvpPendingCount,
         ];
     }
 

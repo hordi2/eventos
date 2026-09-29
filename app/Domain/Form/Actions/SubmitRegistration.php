@@ -111,6 +111,11 @@ final class SubmitRegistration
             // Une place par personne : le titulaire et chacun de ses accompagnants.
             $status = $declined ? RegistrationStatus::Declined : $this->reserveEventPlace($context, $idempotencyKey, 1 + count($companions));
 
+            // Validation manuelle : la place obtenue reste retenue en attendant l'organisateur.
+            if ($status === RegistrationStatus::Confirmed && $context->requiresApproval) {
+                $status = RegistrationStatus::Pending;
+            }
+
             $registration = Registration::query()->create([
                 'organization_id' => $context->organizationId,
                 'event_id' => $context->eventId,

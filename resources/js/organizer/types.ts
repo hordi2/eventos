@@ -23,6 +23,7 @@ export type EventNavLinkKey =
     | 'responses'
     | 'subEvents'
     | 'answers'
+    | 'approvals'
     | 'files'
     | 'meals'
     | 'donations'

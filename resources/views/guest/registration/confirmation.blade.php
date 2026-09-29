@@ -4,7 +4,14 @@
 
 @section('content')
     <div class="mx-auto max-w-lg px-4 py-16 text-center">
-        @if ($registration->status->value === 'declined')
+        @if ($registration->status->value === 'pending')
+            {{-- Validation manuelle : la place est retenue, la confirmation viendra de l'organisateur. --}}
+            <h1 class="mb-4 text-2xl">Votre demande est bien arrivée</h1>
+            <p class="mb-8 text-ink-soft">
+                {{ $event->title }} demande une validation : votre place est retenue le temps que l'organisateur examine votre demande.
+                Vous recevrez un message dès qu'elle sera acceptée.
+            </p>
+        @elseif ($registration->status->value === 'declined')
             <h1 class="mb-4 text-2xl">{{ $settings['decline_screen']['title'] !== '' ? $settings['decline_screen']['title'] : 'Merci pour votre réponse' }}</h1>
 
             @if ($settings['decline_screen']['message'] !== '')
@@ -62,7 +69,7 @@
         @endif
 
         <p class="mb-8 text-sm text-ink-soft">
-            {{ $registration->status->value === 'declined' ? 'Réponse enregistrée' : 'Inscription enregistrée' }}{{ $registration->email !== '' ? " avec l'adresse {$registration->email}" : ($registration->phone_e164 ? " avec le numéro {$registration->phone_e164}" : '') }}.
+            {{ match ($registration->status->value) { 'declined' => 'Réponse enregistrée', 'pending' => 'Demande enregistrée', default => 'Inscription enregistrée' } }}{{ $registration->email !== '' ? " avec l'adresse {$registration->email}" : ($registration->phone_e164 ? " avec le numéro {$registration->phone_e164}" : '') }}.
         </p>
 
         @if ($editUrl || $cancelUrl)

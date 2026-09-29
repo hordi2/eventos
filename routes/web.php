@@ -32,6 +32,7 @@ use App\Http\Controllers\Organizer\ContactImportController;
 use App\Http\Controllers\Organizer\DashboardController;
 use App\Http\Controllers\Organizer\EmailTemplateController;
 use App\Http\Controllers\Organizer\EventAnswerController;
+use App\Http\Controllers\Organizer\EventApprovalController;
 use App\Http\Controllers\Organizer\EventChecklistController;
 use App\Http\Controllers\Organizer\EventController;
 use App\Http\Controllers\Organizer\EventDashboardController;
@@ -269,6 +270,11 @@ Route::middleware('auth')->group(function (): void {
         Route::post('events/{event}/sub-events', [SubEventController::class, 'store'])->name('events.sub-events.store');
         Route::patch('events/{event}/sub-events/{subEvent}', [SubEventController::class, 'update'])->name('events.sub-events.update');
         Route::delete('events/{event}/sub-events/{subEvent}', [SubEventController::class, 'destroy'])->name('events.sub-events.destroy');
+
+        // Validation manuelle des inscriptions (M1.2) : accepter ou refuser.
+        Route::get('events/{event}/validations', [EventApprovalController::class, 'index'])->name('events.approvals.index');
+        Route::post('registrations/{registration}/approve', [EventApprovalController::class, 'approve'])->whereNumber('registration')->name('registrations.approve');
+        Route::post('registrations/{registration}/reject', [EventApprovalController::class, 'reject'])->whereNumber('registration')->name('registrations.reject');
 
         // Ce que les invités ont répondu, question par question puis invité par invité.
         Route::get('events/{event}/answers', [EventAnswerController::class, 'index'])->name('events.answers.index');

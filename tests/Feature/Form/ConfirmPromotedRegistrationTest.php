@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use App\Domain\Event\Models\Event;
-use App\Domain\Form\Listeners\ConfirmPromotedRegistration;
 use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormVersion;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Organization\Models\Organization;
+use App\Listeners\ConfirmPromotedRegistration;
 use App\Models\User;
 use App\Support\Capacity\Events\WaitlistEntryPromoted;
 use App\Support\Capacity\Models\WaitlistEntry;

@@ -7,11 +7,8 @@ namespace App\Domain\Form\Actions;
 use App\Domain\Form\Data\EventEditPolicy;
 use App\Domain\Form\Events\RegistrationCancelled;
 use App\Domain\Form\Models\Registration;
-use App\Domain\Form\Models\RegistrationAnswer;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Form\RegistrationEditLockedException;
-use App\Domain\Form\Support\OptionReservationKey;
-use App\Support\Capacity\Actions\ReleaseCapacity;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -24,9 +21,8 @@ use Illuminate\Support\Facades\DB;
 final class CancelRegistration
 {
     public function __construct(
-        private readonly ReleaseCapacity $releaseCapacity,
         private readonly SnapshotRegistration $snapshotRegistration,
-        private readonly SyncSubEventRegistrations $syncSubEventRegistrations,
+        private readonly ReleaseRegistrationPlaces $releaseRegistrationPlaces,
     ) {}
 
     public function handle(Registration $registration, EventEditPolicy $policy, ?string $reason = null): Registration
@@ -44,41 +40,11 @@ final class CancelRegistration
                 'cancellation_reason' => $reason,
             ]);
 
-            $this->releaseCapacity->handle('event', (string) $registration->event_id, $registration->reservation_key);
-
-            $registration->allAnswers()->with('formField.options')->get()
-                ->each(function (RegistrationAnswer $answer) use ($registration): void {
-                    $this->releaseSelectedOptions($registration, $answer);
-                });
-
-            $registration->attendees()->update(['qr_jti' => null]);
-
-            // Les sessions d'événements secondaires suivent l'inscription principale.
-            $this->syncSubEventRegistrations->handle($registration, []);
+            $this->releaseRegistrationPlaces->handle($registration);
         });
 
         RegistrationCancelled::dispatch($registration->fresh());
 
         return $registration->fresh();
-    }
-
-    private function releaseSelectedOptions(Registration $registration, RegistrationAnswer $answer): void
-    {
-        $field = $answer->formField;
-
-        if (! $field->type->supportsOptions()) {
-            return;
-        }
-
-        $selected = is_array($answer->value) ? $answer->value : [$answer->value];
-        $attendeeId = $answer->attendee_id !== null ? (int) $answer->attendee_id : null;
-
-        foreach ($selected as $value) {
-            $option = $field->options->firstWhere('value', $value);
-
-            if ($option !== null && $option->quota !== null) {
-                $this->releaseCapacity->handle('form_field_option', (string) $option->id, OptionReservationKey::for($registration->reservation_key, $option->id, $attendeeId));
-            }
-        }
     }
 }

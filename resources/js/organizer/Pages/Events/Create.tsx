@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { type FormEvent, useState } from 'react';
 import Badge from '../../Components/Badge';
 import Button from '../../Components/Button';
+import Checkbox from '../../Components/Checkbox';
 import InputError from '../../Components/InputError';
 import InputLabel from '../../Components/InputLabel';
 import Select from '../../Components/Select';
@@ -37,6 +38,7 @@ interface EventDraft {
     endAt: string;
     registrationOpensAt: string | null;
     registrationClosesAt: string | null;
+    requiresApproval: boolean;
     timezone: string;
     venueId: number | null;
     venueName: string | null;
@@ -130,6 +132,7 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
         end_at: event ? toDatetimeLocalValue(event.endAt, event.timezone) : '',
         registration_opens_at: event?.registrationOpensAt ? toDatetimeLocalValue(event.registrationOpensAt, event.timezone) : '',
         registration_closes_at: event?.registrationClosesAt ? toDatetimeLocalValue(event.registrationClosesAt, event.timezone) : '',
+        requires_approval: event?.requiresApproval ?? false,
         timezone: event?.timezone ?? 'Africa/Kinshasa',
         venue_id: event?.venueId ? String(event.venueId) : '',
         venue_name: '',
@@ -322,6 +325,21 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                                 <InputError message={errors.registration_closes_at} />
                             </div>
                         </div>
+
+                        <label className="mt-6 flex cursor-pointer items-start gap-3">
+                            <Checkbox
+                                checked={data.requires_approval}
+                                onChange={(e) => setData('requires_approval', e.target.checked)}
+                                className="mt-1"
+                            />
+                            <span>
+                                <span className="block text-sm text-ink">Valider chaque inscription moi-même</span>
+                                <span className="block text-xs text-ink-soft">
+                                    Chaque réponse attend votre accord. La place est retenue pendant ce temps, et l'invité est prévenu de votre
+                                    décision.
+                                </span>
+                            </span>
+                        </label>
                     </fieldset>
 
                     <div>

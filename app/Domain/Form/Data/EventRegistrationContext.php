@@ -33,5 +33,7 @@ final class EventRegistrationContext
         // GetOrganizationUsage avant de construire ce contexte.
         public readonly ?int $organizationMonthlyRegistrationQuota = null,
         public readonly array $subEvents = [],
+        // Validation manuelle : une place obtenue attend l'accord de l'organisateur.
+        public readonly bool $requiresApproval = false,
     ) {}
 }

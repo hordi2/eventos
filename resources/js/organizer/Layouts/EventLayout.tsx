@@ -20,6 +20,8 @@ interface EventLayoutProps {
 const STATUS_MESSAGES: Record<string, string> = {
     'event-published': 'Événement publié : son lien public accepte les inscriptions.',
     'event-unpublished': "Événement repassé en « Inédit » : sa page publique et les inscriptions sont fermées.",
+    'registration-approved': "Inscription acceptée : l'invité est prévenu et sa place est confirmée.",
+    'registration-rejected': "Demande refusée : l'invité est prévenu et sa place est libérée.",
     'invitee-added': 'Invité ajouté à la liste.',
     'invitee-updated': 'Invité mis à jour.',
     'invitee-removed': 'Invité retiré de la liste. Sa fiche contact est conservée.',

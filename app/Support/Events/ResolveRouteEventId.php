@@ -22,7 +22,7 @@ use Illuminate\Routing\Route;
  */
 final class ResolveRouteEventId
 {
-    private const CHILD_PARAMETERS = ['form', 'ticketType', 'priceTier', 'messageAutomation', 'attendee'];
+    private const CHILD_PARAMETERS = ['form', 'ticketType', 'priceTier', 'messageAutomation', 'attendee', 'registration'];
 
     public function targetsEvent(Route $route): bool
     {
@@ -56,6 +56,7 @@ final class ResolveRouteEventId
                 ->whereKey(PriceTier::query()->whereKey((int) $parameters['priceTier'])->value('ticket_type_id'))
                 ->value('event_id'),
             isset($parameters['messageAutomation']) => MessageAutomation::query()->whereKey((int) $parameters['messageAutomation'])->value('event_id'),
+            isset($parameters['registration']) => Registration::query()->whereKey((int) $parameters['registration'])->value('event_id'),
             isset($parameters['attendee']) => Registration::query()
                 ->whereKey(Attendee::query()->whereKey((int) $parameters['attendee'])->value('registration_id'))
                 ->value('event_id'),

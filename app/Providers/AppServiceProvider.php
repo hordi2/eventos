@@ -12,11 +12,12 @@ use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\Venue;
 use App\Domain\Event\Policies\EventPolicy;
 use App\Domain\Event\Policies\VenuePolicy;
+use App\Domain\Form\Events\RegistrationApproved;
 use App\Domain\Form\Events\RegistrationCancelled;
 use App\Domain\Form\Events\RegistrationCreated;
 use App\Domain\Form\Events\RegistrationFileRejected;
+use App\Domain\Form\Events\RegistrationRejected;
 use App\Domain\Form\Events\RegistrationUpdated;
-use App\Domain\Form\Listeners\ConfirmPromotedRegistration;
 use App\Domain\Form\Listeners\CopyFormsToDuplicatedEvent;
 use App\Domain\Form\Models\Form;
 use App\Domain\Form\Policies\FormPolicy;
@@ -27,10 +28,13 @@ use App\Domain\Page\Listeners\CopyPageToDuplicatedEvent;
 use App\Domain\Ticketing\Events\OrderPaid;
 use App\Domain\Ticketing\Events\OrderPlaced;
 use App\Domain\Ticketing\Listeners\CopyTicketTypesToDuplicatedEvent;
+use App\Listeners\ConfirmPromotedRegistration;
 use App\Listeners\LinkOrderToContact;
 use App\Listeners\LinkRegistrationToContact;
 use App\Listeners\Notifications\NotifyOrganizersOfRegistration;
+use App\Listeners\NotifyGuestOfRegistrationDecision;
 use App\Listeners\NotifyGuestOfRejectedFile;
+use App\Listeners\OpenDonationOnApprovedRegistration;
 use App\Listeners\ReportHealthDiagnostics;
 use App\Listeners\SendConfirmationEmail;
 use App\Listeners\SendConfirmationWhatsapp;
@@ -113,6 +117,15 @@ class AppServiceProvider extends ServiceProvider
 
         // Fichier joint refusé par l'antivirus après l'inscription : l'invité est prévenu.
         EventFacade::listen(RegistrationFileRejected::class, NotifyGuestOfRejectedFile::class);
+
+        // Validation manuelle des inscriptions (M1.2) : la confirmation part
+        // à l'acceptation, le refus prévient l'invité, le don promis n'est
+        // ouvert qu'une fois la place acquise.
+        EventFacade::listen(RegistrationApproved::class, [SendConfirmationEmail::class, 'approved']);
+        EventFacade::listen(RegistrationApproved::class, [SendConfirmationWhatsapp::class, 'approved']);
+        EventFacade::listen(RegistrationApproved::class, [NotifyGuestOfRegistrationDecision::class, 'approved']);
+        EventFacade::listen(RegistrationRejected::class, [NotifyGuestOfRegistrationDecision::class, 'rejected']);
+        EventFacade::listen(RegistrationApproved::class, OpenDonationOnApprovedRegistration::class);
 
         // T-014 : chaque module recopie sa partie d'un événement dupliqué.
         EventFacade::listen(EventDuplicated::class, CopyFormsToDuplicatedEvent::class);

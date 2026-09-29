@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import BarChart from '../../Components/BarChart';
 import LineChart from '../../Components/LineChart';
@@ -24,6 +24,7 @@ interface Stats {
     rsvp_declined_count: number;
     rsvp_no_response_count: number;
     rsvp_waitlisted_count: number;
+    rsvp_pending_count: number;
 }
 
 interface Props {
@@ -76,6 +77,17 @@ export default function Show({ event, stats: initialStats }: Props) {
                     <StatCard label="Sans réponse" value={stats.rsvp_no_response_count} />
                     <StatCard label="Liste d'attente" value={stats.rsvp_waitlisted_count} />
                 </div>
+
+                {stats.rsvp_pending_count > 0 && (
+                    <p className="mt-4 text-sm text-ink-soft">
+                        {stats.rsvp_pending_count > 1
+                            ? `${stats.rsvp_pending_count} demandes attendent votre validation.`
+                            : 'Une demande attend votre validation.'}{' '}
+                        <Link href={`/events/${event.id}/validations`} className="text-ink underline hover:no-underline">
+                            Les examiner
+                        </Link>
+                    </p>
+                )}
             </div>
 
             <div className="mb-8 rounded-card bg-bg p-6 ring-1 ring-line">

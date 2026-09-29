@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventAccessMode;
+use App\Domain\Event\Models\EventType;
 use App\Domain\Form\Models\Attendee;
 use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\Registration;
@@ -32,7 +33,11 @@ it('lance une simulation au premier écran du parcours, avec la dernière versio
 });
 
 it('va jusqu\'au bout du parcours sans rien enregistrer', function (): void {
-    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent([['key' => 'regime', 'type' => 'short_text', 'label' => 'Régime alimentaire']]);
+    // Type professionnel : un événement personnel exigerait aussi le téléphone.
+    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent(
+        [['key' => 'regime', 'type' => 'short_text', 'label' => 'Régime alimentaire']],
+        ['type' => EventType::Conference],
+    );
     [$form, $admin] = formAndAdminOf($organization, $event);
     $base = "/r/{$organization->slug}/{$event->slug}";
 

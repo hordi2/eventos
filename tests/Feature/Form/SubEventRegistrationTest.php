@@ -4,88 +4,20 @@ declare(strict_types=1);
 
 use App\Domain\Event\Models\Event;
 use App\Domain\Form\Actions\CancelRegistration;
-use App\Domain\Form\Actions\CreateForm;
-use App\Domain\Form\Actions\PublishFormVersion;
 use App\Domain\Form\Actions\SubmitRegistration;
 use App\Domain\Form\Actions\UpdateRegistration;
 use App\Domain\Form\Data\AttendeeIdentity;
 use App\Domain\Form\Data\CompanionData;
 use App\Domain\Form\Data\EventEditPolicy;
-use App\Domain\Form\Data\EventRegistrationContext;
 use App\Domain\Form\Data\RegistrationSubmissionMetadata;
 use App\Domain\Form\Models\Attendee;
-use App\Domain\Form\Models\FormVersion;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Form\SubEventFullException;
-use App\Domain\Organization\Models\MembershipRole;
-use App\Domain\Organization\Models\Organization;
-use App\Models\User;
 use App\Support\Capacity\Models\CapacityHold;
 use App\Support\Capacity\Models\CapacityHoldStatus;
-use App\Support\MultiTenancy\CurrentOrganization;
-use App\Support\Registration\BuildSubEventContexts;
-use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-
-/**
- * Un événement principal et trois sessions : un dîner (2 places), un atelier
- * le lendemain (1 place, liste d'attente) et un cocktail qui chevauche le dîner.
- *
- * @return array{organization: Organization, parent: Event, dinner: Event, workshop: Event, cocktail: Event, version: FormVersion, context: EventRegistrationContext}
- */
-function eventWithSessions(): array
-{
-    $organization = Organization::factory()->create();
-    app(CurrentOrganization::class)->set($organization);
-
-    $admin = User::factory()->create();
-    $admin->memberships()->create(['organization_id' => $organization->id, 'role' => MembershipRole::Admin]);
-
-    $start = CarbonImmutable::parse('2026-12-10 18:00', 'UTC');
-    $parent = Event::factory()->for($organization)->create(['start_at' => $start, 'end_at' => $start->addDays(2), 'timezone' => 'UTC']);
-    $session = fn (array $attributes): Event => Event::factory()->for($organization)->create(['parent_event_id' => $parent->id, 'timezone' => 'UTC', ...$attributes]);
-
-    $dinner = $session(['title' => 'Dîner de gala', 'start_at' => $start, 'end_at' => $start->addHours(3), 'capacity' => 2]);
-    $workshop = $session(['title' => 'Atelier photo', 'start_at' => $start->addDay(), 'end_at' => $start->addDay()->addHours(2), 'capacity' => 1, 'allow_waitlist' => true]);
-    $cocktail = $session(['title' => 'Cocktail', 'start_at' => $start->addHour(), 'end_at' => $start->addHours(2)]);
-
-    $form = app(CreateForm::class)->handle($organization, $parent->id, $admin, [
-        'name' => 'Inscription',
-        'fields' => [[
-            'key' => 'sessions',
-            'type' => 'sub_events',
-            'label' => 'Vos sessions',
-            'config' => ['sub_events' => [
-                ['id' => $dinner->id, 'title' => 'Dîner de gala'],
-                ['id' => $workshop->id, 'title' => 'Atelier photo'],
-                ['id' => $cocktail->id, 'title' => 'Cocktail'],
-            ]],
-        ]],
-    ]);
-    app(PublishFormVersion::class)->handle($form, $admin);
-
-    return [
-        'organization' => $organization,
-        'parent' => $parent,
-        'dinner' => $dinner,
-        'workshop' => $workshop,
-        'cocktail' => $cocktail,
-        'version' => $form->fresh()->currentVersion,
-        'context' => new EventRegistrationContext(
-            eventId: $parent->id,
-            organizationId: $organization->id,
-            capacity: null,
-            allowWaitlist: false,
-            registrationOpensAt: null,
-            registrationClosesAt: null,
-            timezone: 'UTC',
-            registrationClosedMessage: null,
-            subEvents: app(BuildSubEventContexts::class)->handle($parent),
-        ),
-    ];
-}
 
 /**
  * @param  array<string, mixed>  $setup

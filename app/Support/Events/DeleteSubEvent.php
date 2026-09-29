@@ -26,7 +26,7 @@ final class DeleteSubEvent
     {
         $hasActiveRegistrations = Registration::query()
             ->where('event_id', $subEvent->id)
-            ->whereIn('status', [RegistrationStatus::Confirmed->value, RegistrationStatus::Waitlisted->value])
+            ->whereIn('status', [RegistrationStatus::Confirmed->value, RegistrationStatus::Pending->value, RegistrationStatus::Waitlisted->value])
             ->exists();
 
         if ($hasActiveRegistrations) {

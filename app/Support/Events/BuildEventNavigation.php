@@ -10,6 +10,8 @@ use App\Domain\Event\Models\EventStatus;
 use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormField;
+use App\Domain\Form\Models\Registration;
+use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Organization\Services\CollaboratorAccess;
 use App\Models\User;
 use App\Support\MultiTenancy\CurrentOrganization;
@@ -84,6 +86,9 @@ final class BuildEventNavigation
             // Un seul niveau de hiérarchie : une session n'a pas ses propres sessions.
             'subEvents' => $link($canUpdate && ! $event->isSubEvent(), route('events.sub-events.index', $event->id)),
             'answers' => $link($gate->allows('viewGuests', $organization), route('events.answers.index', $event->id)),
+            // Proposé seulement quand l'événement demande une validation, ou
+            // qu'il reste des demandes d'un réglage désactivé depuis.
+            'approvals' => $link($gate->allows('viewGuests', $organization) && $this->needsApproval($event), route('events.approvals.index', $event->id)),
             'files' => $link($gate->allows('viewGuests', $organization) && $this->asksFor($event->id, FieldType::FileUpload), route('events.files.index', $event->id)),
             // Rapports : proposés seulement quand le formulaire pose la question.
             'meals' => $link($gate->allows('viewGuests', $organization) && $this->asksFor($event->id, FieldType::MealChoice), route('events.meals.index', $event->id)),
@@ -110,6 +115,14 @@ final class BuildEventNavigation
      * n'ont de sens que si l'un des formulaires pose, ou a posé dans l'une de
      * ses versions, la question correspondante.
      */
+    private function needsApproval(Event $event): bool
+    {
+        return $event->requires_approval || Registration::query()
+            ->where('event_id', $event->id)
+            ->where('status', RegistrationStatus::Pending)
+            ->exists();
+    }
+
     private function asksFor(int $eventId, FieldType $type): bool
     {
         return FormField::query()
