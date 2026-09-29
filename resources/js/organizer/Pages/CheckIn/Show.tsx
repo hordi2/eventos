@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import QrScanner from 'qr-scanner';
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import Badge from '../../Components/Badge';
@@ -48,6 +48,9 @@ const emptyWalkIn = { ticketTypeId: '', name: '', email: '', phone: '' };
 
 export default function Show({ event, guests: initialGuests, ticketTypes }: Props) {
     const [guests, setGuests] = useState<Guest[]>(initialGuests);
+    const [kioskOpen, setKioskOpen] = useState(false);
+    const [kioskCode, setKioskCode] = useState('');
+    const [kioskError, setKioskError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [feedback, setFeedback] = useState<{ type: 'success' | 'conflict' | 'error'; message: string } | null>(null);
     const [webcamActive, setWebcamActive] = useState(false);
@@ -208,6 +211,41 @@ export default function Show({ event, guests: initialGuests, ticketTypes }: Prop
         <EventLayout title="Check-in" eyebrow={event.title}>
             <Head title="Check-in" />
 
+            {/* Kiosque : la tablette reste connectée, le code la protège. */}
+            <Modal open={kioskOpen} onClose={() => setKioskOpen(false)} title="Ouvrir le mode kiosque" showCloseButton>
+                <form
+                    onSubmit={(submitEvent) => {
+                        submitEvent.preventDefault();
+                        router.post(`/events/${event.id}/kiosk`, { code: kioskCode }, { onError: (errors) => setKioskError(errors.code ?? null) });
+                    }}
+                    className="space-y-4"
+                >
+                    <p className="text-sm text-ink-soft">
+                        L'invité s'y pointe seul, par QR code ou en cherchant son nom, et son badge part à l'impression. Ce code sera demandé pour
+                        quitter le kiosque sur la tablette.
+                    </p>
+                    <div>
+                        <InputLabel htmlFor="kiosk_code">Code à quatre chiffres</InputLabel>
+                        <TextInput
+                            id="kiosk_code"
+                            inputMode="numeric"
+                            maxLength={4}
+                            value={kioskCode}
+                            onChange={(changeEvent) => setKioskCode(changeEvent.target.value)}
+                        />
+                        <InputError message={kioskError ?? undefined} />
+                    </div>
+                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <Button type="button" variant="secondary" onClick={() => setKioskOpen(false)} className="sm:w-auto">
+                            Annuler
+                        </Button>
+                        <Button type="submit" className="sm:w-auto">
+                            Ouvrir le kiosque
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
+
             <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <p className="text-ink-soft">
@@ -218,6 +256,9 @@ export default function Show({ event, guests: initialGuests, ticketTypes }: Prop
                     <a href={`/events/${event.id}/badges`} className="inline-flex min-h-11 items-center text-sm text-accent underline underline-offset-2">
                         Badges
                     </a>
+                    <Button variant="secondary" className="w-auto" onClick={() => setKioskOpen(true)}>
+                        Mode kiosque
+                    </Button>
                     <Button variant="secondary" className="w-auto" onClick={webcamActive ? stopWebcam : startWebcam}>
                         {webcamActive ? 'Arrêter la caméra' : 'Scanner avec la caméra'}
                     </Button>

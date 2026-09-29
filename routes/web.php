@@ -49,6 +49,7 @@ use App\Http\Controllers\Organizer\FormController;
 use App\Http\Controllers\Organizer\FormPreviewController;
 use App\Http\Controllers\Organizer\FormThemeImageController;
 use App\Http\Controllers\Organizer\HelpController;
+use App\Http\Controllers\Organizer\KioskController;
 use App\Http\Controllers\Organizer\MessageAutomationController;
 use App\Http\Controllers\Organizer\OrganizationBrandingController;
 use App\Http\Controllers\Organizer\OrganizationImageController;
@@ -371,6 +372,12 @@ Route::middleware('auth')->group(function (): void {
         Route::post('events/{event}/segments/{segment}/tag', [EventSegmentController::class, 'applyTag'])->name('events.segments.apply-tag');
 
         Route::post('attendees/{attendee}/toggle-check-in', [AttendeeController::class, 'toggleCheckIn'])->name('attendees.toggle-check-in');
+
+        // Kiosque d'accueil : la tablette laissée en libre-service le jour J.
+        Route::post('events/{event}/kiosk', [KioskController::class, 'start'])->name('events.kiosk.start');
+        Route::get('events/{event}/kiosk', [KioskController::class, 'show'])->name('events.kiosk.show');
+        Route::get('events/{event}/kiosk/search', [KioskController::class, 'search'])->middleware('throttle:60,1')->name('events.kiosk.search');
+        Route::post('events/{event}/kiosk/exit', [KioskController::class, 'exit'])->middleware('throttle:10,1')->name('events.kiosk.exit');
 
         Route::get('events/{event}/check-in', [CheckInController::class, 'index'])->name('events.check-in.index');
         Route::post('events/{event}/check-in/scan', [CheckInController::class, 'scan'])->name('events.check-in.scan');
