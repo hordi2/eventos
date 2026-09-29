@@ -78,3 +78,34 @@ it('garde les dates d\'ouverture à la création, à l\'heure de l\'événement'
     expect(Event::query()->where('title', 'Gala des partenaires')->sole()->registration_opens_at->toIso8601String())
         ->toBe('2026-11-01T09:00:00+00:00');
 });
+
+it('règle la capacité et la liste d\'attente depuis les paramètres', function (): void {
+    [$organization, $admin] = organizationWithContactRole(MembershipRole::Admin);
+    $event = Event::factory()->for($organization)->create(['timezone' => 'Africa/Kinshasa', 'capacity' => null, 'allow_waitlist' => false]);
+
+    $this->actingAs($admin)->patch("/events/{$event->id}", registrationWindowPayload($event, [
+        'capacity' => '150',
+        'allow_waitlist' => true,
+    ]))->assertRedirect(route('events.edit', $event));
+
+    expect($event->fresh()->capacity)->toBe(150)
+        ->and($event->fresh()->allow_waitlist)->toBeTrue();
+
+    $this->actingAs($admin)->get("/events/{$event->id}/edit")->assertInertia(fn ($page) => $page
+        ->where('event.capacity', 150)
+        ->where('event.allowWaitlist', true));
+
+    // Une capacité effacée retire la limite.
+    $this->actingAs($admin)->patch("/events/{$event->id}", registrationWindowPayload($event, ['capacity' => '']));
+    expect($event->fresh()->capacity)->toBeNull();
+});
+
+it('refuse une capacité qui n\'est pas un nombre de places tenable', function (): void {
+    [$organization, $admin] = organizationWithContactRole(MembershipRole::Admin);
+    $event = Event::factory()->for($organization)->create(['timezone' => 'Africa/Kinshasa', 'capacity' => 80]);
+
+    $this->actingAs($admin)->patch("/events/{$event->id}", registrationWindowPayload($event, ['capacity' => '0']))
+        ->assertSessionHasErrors('capacity');
+
+    expect($event->fresh()->capacity)->toBe(80);
+});

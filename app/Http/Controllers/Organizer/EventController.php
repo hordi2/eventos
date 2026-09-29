@@ -176,6 +176,8 @@ final class EventController extends Controller
             'registrationOpensAt' => $event->registration_opens_at?->toIso8601String(),
             'registrationClosesAt' => $event->registration_closes_at?->toIso8601String(),
             'requiresApproval' => $event->requires_approval,
+            'capacity' => $event->capacity,
+            'allowWaitlist' => $event->allow_waitlist,
             'timezone' => $event->timezone,
             'venueId' => $event->venue_id,
             'venueName' => $event->venue?->name,

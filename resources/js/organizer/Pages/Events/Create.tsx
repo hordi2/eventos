@@ -39,6 +39,8 @@ interface EventDraft {
     registrationOpensAt: string | null;
     registrationClosesAt: string | null;
     requiresApproval: boolean;
+    capacity: number | null;
+    allowWaitlist: boolean;
     timezone: string;
     venueId: number | null;
     venueName: string | null;
@@ -133,6 +135,8 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
         registration_opens_at: event?.registrationOpensAt ? toDatetimeLocalValue(event.registrationOpensAt, event.timezone) : '',
         registration_closes_at: event?.registrationClosesAt ? toDatetimeLocalValue(event.registrationClosesAt, event.timezone) : '',
         requires_approval: event?.requiresApproval ?? false,
+        capacity: event?.capacity != null ? String(event.capacity) : '',
+        allow_waitlist: event?.allowWaitlist ?? false,
         timezone: event?.timezone ?? 'Africa/Kinshasa',
         venue_id: event?.venueId ? String(event.venueId) : '',
         venue_name: '',
@@ -326,6 +330,37 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                             </div>
                         </div>
 
+                        <div className="mt-6 grid gap-6 sm:grid-cols-2 sm:items-start">
+                            <div>
+                                <InputLabel htmlFor="capacity">Capacité (personnes)</InputLabel>
+                                <TextInput
+                                    id="capacity"
+                                    type="number"
+                                    min={1}
+                                    placeholder="Illimitée"
+                                    value={data.capacity}
+                                    onChange={(e) => setData('capacity', e.target.value)}
+                                />
+                                <InputError message={errors.capacity} />
+                                <p className="mt-1.5 text-xs text-ink-soft">
+                                    Chaque personne compte, accompagnants compris. Baisser ce nombre n'annule jamais une inscription déjà acceptée.
+                                </p>
+                            </div>
+                            <label className="flex cursor-pointer items-start gap-3 sm:pt-8">
+                                <Checkbox
+                                    checked={data.allow_waitlist}
+                                    onChange={(e) => setData('allow_waitlist', e.target.checked)}
+                                    className="mt-1"
+                                />
+                                <span>
+                                    <span className="block text-sm text-ink">Liste d'attente quand l'événement est complet</span>
+                                    <span className="block text-xs text-ink-soft">
+                                        Sans elle, les inscriptions se ferment dès la dernière place prise.
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+
                         <label className="mt-6 flex cursor-pointer items-start gap-3">
                             <Checkbox
                                 checked={data.requires_approval}
@@ -456,6 +491,7 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                         <Row label="Début" value={formatInEventTimezone(event.startAt, event.timezone)} />
                         <Row label="Fin" value={formatInEventTimezone(event.endAt, event.timezone)} />
                         <Row label="Fuseau horaire" value={timezones[event.timezone] ?? event.timezone} />
+                        <Row label="Capacité" value={event.capacity != null ? `${event.capacity} personnes` : 'Illimitée'} />
                         <Row
                             label="Ouverture des inscriptions"
                             value={event.registrationOpensAt ? formatInEventTimezone(event.registrationOpensAt, event.timezone) : 'Dès la publication'}
