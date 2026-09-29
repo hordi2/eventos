@@ -53,6 +53,7 @@ final class CreateEvent
             'start_at' => $startAt,
             'end_at' => $endAt,
             'timezone' => $data['timezone'],
+            'locale' => $data['locale'] ?? 'fr',
             'is_online' => $data['is_online'] ?? false,
             'online_url' => $data['online_url'] ?? null,
             'venue_id' => $this->resolveVenueId($organization, $creator, $data),

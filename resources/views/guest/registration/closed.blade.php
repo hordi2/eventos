@@ -1,6 +1,6 @@
 @extends('guest.layout')
 
-@section('title', "Inscriptions fermées — {$event->title}")
+@section('title', __('Inscriptions fermées').' — '.$event->title)
 
 @section('content')
     <div class="mx-auto max-w-lg px-4 py-16 text-center">
@@ -8,9 +8,9 @@
 
         <p class="text-ink-soft">
             @if ($reason === 'full')
-                Cet événement affiche complet.
+                {{ __('Cet événement affiche complet.') }}
             @else
-                {{ $event->registration_closed_message ?? "Les inscriptions ne sont pas ouvertes pour le moment." }}
+                {{ $event->registration_closed_message ?? __('Les inscriptions ne sont pas ouvertes pour le moment.') }}
             @endif
         </p>
     </div>

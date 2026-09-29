@@ -39,6 +39,7 @@ interface EventDraft {
     registrationOpensAt: string | null;
     registrationClosesAt: string | null;
     requiresApproval: boolean;
+    locale: string;
     capacity: number | null;
     allowWaitlist: boolean;
     timezone: string;
@@ -55,6 +56,7 @@ interface CreateEventPageProps {
     venues: VenueOption[];
     canDuplicate?: boolean;
     duplicationParts?: DuplicationPartOption[];
+    locales?: { value: string; label: string }[];
 }
 
 interface DuplicationPartOption {
@@ -99,7 +101,7 @@ function addHoursToLocalValue(value: string, hours: number): string {
     return `${shifted.getFullYear()}-${pad(shifted.getMonth() + 1)}-${pad(shifted.getDate())}T${pad(shifted.getHours())}:${pad(shifted.getMinutes())}`;
 }
 
-export default function CreateEvent({ event, eventTypes, eventAudiences, timezones, venues, canDuplicate = false, duplicationParts = [] }: CreateEventPageProps) {
+export default function CreateEvent({ event, eventTypes, eventAudiences, timezones, venues, canDuplicate = false, duplicationParts = [], locales = [] }: CreateEventPageProps) {
     const [step, setStep] = useState<1 | 2 | 3>(event ? 3 : 1);
     const [endTouched, setEndTouched] = useState(Boolean(event));
     const [venueMode, setVenueMode] = useState<'none' | 'existing' | 'new'>(event?.venueId ? 'existing' : 'none');
@@ -135,6 +137,7 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
         registration_opens_at: event?.registrationOpensAt ? toDatetimeLocalValue(event.registrationOpensAt, event.timezone) : '',
         registration_closes_at: event?.registrationClosesAt ? toDatetimeLocalValue(event.registrationClosesAt, event.timezone) : '',
         requires_approval: event?.requiresApproval ?? false,
+        locale: event?.locale ?? 'fr',
         capacity: event?.capacity != null ? String(event.capacity) : '',
         allow_waitlist: event?.allowWaitlist ?? false,
         timezone: event?.timezone ?? 'Africa/Kinshasa',
@@ -360,6 +363,23 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                                 </span>
                             </label>
                         </div>
+
+                        {locales.length > 1 && (
+                            <div className="mt-6 sm:max-w-xs">
+                                <InputLabel htmlFor="locale">Langue des pages invité</InputLabel>
+                                <Select id="locale" value={data.locale} onChange={(e) => setData('locale', e.target.value)}>
+                                    {locales.map((locale) => (
+                                        <option key={locale.value} value={locale.value}>
+                                            {locale.label}
+                                        </option>
+                                    ))}
+                                </Select>
+                                <p className="mt-1.5 text-xs text-ink-soft">
+                                    Vos invités voient d'abord la langue de leur téléphone si nous la proposons ; sinon celle-ci. Ils peuvent en
+                                    changer sur la page.
+                                </p>
+                            </div>
+                        )}
 
                         <label className="mt-6 flex cursor-pointer items-start gap-3">
                             <Checkbox

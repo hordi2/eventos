@@ -179,7 +179,7 @@ it('propose de réessayer le paiement d\'un don refusé depuis la confirmation d
     $orderBase = "/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}";
 
     $this->get("{$base}/{$token}/confirmation")
-        ->assertSee('Le paiement de votre don n\'a pas abouti', false)
+        ->assertSee('Le paiement de votre don n\'a pas abouti')
         ->assertSee("{$orderBase}/statut", false);
 
     $this->post("{$orderBase}/paiement/reessayer")->assertRedirect("{$orderBase}/paiement");

@@ -36,6 +36,7 @@ final class Event extends Model
         'start_at',
         'end_at',
         'timezone',
+        'locale',
         'is_online',
         'online_url',
         'venue_id',

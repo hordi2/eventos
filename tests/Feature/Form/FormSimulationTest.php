@@ -29,7 +29,7 @@ it('lance une simulation au premier écran du parcours, avec la dernière versio
     // L'événement est encore « Inédit » : la simulation y entre quand même.
     $this->get("/r/{$organization->slug}/{$event->slug}/{$draft->resume_token}/identite")
         ->assertOk()
-        ->assertSee("Simulation d'inscription : rien ne sera enregistré", false);
+        ->assertSee("Simulation d'inscription : rien ne sera enregistré");
 });
 
 it('va jusqu\'au bout du parcours sans rien enregistrer', function (): void {

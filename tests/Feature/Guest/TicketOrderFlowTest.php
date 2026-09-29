@@ -230,7 +230,7 @@ it('affiche l\'échec de paiement d\'une commande de billets sans renvoyer vers 
 
     $status = $this->get("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/statut");
     $status->assertOk();
-    $status->assertSee('Le paiement n\'a pas abouti', false);
+    $status->assertSee('Le paiement n\'a pas abouti');
     $status->assertSee('Réessayer le paiement');
 });
 
@@ -244,9 +244,9 @@ it('affiche l\'échec de paiement d\'une commande de don sans renvoyer vers la p
 
     $status = $this->get("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/statut");
     $status->assertOk();
-    $status->assertSee('Le paiement de votre don n\'a pas abouti', false);
+    $status->assertSee('Le paiement de votre don n\'a pas abouti');
     $status->assertSee('Réessayer le paiement');
-    $status->assertDontSee('Choisir d\'autres billets', false);
+    $status->assertDontSee('Choisir d\'autres billets');
 });
 
 it('rouvre le paiement d\'une commande de billets échouée', function (): void {
@@ -292,5 +292,5 @@ it('refuse de rouvrir le paiement quand les places ne sont plus disponibles', fu
     $this->get("{$base}/statut")
         ->assertOk()
         ->assertSee('Les places de cette commande ne sont plus disponibles.')
-        ->assertSee('Choisir d\'autres billets', false);
+        ->assertSee('Choisir d\'autres billets');
 });

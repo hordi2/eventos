@@ -75,7 +75,7 @@
             @if (! $page->isOnline && $page->venueName !== null)
                 — {{ $page->venueName }}
             @elseif ($page->isOnline)
-                — En ligne
+                — {{ __('En ligne') }}
             @endif
         </p>
 
@@ -84,19 +84,19 @@
             class="mb-10 inline-block min-h-11 rounded-pill px-8 py-3 font-medium text-bg {{ $page->organizationPrimaryColor === null ? 'bg-ink' : '' }}"
             @if ($page->organizationPrimaryColor !== null) style="background-color: {{ $page->organizationPrimaryColor }}" @endif
         >
-            S'inscrire
+            {{ __("S'inscrire") }}
         </a>
 
         @if ($page->description !== null)
             <section class="mb-10">
-                <h2 class="mb-3 font-serif text-xl italic">À propos</h2>
+                <h2 class="mb-3 font-serif text-xl italic">{{ __('À propos') }}</h2>
                 <p class="whitespace-pre-line text-ink">{{ $page->description }}</p>
             </section>
         @endif
 
         @if ($page->programItems !== [])
             <section class="mb-10">
-                <h2 class="mb-3 font-serif text-xl italic">Programme</h2>
+                <h2 class="mb-3 font-serif text-xl italic">{{ __('Programme') }}</h2>
                 <ul class="space-y-3">
                     @foreach ($page->programItems as $item)
                         <li class="flex gap-4">
@@ -115,7 +115,7 @@
 
         @if (! $page->isOnline && $page->venueName !== null)
             <section class="mb-10">
-                <h2 class="mb-3 font-serif text-xl italic">Lieu</h2>
+                <h2 class="mb-3 font-serif text-xl italic">{{ __('Lieu') }}</h2>
                 <p class="mb-3">{{ $page->venueName }}</p>
                 @if ($page->venueAddress !== null)
                     <p class="mb-3 text-sm text-ink-soft">{{ $page->venueAddress }}</p>
@@ -133,7 +133,7 @@
 
         @if ($page->faqItems !== [])
             <section class="mb-10">
-                <h2 class="mb-3 font-serif text-xl italic">Questions fréquentes</h2>
+                <h2 class="mb-3 font-serif text-xl italic">{{ __('Questions fréquentes') }}</h2>
                 <div class="space-y-2">
                     @foreach ($page->faqItems as $item)
                         <div x-data="{ open: false }" class="rounded-card bg-bg ring-1 ring-line">
@@ -153,7 +153,7 @@
             class="inline-block min-h-11 rounded-pill px-8 py-3 font-medium text-bg {{ $page->organizationPrimaryColor === null ? 'bg-ink' : '' }}"
             @if ($page->organizationPrimaryColor !== null) style="background-color: {{ $page->organizationPrimaryColor }}" @endif
         >
-            S'inscrire
+            {{ __("S'inscrire") }}
         </a>
     </div>
 @endsection

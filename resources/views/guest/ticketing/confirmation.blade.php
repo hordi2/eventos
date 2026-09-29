@@ -1,6 +1,6 @@
 @extends('guest.layout')
 
-@section('title', "Confirmation — {$event->title}")
+@section('title', __('Confirmation').' — '.$event->title)
 
 @section('content')
     <div class="mx-auto max-w-lg px-4 py-10 sm:py-16">
@@ -8,30 +8,30 @@
         @php($isDonation = $order->items->isEmpty() && $order->donations->isNotEmpty())
 
         @if ($order->status->value === 'paid')
-            <h1 class="mb-2 text-2xl">{{ $isDonation ? 'Merci pour votre don' : 'Commande confirmée' }}</h1>
+            <h1 class="mb-2 text-2xl">{{ $isDonation ? __('Merci pour votre don') : __('Commande confirmée') }}</h1>
             <p class="mb-8 text-ink-soft">
-                Merci {{ $order->buyer_name }}, votre paiement a bien été reçu.
+                {{ __(':name, votre paiement a bien été reçu.', ['name' => $order->buyer_name]) }}
                 @if ($isDonation)
-                    Votre reçu vous a été envoyé par e-mail.
+                    {{ __('Votre reçu vous a été envoyé par e-mail.') }}
                 @endif
             </p>
         @elseif ($order->status->value === 'payment_on_site' && $isDonation)
-            <h1 class="mb-2 text-2xl">Promesse de don enregistrée</h1>
+            <h1 class="mb-2 text-2xl">{{ __('Promesse de don enregistrée') }}</h1>
             <p class="mb-8 text-ink-soft">
-                Merci {{ $order->buyer_name }}. Réglez votre don de <strong class="text-ink">{{ $order->total->format() }}</strong>
-                à l'accueil le jour de l'événement : votre reçu vous sera alors envoyé par e-mail.
+                {{ __('Merci :name.', ['name' => $order->buyer_name]) }}
+                {!! __("Réglez votre don de <strong>:amount</strong> à l'accueil le jour de l'événement : votre reçu vous sera alors envoyé par e-mail.", ['amount' => e($order->total->format())]) !!}
             </p>
         @elseif ($order->status->value === 'payment_on_site')
-            <h1 class="mb-2 text-2xl">Réservation confirmée</h1>
+            <h1 class="mb-2 text-2xl">{{ __('Réservation confirmée') }}</h1>
             <p class="mb-8 text-ink-soft">
-                Merci {{ $order->buyer_name }}, votre place est réservée. Réglez le montant de
-                <strong class="text-ink">{{ $order->total->format() }}</strong> à votre arrivée.
+                {{ __(':name, votre place est réservée.', ['name' => $order->buyer_name]) }}
+                {!! __('Réglez le montant de <strong>:amount</strong> à votre arrivée.', ['amount' => e($order->total->format())]) !!}
             </p>
         @elseif ($order->status->value === 'refunded')
-            <h1 class="mb-2 text-2xl">Commande remboursée</h1>
-            <p class="mb-8 text-ink-soft">Cette commande a été remboursée.</p>
+            <h1 class="mb-2 text-2xl">{{ __('Commande remboursée') }}</h1>
+            <p class="mb-8 text-ink-soft">{{ __('Cette commande a été remboursée.') }}</p>
         @else
-            <h1 class="mb-2 text-2xl">Commande</h1>
+            <h1 class="mb-2 text-2xl">{{ __('Commande') }}</h1>
         @endif
 
         <div class="mb-8 space-y-4">
@@ -49,8 +49,8 @@
                                     href="{{ route('guest.ticketing.payment.ticket', [request()->route('organization'), request()->route('event'), $order->reservation_key, $ticket->id]) }}"
                                     class="flex items-center justify-between text-sm text-ink underline underline-offset-2"
                                 >
-                                    <span>Billet #{{ $ticket->id }}</span>
-                                    <span>Télécharger le PDF</span>
+                                    <span>{{ __('Billet nº :number', ['number' => $ticket->id]) }}</span>
+                                    <span>{{ __('Télécharger le PDF') }}</span>
                                 </a>
                             @endforeach
                         </div>
@@ -60,7 +60,7 @@
 
             @foreach ($order->donations as $donation)
                 <div class="rounded-control border border-line p-4">
-                    <p class="font-medium text-ink">Don</p>
+                    <p class="font-medium text-ink">{{ __('Don') }}</p>
                     <p class="text-ink-soft">{{ $donation->amount->format() }}</p>
                 </div>
             @endforeach
@@ -68,13 +68,13 @@
 
         @if ($order->discount !== null && $order->discount->amountMinor() > 0)
             <div class="flex items-center justify-between border-t border-line pt-4 text-sm text-ink-soft">
-                <span>Code promo {{ $order->promoCode?->code }}</span>
+                <span>{{ __('Code promo :code', ['code' => $order->promoCode?->code]) }}</span>
                 <span>−{{ $order->discount->format() }}</span>
             </div>
         @endif
 
         <div class="flex items-center justify-between border-t border-line pt-4">
-            <span class="text-sm text-ink-soft">Total</span>
+            <span class="text-sm text-ink-soft">{{ __('Total') }}</span>
             <span class="text-lg font-medium text-ink">{{ $order->total->format() }}</span>
         </div>
     </div>

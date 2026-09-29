@@ -1,6 +1,6 @@
 @extends('guest.layout')
 
-@section('title', "Billets — {$event->title}")
+@section('title', __('Billets').' — '.$event->title)
 
 @php
     $initialItems = [];
@@ -35,7 +35,7 @@
         }"
     >
         <p class="mb-1 text-sm font-medium text-ink-soft">{{ $event->title }}</p>
-        <h1 class="mb-8 text-2xl">Billets</h1>
+        <h1 class="mb-8 text-2xl">{{ __('Billets') }}</h1>
 
         @if ($errors->any())
             <div class="mb-6 rounded-control border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -63,7 +63,7 @@
                                 @endif
                                 <p class="mt-1 text-sm text-ink">
                                     @if (! $ticketType['available'])
-                                        <span class="text-ink-soft">Épuisé ou vente fermée</span>
+                                        <span class="text-ink-soft">{{ __('Épuisé ou vente fermée') }}</span>
                                     @else
                                         {{ $ticketType['price_label'] }}
                                     @endif
@@ -78,21 +78,21 @@
                                     min="0"
                                     max="{{ $ticketType['max_per_order'] ?? 99 }}"
                                     class="w-20 rounded-control border border-line px-2 py-1.5 text-center text-ink"
-                                    aria-label="Quantité — {{ $ticketType['name'] }}"
+                                    aria-label="{{ __('Quantité') }} — {{ $ticketType['name'] }}"
                                 >
                             @endif
                         </div>
                         @if ($ticketType['available'] && $ticketType['min_per_order'] > 1)
-                            <p class="mt-2 text-xs text-ink-soft">Minimum {{ $ticketType['min_per_order'] }} par commande.</p>
+                            <p class="mt-2 text-xs text-ink-soft">{{ __('Minimum :count par commande.', ['count' => $ticketType['min_per_order']]) }}</p>
                         @endif
                     </div>
                 @empty
-                    <p class="text-ink-soft">Aucun billet n'est disponible pour cet événement pour le moment.</p>
+                    <p class="text-ink-soft">{{ __("Aucun billet n'est disponible pour cet événement pour le moment.") }}</p>
                 @endforelse
             </div>
 
             <div class="mb-8">
-                <label for="donation_amount" class="mb-1.5 block text-sm font-medium text-ink">Faire un don (optionnel)</label>
+                <label for="donation_amount" class="mb-1.5 block text-sm font-medium text-ink">{{ __('Faire un don (optionnel)') }}</label>
                 <input
                     type="number"
                     id="donation_amount"
@@ -100,7 +100,7 @@
                     x-model="donationAmount"
                     min="0"
                     step="0.01"
-                    placeholder="Montant libre"
+                    placeholder="{{ __('Montant libre') }}"
                     class="w-full rounded-control border border-line px-3 py-2 text-ink"
                 >
                 <div class="mt-2 flex gap-2">
@@ -111,7 +111,7 @@
             </div>
 
             <div class="mb-8">
-                <label for="promo_code" class="mb-1.5 block text-sm font-medium text-ink">Code promo (optionnel)</label>
+                <label for="promo_code" class="mb-1.5 block text-sm font-medium text-ink">{{ __('Code promo (optionnel)') }}</label>
                 <input
                     type="text"
                     id="promo_code"
@@ -124,31 +124,31 @@
                 @error('promo_code')
                     <p class="mt-1.5 text-sm text-red-700">{{ $message }}</p>
                 @enderror
-                <p class="mt-1.5 text-xs text-ink-soft">La réduction s'applique aux billets et s'affiche à l'étape suivante.</p>
+                <p class="mt-1.5 text-xs text-ink-soft">{{ __("La réduction s'applique aux billets et s'affiche à l'étape suivante.") }}</p>
             </div>
 
             <div class="mb-6 grid grid-cols-1 gap-4">
                 <div>
-                    <label for="buyer_name" class="mb-1.5 block text-sm font-medium text-ink">Nom complet *</label>
+                    <label for="buyer_name" class="mb-1.5 block text-sm font-medium text-ink">{{ __('Nom complet') }} *</label>
                     <input type="text" id="buyer_name" name="buyer_name" value="{{ old('buyer_name') }}" required class="w-full rounded-control border border-line px-3 py-2 text-ink">
                 </div>
                 <div>
-                    <label for="buyer_email" class="mb-1.5 block text-sm font-medium text-ink">Adresse e-mail *</label>
+                    <label for="buyer_email" class="mb-1.5 block text-sm font-medium text-ink">{{ __('Adresse e-mail') }} *</label>
                     <input type="email" id="buyer_email" name="buyer_email" value="{{ old('buyer_email') }}" required class="w-full rounded-control border border-line px-3 py-2 text-ink">
                 </div>
                 <div>
-                    <label for="buyer_phone" class="mb-1.5 block text-sm font-medium text-ink">Téléphone</label>
+                    <label for="buyer_phone" class="mb-1.5 block text-sm font-medium text-ink">{{ __('Téléphone') }}</label>
                     <input type="tel" id="buyer_phone" name="buyer_phone" value="{{ old('buyer_phone') }}" placeholder="+243 8xx xxx xxx" class="w-full rounded-control border border-line px-3 py-2 text-ink">
                 </div>
             </div>
 
             <div class="mb-6 flex items-center justify-between border-t border-line pt-4">
-                <span class="text-sm text-ink-soft">Total</span>
+                <span class="text-sm text-ink-soft">{{ __('Total') }}</span>
                 <span class="text-lg font-medium text-ink" x-text="totalFormatted"></span>
             </div>
 
             <button type="submit" :disabled="! hasSelection" :class="{ 'opacity-50 cursor-not-allowed': ! hasSelection }" class="min-h-11 w-full rounded-pill bg-ink px-8 py-3 font-medium text-bg">
-                Continuer
+                {{ __('Continuer') }}
             </button>
         </form>
     </div>

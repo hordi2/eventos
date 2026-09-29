@@ -1,6 +1,6 @@
 @extends('guest.layout')
 
-@section('title', "Bienvenue — {$event->title}")
+@section('title', __('Bienvenue').' — '.$event->title)
 
 @section('content')
     <div class="mx-auto max-w-lg px-4 py-16 text-center sm:py-20">
@@ -14,6 +14,6 @@
         <a
             href="{{ route('guest.registration.identity.show', [request()->route('organization'), request()->route('event'), $draft->resume_token]) }}"
             class="form-button inline-flex min-h-11 items-center justify-center rounded-pill px-10 py-3 font-medium"
-        >{{ $settings['welcome']['button_label'] !== '' ? $settings['welcome']['button_label'] : 'Commencer' }}</a>
+        >{{ $settings['welcome']['button_label'] !== '' ? $settings['welcome']['button_label'] : __('Commencer') }}</a>
     </div>
 @endsection

@@ -1,6 +1,6 @@
 @extends('guest.layout')
 
-@section('title', "Paiement en cours — {$event->title}")
+@section('title', __('Paiement en cours').' — '.$event->title)
 
 @php
     // Recharge cette page toutes les 5 secondes : status() ré-évalue l'état
@@ -13,10 +13,9 @@
 @section('content')
     <div class="mx-auto max-w-lg px-4 py-16 text-center">
         <p class="mb-1 text-sm font-medium text-ink-soft">{{ $event->title }}</p>
-        <h1 class="mb-4 text-2xl">Paiement en cours de confirmation</h1>
+        <h1 class="mb-4 text-2xl">{{ __('Paiement en cours de confirmation') }}</h1>
         <p class="text-ink-soft">
-            Vérifiez votre téléphone et validez la demande de paiement Mobile Money. Cette page se met à jour
-            automatiquement — vous pouvez patienter, la confirmation peut prendre jusqu'à 5 minutes.
+            {{ __('Vérifiez votre téléphone et validez la demande de paiement Mobile Money. Cette page se met à jour automatiquement — vous pouvez patienter, la confirmation peut prendre jusqu\'à 5 minutes.') }}
         </p>
     </div>
 @endsection

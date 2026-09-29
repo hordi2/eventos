@@ -120,7 +120,7 @@ it('bloque la modification quand l\'organisateur ne l\'autorise pas', function (
         [], ['allow_guest_edit' => false],
     );
 
-    $this->get(signedEditUrl($organization, $event, $registration))->assertSee("n'est plus possible", false);
+    $this->get(signedEditUrl($organization, $event, $registration))->assertSee("n'est plus possible");
 });
 
 it('refuse une modification qui ferait dépasser le quota d\'une option', function (): void {

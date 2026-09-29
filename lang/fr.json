@@ -7,5 +7,6 @@
     "Service Unavailable": "Service indisponible",
     "This action is unauthorized.": "Vous n'avez pas le droit d'effectuer cette action.",
     "Too Many Requests": "Trop de requêtes",
-    "Unauthorized": "Authentification requise"
+    "Unauthorized": "Authentification requise",
+    "Vous pouvez venir avec :count personne au plus.|Vous pouvez venir avec :count personnes au plus.": "Vous pouvez venir avec :count personne au plus.|Vous pouvez venir avec :count personnes au plus."
 }

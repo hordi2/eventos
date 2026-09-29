@@ -19,6 +19,7 @@ use App\Http\Requests\Organizer\Event\CreateEventRequest;
 use App\Http\Requests\Organizer\Event\DuplicateEventRequest;
 use App\Http\Requests\Organizer\Event\UpdateEventRequest;
 use App\Models\User;
+use App\Support\Guest\GuestLocales;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -66,6 +67,7 @@ final class EventController extends Controller
             // refusée aux collaborateurs, même administrateurs de celui-ci
             // (RestrictCollaboratorToSharedEvents).
             'canDuplicate' => ! $collaboratorAccess->isCollaborator($user, $event->organization_id),
+            'locales' => array_map(fn (string $code, string $name): array => ['value' => $code, 'label' => $name], array_keys(GuestLocales::SUPPORTED), GuestLocales::SUPPORTED),
             'duplicationParts' => EventDuplicationPart::options(),
         ]);
     }
@@ -176,6 +178,7 @@ final class EventController extends Controller
             'registrationOpensAt' => $event->registration_opens_at?->toIso8601String(),
             'registrationClosesAt' => $event->registration_closes_at?->toIso8601String(),
             'requiresApproval' => $event->requires_approval,
+            'locale' => $event->locale,
             'capacity' => $event->capacity,
             'allowWaitlist' => $event->allow_waitlist,
             'timezone' => $event->timezone,

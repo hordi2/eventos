@@ -81,6 +81,7 @@ final class DuplicateEvent
             'start_at' => $original->start_at->addSeconds($offsetSeconds),
             'end_at' => $original->end_at->addSeconds($offsetSeconds),
             'timezone' => $original->timezone,
+            'locale' => $original->locale,
             'is_online' => $original->is_online,
             'online_url' => $original->online_url,
             'venue_id' => $original->venue_id,

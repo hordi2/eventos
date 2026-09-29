@@ -42,7 +42,7 @@
     @if (isset($draft) && $draft instanceof \App\Domain\Form\Models\RegistrationDraft && $draft->is_test)
         {{-- Simulation lancée par « Prévisualiser » dans le constructeur. --}}
         <div role="status" class="sticky top-0 z-20 bg-ink px-4 py-2 text-center text-xs text-bg">
-            Simulation d'inscription : rien ne sera enregistré et aucun message ne partira.
+            {{ __("Simulation d'inscription : rien ne sera enregistré et aucun message ne partira.") }}
         </div>
     @endif
     @php($headerUrl = isset($formTheme) ? ($formTheme['headerUrl'] ?? null) : null)
@@ -59,5 +59,19 @@
         </div>
     @endif
     @yield('content')
+
+    {{-- Sélecteur de langue (lot 2) : l'invité peut passer d'une langue à
+         l'autre, son choix est retenu pour la suite du parcours. --}}
+    @if (count(\App\Support\Guest\GuestLocales::SUPPORTED) > 1)
+        <div class="mx-auto max-w-lg px-4 pb-10 text-center text-xs text-ink-soft">
+            @foreach (\App\Support\Guest\GuestLocales::SUPPORTED as $code => $name)
+                @if ($code === app()->getLocale())
+                    <span class="px-2 font-medium text-ink">{{ $name }}</span>
+                @else
+                    <a href="{{ request()->fullUrlWithQuery(['lang' => $code]) }}" class="px-2 underline hover:no-underline" hreflang="{{ $code }}">{{ $name }}</a>
+                @endif
+            @endforeach
+        </div>
+    @endif
 </body>
 </html>

@@ -6,6 +6,7 @@ namespace App\Http\Requests\Organizer\Event;
 
 use App\Domain\Event\Models\EventAudience;
 use App\Domain\Event\Models\EventType;
+use App\Support\Guest\GuestLocales;
 use DateTimeZone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -34,6 +35,7 @@ final class CreateEventRequest extends FormRequest
             'registration_opens_at' => ['nullable', 'date'],
             'registration_closes_at' => ['nullable', 'date'],
             'requires_approval' => ['boolean'],
+            'locale' => ['nullable', 'string', Rule::in(array_keys(GuestLocales::SUPPORTED))],
             // Vide : aucune limite de places, comme pour une session (T-024).
             'capacity' => ['nullable', 'integer', 'min:1', 'max:1000000'],
             'allow_waitlist' => ['boolean'],

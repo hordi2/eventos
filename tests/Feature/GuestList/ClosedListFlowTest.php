@@ -85,7 +85,7 @@ it('ouvre l\'invitation par le lien personnel et préremplit la réponse, groupe
         ->assertSee('value="grace@exemple.cd"', false)
         ->assertSee('Patrick Mbuyi vient')
         ->assertSee("value=\"{$patrick->id}\"", false)
-        ->assertSee('1 personne de plus');
+        ->assertSee('Vous pouvez venir avec 1 personne au plus.');
 });
 
 it('refuse un lien personnel inconnu', function (): void {

@@ -8,6 +8,7 @@ use App\Http\Middleware\ResolveApiCheckInEvent;
 use App\Http\Middleware\ResolveApiOrganization;
 use App\Http\Middleware\ResolveCurrentOrganization;
 use App\Http\Middleware\ResolveGuestEvent;
+use App\Http\Middleware\SetGuestLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -39,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'resolve-organization' => ResolveCurrentOrganization::class,
             'can-organization' => AuthorizeOrganizationAbility::class,
             'resolve-guest-event' => ResolveGuestEvent::class,
+            'guest-locale' => SetGuestLocale::class,
             'resolve-api-check-in-event' => ResolveApiCheckInEvent::class,
             'resolve-api-organization' => ResolveApiOrganization::class,
         ]);

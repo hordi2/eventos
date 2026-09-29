@@ -449,7 +449,7 @@ Route::middleware('auth')->group(function (): void {
 // Page RSVP publique (T-031) : jamais d'authentification, jamais de
 // création de compte demandée à l'invité. resolve-guest-event résout
 // organisation + événement depuis le slug et pose le contexte multi-tenant.
-Route::middleware('resolve-guest-event')
+Route::middleware(['resolve-guest-event', 'guest-locale'])
     ->prefix('r/{organization}/{event}')
     ->name('guest.registration.')
     ->group(function (): void {
@@ -497,7 +497,7 @@ Route::middleware('resolve-guest-event')
 
 // Panier et paiement des billets (T-058/T-059, M5.4/M5.3) : même principe
 // que la page RSVP ci-dessus (resolve-guest-event, jamais d'authentification).
-Route::middleware('resolve-guest-event')
+Route::middleware(['resolve-guest-event', 'guest-locale'])
     ->prefix('billets/{organization}/{event}')
     ->name('guest.ticketing.')
     ->group(function (): void {
