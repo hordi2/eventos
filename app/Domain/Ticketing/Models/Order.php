@@ -11,6 +11,7 @@ use App\Support\MultiTenancy\BelongsToOrganization;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * CLAUDE.md, test d'architecture) — même règle que TicketType.
  *
  * @property Money $total
+ * @property ?Money $discount
  */
 final class Order extends Model
 {
@@ -41,6 +43,8 @@ final class Order extends Model
         'status',
         'reservation_key',
         'total',
+        'discount',
+        'promo_code_id',
         'reserved_until',
         'paid_at',
         'failed_at',
@@ -49,11 +53,20 @@ final class Order extends Model
         'abandoned_at',
     ];
 
+    /**
+     * @return BelongsTo<PromoCode, $this>
+     */
+    public function promoCode(): BelongsTo
+    {
+        return $this->belongsTo(PromoCode::class);
+    }
+
     protected function casts(): array
     {
         return [
             'status' => OrderStatus::class,
             'total' => AsMoney::class.':total_amount_minor,total_currency',
+            'discount' => AsMoney::class.':discount_amount_minor,discount_currency',
             'reserved_until' => 'immutable_datetime',
             'paid_at' => 'immutable_datetime',
             'failed_at' => 'immutable_datetime',

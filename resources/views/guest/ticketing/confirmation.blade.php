@@ -66,6 +66,13 @@
             @endforeach
         </div>
 
+        @if ($order->discount !== null && $order->discount->amountMinor() > 0)
+            <div class="flex items-center justify-between border-t border-line pt-4 text-sm text-ink-soft">
+                <span>Code promo {{ $order->promoCode?->code }}</span>
+                <span>−{{ $order->discount->format() }}</span>
+            </div>
+        @endif
+
         <div class="flex items-center justify-between border-t border-line pt-4">
             <span class="text-sm text-ink-soft">Total</span>
             <span class="text-lg font-medium text-ink">{{ $order->total->format() }}</span>

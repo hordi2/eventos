@@ -110,6 +110,23 @@
                 </div>
             </div>
 
+            <div class="mb-8">
+                <label for="promo_code" class="mb-1.5 block text-sm font-medium text-ink">Code promo (optionnel)</label>
+                <input
+                    type="text"
+                    id="promo_code"
+                    name="promo_code"
+                    value="{{ old('promo_code') }}"
+                    maxlength="40"
+                    autocapitalize="characters"
+                    class="w-full rounded-control border border-line px-3 py-2 text-ink uppercase"
+                >
+                @error('promo_code')
+                    <p class="mt-1.5 text-sm text-red-700">{{ $message }}</p>
+                @enderror
+                <p class="mt-1.5 text-xs text-ink-soft">La réduction s'applique aux billets et s'affiche à l'étape suivante.</p>
+            </div>
+
             <div class="mb-6 grid grid-cols-1 gap-4">
                 <div>
                     <label for="buyer_name" class="mb-1.5 block text-sm font-medium text-ink">Nom complet *</label>

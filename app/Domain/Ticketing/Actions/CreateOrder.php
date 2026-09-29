@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Ticketing\Actions;
 
 use App\Domain\Ticketing\Events\OrderPlaced;
+use App\Domain\Ticketing\InvalidPromoCodeException;
 use App\Domain\Ticketing\Models\Donation;
 use App\Domain\Ticketing\Models\Order;
 use App\Domain\Ticketing\Models\OrderItem;
@@ -50,6 +51,7 @@ final class CreateOrder
         private readonly ReservePriceTierCapacity $reservePriceTierCapacity,
         private readonly ReleasePriceTierCapacity $releasePriceTierCapacity,
         private readonly DetermineActivePriceTier $determineActivePriceTier,
+        private readonly ResolvePromoCode $resolvePromoCode,
     ) {}
 
     /**
@@ -65,6 +67,7 @@ final class CreateOrder
         int $reservationMinutes = 15,
         ?Money $donation = null,
         ?string $donationCause = null,
+        ?string $promoCode = null,
     ): Order {
         $this->currentOrganization->set($organizationId);
 
@@ -90,7 +93,18 @@ final class CreateOrder
             throw $exception;
         }
 
-        $order = DB::transaction(function () use ($organizationId, $eventId, $buyer, $resolved, $reservationKey, $reservationMinutes, $donation, $donationCause): Order {
+        try {
+            $promo = $promoCode === null || trim($promoCode) === ''
+                ? null
+                : $this->resolvePromoCode->handle($eventId, $promoCode, $this->ticketsSubtotal($resolved));
+        } catch (InvalidPromoCodeException $exception) {
+            // Le stock retenu ne doit pas rester bloqué sur un code refusé.
+            $this->releaseResolved($resolved, $reservationKey);
+
+            throw $exception;
+        }
+
+        $order = DB::transaction(function () use ($organizationId, $eventId, $buyer, $resolved, $reservationKey, $reservationMinutes, $donation, $donationCause, $promo): Order {
             $order = Order::query()->create([
                 'organization_id' => $organizationId,
                 'event_id' => $eventId,
@@ -99,6 +113,7 @@ final class CreateOrder
                 'buyer_phone_e164' => $buyer['phone'] ?? null,
                 'status' => OrderStatus::Pending,
                 'reservation_key' => $reservationKey,
+                'promo_code_id' => $promo?->id,
                 'total' => Money::zero($resolved[0]['unit_amount']->currency()),
                 'reserved_until' => CarbonImmutable::now()->addMinutes($reservationMinutes),
             ]);
@@ -118,6 +133,13 @@ final class CreateOrder
                     'quantity' => $line['quantity'],
                     'unit_amount' => $line['unit_amount'],
                 ]);
+            }
+
+            // La réduction porte sur les billets ; un don n'est jamais remisé.
+            if ($promo !== null && $total !== null) {
+                $discount = $promo->discountFor($total);
+                $total = $total->subtract($discount);
+                $order->update(['discount' => $discount]);
             }
 
             if ($donation !== null) {
@@ -140,6 +162,22 @@ final class CreateOrder
         OrderPlaced::dispatch($order);
 
         return $order->fresh(['items', 'donations']);
+    }
+
+    /**
+     * Total des billets du panier, avant réduction et avant don.
+     *
+     * @param  list<array{ticket_type: TicketType, tier: PriceTier|null, quantity: int, unit_amount: Money, name: string}>  $resolved
+     */
+    private function ticketsSubtotal(array $resolved): Money
+    {
+        $subtotal = Money::zero($resolved[0]['unit_amount']->currency());
+
+        foreach ($resolved as $line) {
+            $subtotal = $subtotal->add($line['unit_amount']->multipliedBy($line['quantity']));
+        }
+
+        return $subtotal;
     }
 
     /**

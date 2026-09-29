@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Guest;
 use App\Domain\Event\Models\Event;
 use App\Domain\Ticketing\Actions\CreateOrder;
 use App\Domain\Ticketing\Actions\DetermineActivePriceTier;
+use App\Domain\Ticketing\InvalidPromoCodeException;
 use App\Domain\Ticketing\Models\TicketType;
 use App\Domain\Ticketing\TicketsUnavailableException;
 use App\Http\Controllers\Controller;
@@ -70,7 +71,10 @@ final class TicketOrderController extends Controller
                 $request->validated('checkout_token'),
                 donation: $donation,
                 donationCause: $request->validated('donation_cause'),
+                promoCode: $request->validated('promo_code'),
             );
+        } catch (InvalidPromoCodeException $e) {
+            return back()->withErrors(['promo_code' => $e->getMessage()])->withInput();
         } catch (TicketsUnavailableException|InvalidArgumentException $e) {
             return back()->withErrors(['items' => $e->getMessage()])->withInput();
         }

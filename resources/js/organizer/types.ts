@@ -38,6 +38,7 @@ export type EventNavLinkKey =
     | 'checkIn'
     | 'badges'
     | 'tickets'
+    | 'promoCodes'
     | 'exports'
     | 'referral';
 

@@ -53,6 +53,7 @@ use App\Http\Controllers\Organizer\MessageAutomationController;
 use App\Http\Controllers\Organizer\OrganizationBrandingController;
 use App\Http\Controllers\Organizer\OrganizationImageController;
 use App\Http\Controllers\Organizer\PageController;
+use App\Http\Controllers\Organizer\PromoCodeController;
 use App\Http\Controllers\Organizer\RegistrationFileController;
 use App\Http\Controllers\Organizer\SeatingController;
 use App\Http\Controllers\Organizer\SenderAgreementController;
@@ -419,6 +420,12 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/automations', [MessageAutomationController::class, 'index'])->name('events.automations.index');
         Route::post('events/{event}/automations', [MessageAutomationController::class, 'store'])->name('events.automations.store');
         Route::post('message-automations/{messageAutomation}/cancel', [MessageAutomationController::class, 'cancel'])->name('message-automations.cancel');
+
+        // Codes promo de l'événement (lot 2) : réductions sur les billets.
+        Route::get('events/{event}/codes-promo', [PromoCodeController::class, 'index'])->name('events.promo-codes.index');
+        Route::post('events/{event}/codes-promo', [PromoCodeController::class, 'store'])->name('events.promo-codes.store');
+        Route::patch('promo-codes/{promoCode}', [PromoCodeController::class, 'update'])->whereNumber('promoCode')->name('promo-codes.update');
+        Route::delete('promo-codes/{promoCode}', [PromoCodeController::class, 'destroy'])->whereNumber('promoCode')->name('promo-codes.destroy');
 
         Route::get('events/{event}/ticket-types', [TicketTypeController::class, 'index'])->name('events.ticket-types.index');
         Route::post('events/{event}/ticket-types', [TicketTypeController::class, 'store'])->name('events.ticket-types.store');

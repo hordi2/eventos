@@ -33,6 +33,7 @@ final class StoreTicketOrderRequest extends FormRequest
             'items.*' => ['nullable', 'integer', 'min:0'],
             'donation_amount' => ['nullable', 'numeric', 'min:0'],
             'donation_cause' => ['nullable', 'string', 'max:255'],
+            'promo_code' => ['nullable', 'string', 'max:40'],
         ];
     }
 }

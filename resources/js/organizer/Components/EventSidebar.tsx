@@ -84,7 +84,14 @@ function buildSections(nav: EventNav): SidebarSection[] {
                 { label: 'Plan de table', icon: 'seat', linkKey: 'seating' },
                 { label: 'Check-in', icon: 'scan', linkKey: 'checkIn' },
                 { label: 'Badges', icon: 'badge', linkKey: 'badges' },
-                { label: 'Billetterie', icon: 'ticket', linkKey: 'tickets' },
+                {
+                    label: 'Billetterie',
+                    icon: 'ticket',
+                    children: [
+                        { label: 'Billets et tarifs', linkKey: 'tickets' },
+                        { label: 'Codes promo', linkKey: 'promoCodes' },
+                    ],
+                },
                 { label: 'Exports', icon: 'download', linkKey: 'exports' },
             ],
         },

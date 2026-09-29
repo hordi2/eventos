@@ -8,7 +8,13 @@
     <div class="mx-auto max-w-lg px-4 py-10 sm:py-16">
         <p class="mb-1 text-sm font-medium text-ink-soft">{{ $event->title }}</p>
         <h1 class="mb-2 text-2xl">{{ $isDonation ? 'Régler votre don' : 'Moyen de paiement' }}</h1>
-        <p class="mb-8 text-ink-soft">{{ $isDonation ? 'Montant de votre don' : 'Total à régler' }} : <strong class="text-ink">{{ $order->total->format() }}</strong></p>
+        <p class="mb-2 text-ink-soft">{{ $isDonation ? 'Montant de votre don' : 'Total à régler' }} : <strong class="text-ink">{{ $order->total->format() }}</strong></p>
+
+        @if ($order->discount !== null && $order->discount->amountMinor() > 0)
+            <p class="mb-8 text-sm text-ink-soft">Code promo {{ $order->promoCode?->code }} : −{{ $order->discount->format() }} sur vos billets.</p>
+        @else
+            <div class="mb-8"></div>
+        @endif
 
         @if ($errors->any())
             <div class="mb-6 rounded-control border border-red-200 bg-red-50 p-4 text-sm text-red-700">
