@@ -94,6 +94,17 @@
             </section>
         @endif
 
+        @isset($calendar)
+            <div class="mb-10 flex flex-wrap gap-3 text-sm">
+                <a href="{{ $calendar['google'] }}" target="_blank" rel="noopener" class="inline-flex min-h-10 items-center rounded-pill border border-line px-4 py-2 text-ink">
+                    {{ __('Ajouter à Google Agenda') }}
+                </a>
+                <a href="{{ $calendar['ics'] }}" class="inline-flex min-h-10 items-center rounded-pill border border-line px-4 py-2 text-ink">
+                    {{ __('Ajouter à mon agenda (.ics)') }}
+                </a>
+            </div>
+        @endisset
+
         {{-- Page composée par l'organisateur (lot 2) : chaque bloc dans son ordre. --}}
         @foreach ($page->blocks as $block)
             @include('guest.page._block', ['block' => $block, 'page' => $page, 'event' => $event])

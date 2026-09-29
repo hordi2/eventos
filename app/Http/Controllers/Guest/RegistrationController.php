@@ -43,7 +43,9 @@ use App\Http\Requests\Guest\SaveIdentityRequest;
 use App\Http\Requests\Guest\UpdateRegistrationRequest;
 use App\Http\Requests\Guest\VerifyEventPasswordRequest;
 use App\Support\Capacity\Actions\GetRemainingCapacity;
+use App\Support\Events\EventCalendarLinks;
 use App\Support\GuestList\ResolveGuestInvitation;
+use App\Support\Messaging\GenerateEventIcs;
 use App\Support\Page\GetEventPage;
 use App\Support\Registration\BuildGuestSubEventChoices;
 use App\Support\Registration\BuildGuestVisibilityContext;
@@ -56,6 +58,7 @@ use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\URL;
@@ -137,6 +140,19 @@ final class RegistrationController extends Controller
     /**
      * Écran « Message de bienvenue » du constructeur, avant l'identité.
      */
+    /**
+     * Fichier .ics de l'événement, pour l'agenda de l'invité.
+     */
+    public function calendar(Request $request, string $organization, string $event): Response
+    {
+        $eventModel = $this->event($request);
+
+        return response(app(GenerateEventIcs::class)->handle($eventModel), 200, [
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="'.$eventModel->slug.'.ics"',
+        ]);
+    }
+
     public function welcomeShow(Request $request, string $organization, string $event, string $token): View
     {
         $eventModel = $this->event($request);
@@ -297,6 +313,10 @@ final class RegistrationController extends Controller
             'editUrl' => $hideLinks ? null : $this->signedEditUrl($organization, $event, $eventModel, $registration),
             'cancelUrl' => $hideLinks ? null : $this->signedCancelUrl($organization, $event, $eventModel, $registration),
             'qrCodes' => app(RenderAttendeeQrCodes::class)->handle($eventModel, $registration),
+            'calendar' => [
+                'google' => app(EventCalendarLinks::class)->googleUrl($eventModel),
+                'ics' => app(EventCalendarLinks::class)->icsUrl($eventModel),
+            ],
             'donation' => app(PresentRegistrationDonation::class)->handle($organization, $event, $registration),
             ...$this->presentation($eventModel, $this->formOf($draft->form_version_id)),
         ]);
@@ -615,6 +635,10 @@ final class RegistrationController extends Controller
             'event' => $eventModel,
             'page' => app(GetEventPage::class)->handle($eventModel),
             'beginUrl' => route('guest.registration.begin', [$organization, $event, ...($form->is_default ? [] : ['formulaire' => $form->slug])]),
+            'calendar' => [
+                'google' => app(EventCalendarLinks::class)->googleUrl($eventModel),
+                'ics' => app(EventCalendarLinks::class)->icsUrl($eventModel),
+            ],
         ]);
     }
 

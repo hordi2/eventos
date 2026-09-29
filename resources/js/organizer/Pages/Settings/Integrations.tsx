@@ -37,6 +37,7 @@ interface Props {
     webhooks: WebhookRow[];
     availableEvents: EventOption[];
     apiBaseUrl: string;
+    ga4MeasurementId: string | null;
     n8n: N8nState;
 }
 
@@ -44,7 +45,8 @@ function formatDate(value: string | null): string {
     return value ? new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : 'jamais';
 }
 
-export default function Integrations({ tokens, webhooks, availableEvents, apiBaseUrl, n8n }: Props) {
+export default function Integrations({ tokens, webhooks, availableEvents, apiBaseUrl, ga4MeasurementId, n8n }: Props) {
+    const analyticsForm = useForm({ ga4_measurement_id: ga4MeasurementId ?? '' });
     const { flash } = usePage<SharedProps>().props;
     const [showTokenSecret, setShowTokenSecret] = useState(true);
     // Renseigné quand la clé affichée vient d'être créée depuis le bloc
@@ -125,6 +127,36 @@ export default function Integrations({ tokens, webhooks, availableEvents, apiBas
                 connectionTool={connectionTool}
                 onConnectionToolChange={setConnectionTool}
             />
+
+            <section className="mb-14">
+                <h2 className="mb-1 font-serif text-xl italic">Mesure d'audience</h2>
+                <p className="mb-4 max-w-2xl text-sm text-ink-soft">
+                    Votre identifiant Google Analytics 4 pour suivre les visites de vos pages invité. Il n'est chargé qu'après l'accord de l'invité,
+                    demandé par un bandeau en bas de page.
+                </p>
+                <form
+                    onSubmit={(submitEvent) => {
+                        submitEvent.preventDefault();
+                        analyticsForm.post('/settings/api/analytics', { preserveScroll: true });
+                    }}
+                    className="flex flex-wrap items-end gap-3"
+                >
+                    <div className="w-64">
+                        <InputLabel htmlFor="ga4">Identifiant GA4</InputLabel>
+                        <TextInput
+                            id="ga4"
+                            value={analyticsForm.data.ga4_measurement_id}
+                            onChange={(changeEvent) => analyticsForm.setData('ga4_measurement_id', changeEvent.target.value)}
+                            placeholder="G-XXXXXXXX"
+                        />
+                        <InputError message={analyticsForm.errors.ga4_measurement_id} />
+                    </div>
+                    <Button type="submit" disabled={analyticsForm.processing} className="w-auto px-6 py-2">
+                        Enregistrer
+                    </Button>
+                    <p className="text-xs text-ink-soft">Laissez vide pour retirer la mesure.</p>
+                </form>
+            </section>
 
             <section className="mb-14">
                 <h2 className="mb-1 font-serif text-xl italic">Clés API</h2>

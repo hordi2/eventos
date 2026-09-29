@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Organizer\Settings;
 
 use App\Domain\Organization\Models\Organization;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Organizer\Settings\SaveAnalyticsRequest;
 use App\Http\Requests\Organizer\Settings\StoreApiTokenRequest;
 use App\Http\Requests\Organizer\Settings\StoreWebhookRequest;
 use App\Http\Requests\Organizer\Settings\UpdateWebhookRequest;
@@ -57,6 +58,7 @@ final class IntegrationController extends Controller
             // pour que l'organisateur puisse copier-coller sans deviner le
             // domaine de son instance.
             'apiBaseUrl' => url('/api/v1'),
+            'ga4MeasurementId' => $this->currentOrganization()->ga4_measurement_id,
             'n8n' => $this->n8nState(),
         ]);
     }
@@ -102,6 +104,17 @@ final class IntegrationController extends Controller
             'error' => $cached['error'],
             'fetched_at' => $cached['fetched_at'],
         ];
+    }
+
+    /**
+     * Mesure d'audience Google Analytics 4 des pages invité : chargée
+     * seulement après l'accord de l'invité (guest.layout).
+     */
+    public function saveAnalytics(SaveAnalyticsRequest $request): RedirectResponse
+    {
+        $this->currentOrganization()->update(['ga4_measurement_id' => $request->string('ga4_measurement_id')->toString() ?: null]);
+
+        return back()->with('status', 'analytics-saved');
     }
 
     public function storeToken(StoreApiTokenRequest $request): RedirectResponse

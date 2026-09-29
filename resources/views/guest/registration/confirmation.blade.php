@@ -78,6 +78,18 @@
             @endif
         </p>
 
+        {{-- Ajouter à mon agenda : Google d'un côté, fichier .ics pour tous les autres. --}}
+        @if ($registration->status->value === 'confirmed' && isset($calendar))
+            <div class="mb-8 flex flex-wrap items-center justify-center gap-3">
+                <a href="{{ $calendar['google'] }}" target="_blank" rel="noopener" class="inline-flex min-h-11 items-center rounded-pill border border-line px-5 py-2.5 text-sm font-medium text-ink">
+                    {{ __('Ajouter à Google Agenda') }}
+                </a>
+                <a href="{{ $calendar['ics'] }}" class="inline-flex min-h-11 items-center rounded-pill border border-line px-5 py-2.5 text-sm font-medium text-ink">
+                    {{ __('Ajouter à mon agenda (.ics)') }}
+                </a>
+            </div>
+        @endif
+
         @if ($editUrl || $cancelUrl)
             <div class="flex items-center justify-center gap-6 text-sm">
                 @if ($editUrl)

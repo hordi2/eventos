@@ -27,6 +27,7 @@ final class Organization extends Model
         'allow_editor_financial_access',
         'logo_path',
         'primary_color',
+        'ga4_measurement_id',
         'theme_mode',
         'plan',
         'stripe_customer_id',

@@ -60,6 +60,43 @@
     @endif
     @yield('content')
 
+    @php($ga4 = isset($guestOrganization) ? $guestOrganization->ga4_measurement_id : null)
+    @if ($ga4)
+        {{-- Mesure d'audience : chargée seulement si l'invité l'accepte
+             (§10.2, RGPD). Son choix est gardé sur son appareil, jamais
+             chez nous, et rien ne part avant qu'il ne l'ait donné. --}}
+        <div
+            x-data="{
+                choice: localStorage.getItem('itaza-audience'),
+                accept() { this.choice = 'yes'; localStorage.setItem('itaza-audience', 'yes'); this.load(); },
+                refuse() { this.choice = 'no'; localStorage.setItem('itaza-audience', 'no'); },
+                load() {
+                    if (document.getElementById('itaza-ga4')) { return; }
+                    const script = document.createElement('script');
+                    script.id = 'itaza-ga4';
+                    script.async = true;
+                    script.src = 'https://www.googletagmanager.com/gtag/js?id={{ $ga4 }}';
+                    document.head.appendChild(script);
+                    window.dataLayer = window.dataLayer || [];
+                    window.gtag = function () { window.dataLayer.push(arguments); };
+                    window.gtag('js', new Date());
+                    window.gtag('config', '{{ $ga4 }}', { anonymize_ip: true });
+                },
+            }"
+            x-init="if (choice === 'yes') { load(); }"
+        >
+            <div x-show="choice === null" x-cloak class="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg px-4 py-3">
+                <div class="mx-auto flex max-w-lg flex-wrap items-center justify-between gap-3">
+                    <p class="text-xs text-ink-soft">{{ __("Acceptez-vous la mesure d'audience de cette page ? Elle aide l'organisateur à savoir combien de personnes l'ont vue.") }}</p>
+                    <div class="flex gap-2">
+                        <button type="button" @click="refuse()" class="min-h-9 rounded-pill border border-line px-4 py-1.5 text-xs text-ink">{{ __('Refuser') }}</button>
+                        <button type="button" @click="accept()" class="min-h-9 rounded-pill bg-ink px-4 py-1.5 text-xs text-bg">{{ __('Accepter') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- Sélecteur de langue (lot 2) : l'invité peut passer d'une langue à
          l'autre, son choix est retenu pour la suite du parcours. --}}
     @if (count(\App\Support\Guest\GuestLocales::SUPPORTED) > 1)

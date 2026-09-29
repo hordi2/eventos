@@ -241,6 +241,7 @@ Route::middleware('auth')->group(function (): void {
         ->name('settings.integrations.')
         ->group(function (): void {
             Route::get('/', [IntegrationController::class, 'index'])->name('index');
+            Route::post('analytics', [IntegrationController::class, 'saveAnalytics'])->name('analytics.save');
             Route::post('tokens', [IntegrationController::class, 'storeToken'])->name('tokens.store');
             Route::delete('tokens/{token}', [IntegrationController::class, 'destroyToken'])->name('tokens.destroy');
             Route::post('n8n', [N8nConnectionController::class, 'store'])->name('n8n.store');
@@ -472,6 +473,8 @@ Route::middleware(['resolve-guest-event', 'guest-locale'])
 
         Route::get('/', [RegistrationController::class, 'start'])->name('start');
         Route::get('commencer', [RegistrationController::class, 'begin'])->name('begin');
+        // « Ajouter à mon agenda » : Apple Calendrier, Outlook et les autres.
+        Route::get('agenda.ics', [RegistrationController::class, 'calendar'])->name('calendar');
         // Lien propre d'un formulaire, quand l'événement en a plusieurs.
         Route::get('f/{formSlug}', [RegistrationController::class, 'startForm'])->name('form');
 

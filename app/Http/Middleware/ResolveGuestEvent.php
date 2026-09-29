@@ -14,6 +14,7 @@ use App\Support\MultiTenancy\CurrentOrganization;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -86,6 +87,8 @@ final class ResolveGuestEvent
         }
 
         $request->attributes->set('guestOrganization', $organization);
+        // Vue par la mise en page invité : mesure d'audience et charte graphique.
+        View::share('guestOrganization', $organization);
         $request->attributes->set('guestEvent', $event);
         $request->attributes->set('guestInvitee', $invitee);
 
