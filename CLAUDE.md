@@ -351,9 +351,14 @@ php artisan queue:failed
 
 > Section à tenir à jour à chaque fin de lot.
 
-- [ ] **Lot 1 — MVP** (sprints 1 à 8)
-- [ ] Lot 2 — Consolidation
+- [x] **Lot 1 — MVP** (sprints 1 à 8) — tous les tickets T-001 à T-078 livrés,
+      plus le constructeur de formulaire à blocs, la liste d'invités et la
+      duplication complète d'un événement.
+- [ ] Lot 2 — Consolidation (en cours)
 - [ ] Lot 3 — Montée en gamme
 
-**Sprint en cours** : Sprint 1 — Fondations
-**Dernière mise à jour** : —
+**En cours** : Lot 2 — validation manuelle des inscriptions.
+**Reste au lot 2** : codes promo, pages invité multilingues, kiosque
+d'accueil, page événement en blocs, Google Agenda et GA4.
+
+**Dernière mise à jour** : 29 septembre 2026
