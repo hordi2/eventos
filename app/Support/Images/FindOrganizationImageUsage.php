@@ -8,6 +8,8 @@ use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormField;
 use App\Domain\Form\Support\FormSettings;
 use App\Domain\Organization\Models\OrganizationImage;
+use App\Domain\Page\Models\Page;
+use App\Domain\Page\Support\PageBlocks;
 
 /**
  * Où une image de la bibliothèque est-elle encore utilisée ? Hors des modules
@@ -51,6 +53,14 @@ final class FindOrganizationImageUsage
         foreach ($fields as $field) {
             $formName = $field->formVersion->form->name;
             $usages[] = "bloc « {$field->label} » du formulaire « {$formName} »";
+        }
+
+        foreach (Page::query()->get() as $page) {
+            foreach (PageBlocks::resolve($page) as $block) {
+                if (($block['path'] ?? null) === $image->path) {
+                    $usages[] = "image de la page de l'événement";
+                }
+            }
         }
 
         return array_values(array_unique($usages));

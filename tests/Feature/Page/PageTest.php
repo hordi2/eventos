@@ -20,20 +20,18 @@ it('affiche la page d\'édition avec des valeurs par défaut quand rien n\'a enc
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page->component('Pages/Edit')
         ->where('page.banner_url', null)
-        ->where('page.program_items', [])
-        ->where('page.faq_items', []));
+        // Sans blocs enregistrés, la page garde sa mise en page d'origine.
+        ->where('page.blocks.0.type', 'venue'));
 });
 
-it('enregistre le programme et la FAQ de la page événement', function (): void {
+it('enregistre le programme et la FAQ, en blocs', function (): void {
     ['organization' => $organization, 'event' => $event, 'doorStaff' => $owner] = makeCheckInEvent(MembershipRole::Owner);
 
     $response = $this->actingAs($owner)->patchJson("/events/{$event->id}/page", [
         'meta_description' => 'Une belle soirée à ne pas manquer.',
-        'program_items' => [
-            ['time' => '18h00', 'title' => 'Accueil', 'description' => null],
-        ],
-        'faq_items' => [
-            ['question' => 'Faut-il un billet ?', 'answer' => 'Non, l\'entrée est libre.'],
+        'blocks' => [
+            ['type' => 'program', 'items' => [['time' => '18h00', 'title' => 'Accueil', 'description' => null]]],
+            ['type' => 'faq', 'items' => [['question' => 'Faut-il un billet ?', 'answer' => 'Non, l\'entrée est libre.']]],
         ],
     ]);
 

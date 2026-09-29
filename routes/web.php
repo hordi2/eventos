@@ -400,6 +400,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/page', [PageController::class, 'edit'])->name('events.page.edit');
         Route::patch('events/{event}/page', [PageController::class, 'update'])->name('events.page.update');
         Route::post('events/{event}/page/banner', [PageController::class, 'uploadBanner'])->name('events.page.banner');
+        Route::post('events/{event}/page/images', [PageController::class, 'uploadImage'])->name('events.page.images');
 
         Route::get('events/{event}/exports', [ExportController::class, 'index'])->name('events.exports.index');
         Route::post('events/{event}/exports', [ExportController::class, 'store'])->name('events.exports.store');

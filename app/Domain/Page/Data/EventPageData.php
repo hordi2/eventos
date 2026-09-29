@@ -9,6 +9,7 @@ final class EventPageData
     /**
      * @param  list<array{time: string, title: string, description: ?string}>  $programItems
      * @param  list<array{question: string, answer: string}>  $faqItems
+     * @param  list<array<string, mixed>>  $blocks  page composée par l'organisateur, dans son ordre
      */
     public function __construct(
         public readonly string $title,
@@ -23,6 +24,7 @@ final class EventPageData
         public readonly bool $isOnline,
         public readonly array $programItems,
         public readonly array $faqItems,
+        public readonly array $blocks,
         public readonly ?string $organizationLogoUrl,
         public readonly ?string $organizationPrimaryColor,
     ) {}

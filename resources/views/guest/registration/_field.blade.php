@@ -58,8 +58,8 @@
                     <button type="button" x-show="! playing" @click="playing = true" class="flex min-h-11 w-full items-center gap-3 px-4 py-3 text-left">
                         <span aria-hidden="true" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-bg">▶</span>
                         <span>
-                            <span class="block text-sm font-medium text-ink">Lire la vidéo</span>
-                            <span class="block text-xs text-ink-soft">{{ $video->provider }} · se charge seulement quand vous cliquez</span>
+                            <span class="block text-sm font-medium text-ink">{{ __('Lire la vidéo') }}</span>
+                            <span class="block text-xs text-ink-soft">{{ $video->provider }} · {{ __('se charge seulement quand vous cliquez') }}</span>
                         </span>
                     </button>
                 </div>

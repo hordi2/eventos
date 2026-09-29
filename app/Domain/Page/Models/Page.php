@@ -27,6 +27,7 @@ final class Page extends Model
         'meta_description',
         'program_items',
         'faq_items',
+        'blocks',
     ];
 
     /**
@@ -42,6 +43,7 @@ final class Page extends Model
         return [
             'program_items' => 'array',
             'faq_items' => 'array',
+            'blocks' => 'array',
         ];
     }
 

@@ -94,59 +94,10 @@
             </section>
         @endif
 
-        @if ($page->programItems !== [])
-            <section class="mb-10">
-                <h2 class="mb-3 font-serif text-xl italic">{{ __('Programme') }}</h2>
-                <ul class="space-y-3">
-                    @foreach ($page->programItems as $item)
-                        <li class="flex gap-4">
-                            <span class="w-16 shrink-0 font-medium">{{ $item['time'] }}</span>
-                            <div>
-                                <p class="font-medium">{{ $item['title'] }}</p>
-                                @if (! empty($item['description']))
-                                    <p class="text-sm text-ink-soft">{{ $item['description'] }}</p>
-                                @endif
-                            </div>
-                        </li>
-                    @endforeach
-                </ul>
-            </section>
-        @endif
-
-        @if (! $page->isOnline && $page->venueName !== null)
-            <section class="mb-10">
-                <h2 class="mb-3 font-serif text-xl italic">{{ __('Lieu') }}</h2>
-                <p class="mb-3">{{ $page->venueName }}</p>
-                @if ($page->venueAddress !== null)
-                    <p class="mb-3 text-sm text-ink-soft">{{ $page->venueAddress }}</p>
-                @endif
-                @if ($page->venueLatitude !== null && $page->venueLongitude !== null)
-                    <iframe
-                        class="h-64 w-full rounded-card"
-                        loading="lazy"
-                        src="https://www.openstreetmap.org/export/embed.html?bbox={{ $page->venueLongitude - 0.01 }}%2C{{ $page->venueLatitude - 0.01 }}%2C{{ $page->venueLongitude + 0.01 }}%2C{{ $page->venueLatitude + 0.01 }}&marker={{ $page->venueLatitude }}%2C{{ $page->venueLongitude }}"
-                        title="Carte du lieu"
-                    ></iframe>
-                @endif
-            </section>
-        @endif
-
-        @if ($page->faqItems !== [])
-            <section class="mb-10">
-                <h2 class="mb-3 font-serif text-xl italic">{{ __('Questions fréquentes') }}</h2>
-                <div class="space-y-2">
-                    @foreach ($page->faqItems as $item)
-                        <div x-data="{ open: false }" class="rounded-card bg-bg ring-1 ring-line">
-                            <button type="button" x-on:click="open = !open" class="flex w-full items-center justify-between px-4 py-3 text-left font-medium">
-                                {{ $item['question'] }}
-                                <span x-text="open ? '−' : '+'"></span>
-                            </button>
-                            <p x-show="open" x-cloak class="px-4 pb-3 text-sm text-ink-soft">{{ $item['answer'] }}</p>
-                        </div>
-                    @endforeach
-                </div>
-            </section>
-        @endif
+        {{-- Page composée par l'organisateur (lot 2) : chaque bloc dans son ordre. --}}
+        @foreach ($page->blocks as $block)
+            @include('guest.page._block', ['block' => $block, 'page' => $page, 'event' => $event])
+        @endforeach
 
         <a
             href="{{ $beginUrl }}"

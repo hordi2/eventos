@@ -7,6 +7,7 @@ namespace App\Support\Page;
 use App\Domain\Event\Models\Event;
 use App\Domain\Page\Data\EventPageData;
 use App\Domain\Page\Models\Page;
+use App\Domain\Page\Support\PageBlocks;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -44,6 +45,7 @@ final class GetEventPage
             isOnline: $event->is_online,
             programItems: $page !== null ? $page->program_items : [],
             faqItems: $page !== null ? $page->faq_items : [],
+            blocks: PageBlocks::resolve($page),
             organizationLogoUrl: $event->organization->logo_path !== null
                 ? Storage::disk('public')->url($event->organization->logo_path)
                 : null,
