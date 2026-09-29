@@ -354,11 +354,13 @@ php artisan queue:failed
 - [x] **Lot 1 — MVP** (sprints 1 à 8) — tous les tickets T-001 à T-078 livrés,
       plus le constructeur de formulaire à blocs, la liste d'invités et la
       duplication complète d'un événement.
-- [ ] Lot 2 — Consolidation (en cours)
+- [x] **Lot 2 — Consolidation** — validation manuelle des inscriptions, codes
+      promo, pages invité en français et en anglais, page événement en blocs,
+      kiosque d'accueil, agenda et mesure d'audience. WhatsApp, plan de table,
+      séquences d'envois, Zapier/n8n, API et webhooks étaient déjà livrés.
 - [ ] Lot 3 — Montée en gamme
 
-**En cours** : Lot 2 — validation manuelle des inscriptions.
-**Reste au lot 2** : codes promo, pages invité multilingues, kiosque
-d'accueil, page événement en blocs, Google Agenda et GA4.
+**Reste du lot 2, hors code** : publier l'application mobile de check-in sur
+les stores (compte développeur à ouvrir).
 
 **Dernière mise à jour** : 29 septembre 2026
