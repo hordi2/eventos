@@ -90,6 +90,15 @@
             </div>
         @endif
 
+        {{-- Programme personnel (D6) : seulement pour qui a choisi des sessions. --}}
+        @if (($agendaUrl ?? null) && $registration->status->value !== 'declined')
+            <div class="mb-8 flex justify-center">
+                <a href="{{ $agendaUrl }}" class="inline-flex min-h-11 items-center rounded-pill border border-line px-5 py-2.5 text-sm font-medium text-ink">
+                    {{ __('Voir mon programme') }}
+                </a>
+            </div>
+        @endif
+
         @if ($editUrl || $cancelUrl)
             <div class="flex items-center justify-center gap-6 text-sm">
                 @if ($editUrl)

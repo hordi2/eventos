@@ -51,7 +51,9 @@ use App\Support\Registration\BuildGuestSubEventChoices;
 use App\Support\Registration\BuildGuestVisibilityContext;
 use App\Support\Registration\BuildSubEventContexts;
 use App\Support\Registration\OpenRegistrationDonation;
+use App\Support\Registration\PersonalAgendaLink;
 use App\Support\Registration\PresentGuestPresentation;
+use App\Support\Registration\PresentPersonalAgenda;
 use App\Support\Registration\PresentRegistrationDonation;
 use App\Support\Registration\RenderAttendeeQrCodes;
 use Carbon\CarbonImmutable;
@@ -312,6 +314,8 @@ final class RegistrationController extends Controller
             'registration' => $registration,
             'editUrl' => $hideLinks ? null : $this->signedEditUrl($organization, $event, $eventModel, $registration),
             'cancelUrl' => $hideLinks ? null : $this->signedCancelUrl($organization, $event, $eventModel, $registration),
+            // « Mon agenda » (D6) : proposé à qui a choisi au moins une session.
+            'agendaUrl' => $this->personalAgendaUrl($eventModel, $registration),
             'qrCodes' => app(RenderAttendeeQrCodes::class)->handle($eventModel, $registration),
             'calendar' => [
                 'google' => app(EventCalendarLinks::class)->googleUrl($eventModel),
@@ -576,6 +580,19 @@ final class RegistrationController extends Controller
     private function signedCancelUrl(string $organization, string $event, Event $eventModel, Registration $registration): string
     {
         return URL::temporarySignedRoute('guest.registration.cancel', $this->linkExpiry($eventModel), [$organization, $event, $registration->id]);
+    }
+
+    /**
+     * Lien « mon agenda » : seulement pour qui a retenu au moins une
+     * session — sans session, la page n'aurait rien à montrer.
+     */
+    private function personalAgendaUrl(Event $eventModel, Registration $registration): ?string
+    {
+        if (app(PresentPersonalAgenda::class)->sessions($registration, $eventModel) === []) {
+            return null;
+        }
+
+        return app(PersonalAgendaLink::class)->url($eventModel, $registration);
     }
 
     private function linkExpiry(Event $event): DateTimeInterface

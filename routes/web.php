@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Guest\FormThemeStyleController;
 use App\Http\Controllers\Guest\GuestInvitationController;
+use App\Http\Controllers\Guest\PersonalAgendaController;
 use App\Http\Controllers\Guest\ProposalController as GuestProposalController;
 use App\Http\Controllers\Guest\RegistrationController;
 use App\Http\Controllers\Guest\SpeakerPortalController;
@@ -524,6 +525,10 @@ Route::middleware(['resolve-guest-event', 'guest-locale'])
         Route::middleware('signed')->group(function (): void {
             Route::match(['GET', 'POST'], 'inscriptions/{registration}/modifier', [RegistrationController::class, 'edit'])->middleware('throttle:30,1')->name('edit');
             Route::match(['GET', 'POST'], 'inscriptions/{registration}/annuler', [RegistrationController::class, 'cancel'])->name('cancel');
+            // « Mon agenda » (D6) : le programme personnel du participant,
+            // celui des sessions qu'il a choisies.
+            Route::get('inscriptions/{registration}/mon-agenda', [PersonalAgendaController::class, 'show'])->whereNumber('registration')->name('agenda');
+            Route::get('inscriptions/{registration}/mon-agenda.ics', [PersonalAgendaController::class, 'calendar'])->whereNumber('registration')->name('agenda.ics');
         });
     });
 

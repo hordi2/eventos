@@ -7,12 +7,16 @@ namespace App\Support\Messaging;
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Contact\Models\EventInvitee;
 use App\Domain\Event\Models\Event;
+use App\Domain\Form\Models\Registration;
+use App\Domain\Form\Models\RegistrationStatus;
 use App\Support\CheckIn\GetContactTableName;
+use App\Support\Registration\PersonalAgendaLink;
 
 /**
- * Traverse Contact (Domain/Contact) et Event (Domain/Event) : ne peut pas
- * vivre dans Domain/Messaging (section 3 du CLAUDE.md), même raisonnement
- * que SendEmailToContact.
+ * Traverse Contact (Domain/Contact), Event (Domain/Event) et Form
+ * (l'inscription, pour « mon agenda ») : ne peut pas vivre dans
+ * Domain/Messaging (section 3 du CLAUDE.md), même raisonnement que
+ * SendEmailToContact.
  *
  * QR ne figure volontairement pas dans la liste (accord explicite) :
  * T-055 n'a construit de QR que pour les billets payés, pas pour les
@@ -34,10 +38,12 @@ final class ResolveMergeVariables
         'event_date' => 'date à confirmer',
         'event_location' => 'lieu à confirmer',
         'table' => '',
+        'mon_agenda' => '',
     ];
 
     public function __construct(
         private readonly GetContactTableName $getContactTableName,
+        private readonly PersonalAgendaLink $personalAgendaLink,
     ) {}
 
     public function resolve(string $text, Contact $contact, ?Event $event): string
@@ -80,6 +86,7 @@ final class ResolveMergeVariables
             'table' => $event !== null
                 ? $this->getContactTableName->forContact($contact->organization_id, $event->id, $contact->id)
                 : null,
+            'mon_agenda' => $event !== null ? $this->personalAgenda($event, $contact) : null,
         ];
 
         foreach ((array) ($contact->custom_fields ?? []) as $key => $value) {
@@ -108,6 +115,24 @@ final class ResolveMergeVariables
         return $token !== null
             ? route('guest.registration.invitation.open', [$event->organization->slug, $event->slug, $token])
             : route('guest.registration.start', [$event->organization->slug, $event->slug]);
+    }
+
+    /**
+     * « Mon agenda » (D6) : le programme personnel du participant. Vide
+     * tant qu'il n'a pas d'inscription active à cet événement — le repli
+     * évite alors un lien mort dans le message.
+     */
+    private function personalAgenda(Event $event, Contact $contact): ?string
+    {
+        $registration = Registration::query()
+            ->where('event_id', $event->id)
+            ->where('contact_id', $contact->id)
+            ->whereNull('parent_registration_id')
+            ->whereIn('status', [RegistrationStatus::Confirmed->value, RegistrationStatus::Pending->value])
+            ->latest('id')
+            ->first();
+
+        return $registration === null ? null : $this->personalAgendaLink->url($event, $registration);
     }
 
     private function eventDate(Event $event): string

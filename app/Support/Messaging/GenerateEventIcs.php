@@ -22,21 +22,62 @@ final class GenerateEventIcs
 {
     public function handle(Event $event): string
     {
-        $event->loadMissing('venue');
+        return $this->calendar($this->vevent($event));
+    }
 
+    /**
+     * Programme personnel d'un participant (D6) : l'événement lui-même,
+     * puis chacune de ses sessions. Un seul fichier, plusieurs VEVENT —
+     * l'agenda du participant les range tout seul.
+     *
+     * @param  list<Event>  $sessions
+     */
+    public function personalAgenda(Event $event, array $sessions): string
+    {
+        $lines = $this->vevent($event);
+
+        foreach ($sessions as $session) {
+            // La salle prime sur le lieu de l'événement : c'est elle que le
+            // participant cherche une fois sur place.
+            $lines = [...$lines, ...$this->vevent($session, $session->room ?? $this->location($event))];
+        }
+
+        return $this->calendar($lines);
+    }
+
+    /**
+     * @param  list<string>  $vevents
+     */
+    private function calendar(array $vevents): string
+    {
         $lines = [
             'BEGIN:VCALENDAR',
             'VERSION:2.0',
             'PRODID:-//Itaza Invitation//FR',
             'CALSCALE:GREGORIAN',
             'METHOD:PUBLISH',
+            ...$vevents,
+            'END:VCALENDAR',
+        ];
+
+        return implode("\r\n", array_map($this->fold(...), $lines))."\r\n";
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function vevent(Event $event, ?string $location = null): array
+    {
+        $event->loadMissing('venue');
+
+        $lines = [
             'BEGIN:VEVENT',
             'UID:event-'.$event->id.'@itaza-invitation.app',
             'DTSTAMP:'.$this->utc(CarbonImmutable::now()),
             'DTSTART:'.$this->utc($event->start_at),
             'DTEND:'.$this->utc($event->end_at),
             'SUMMARY:'.$this->escape($event->title),
-            'LOCATION:'.$this->escape($this->location($event)),
+            'LOCATION:'.$this->escape($location ?? $this->location($event)),
         ];
 
         if ($event->description !== null && $event->description !== '') {
@@ -49,9 +90,8 @@ final class GenerateEventIcs
         $lines[] = 'TRIGGER:-PT1H';
         $lines[] = 'END:VALARM';
         $lines[] = 'END:VEVENT';
-        $lines[] = 'END:VCALENDAR';
 
-        return implode("\r\n", array_map($this->fold(...), $lines))."\r\n";
+        return $lines;
     }
 
     private function location(Event $event): string

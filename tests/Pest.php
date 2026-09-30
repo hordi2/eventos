@@ -7,6 +7,7 @@ use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventType;
 use App\Domain\Form\Actions\CreateForm;
 use App\Domain\Form\Actions\PublishFormVersion;
+use App\Domain\Form\Actions\ReviseForm;
 use App\Domain\Form\Data\EventRegistrationContext;
 use App\Domain\Form\Models\Attendee;
 use App\Domain\Form\Models\FieldOption;
@@ -489,4 +490,49 @@ function registerGuestWithAnswers(TestCase $test, Event $event, string $base): v
     ])->assertSessionHasNoErrors();
 
     $test->post("{$base}/{$token}/recap");
+}
+
+/**
+ * Événement publié dont le formulaire propose deux sessions qui se
+ * chevauchent : un dîner de 10 places et un cocktail.
+ *
+ * @return array{organization: Organization, event: Event, dinner: Event, cocktail: Event, doorStaff: User, base: string}
+ */
+function guestEventWithSessions(): array
+{
+    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent([], ['type' => EventType::Conference]);
+
+    app(CurrentOrganization::class)->set($organization);
+    $start = CarbonImmutable::now()->addWeek()->setTime(18, 0);
+    $dinner = Event::factory()->for($organization)->create(['parent_event_id' => $event->id, 'title' => 'Dîner de gala', 'start_at' => $start, 'end_at' => $start->addHours(3), 'capacity' => 10, 'timezone' => 'UTC']);
+    $cocktail = Event::factory()->for($organization)->create(['parent_event_id' => $event->id, 'title' => 'Cocktail', 'start_at' => $start->addHour(), 'end_at' => $start->addHours(2), 'timezone' => 'UTC']);
+
+    $admin = User::factory()->create();
+    Membership::factory()->for($organization)->for($admin)->create(['role' => MembershipRole::Admin]);
+    $doorStaff = User::factory()->create();
+    Membership::factory()->for($organization)->for($doorStaff)->create(['role' => MembershipRole::DoorStaff]);
+
+    $form = Form::query()->where('event_id', $event->id)->firstOrFail();
+    app(ReviseForm::class)->handle($form, $admin, [[
+        'key' => 'sessions',
+        'type' => 'sub_events',
+        'label' => 'Vos sessions',
+        'config' => ['sub_events' => [['id' => $dinner->id, 'title' => 'Dîner de gala'], ['id' => $cocktail->id, 'title' => 'Cocktail']]],
+    ]]);
+    app(PublishFormVersion::class)->handle($form->fresh(), $admin);
+    app(CurrentOrganization::class)->clear();
+
+    return [
+        'organization' => $organization,
+        'event' => $event,
+        'dinner' => $dinner,
+        'cocktail' => $cocktail,
+        'doorStaff' => $doorStaff,
+        'base' => "/r/{$organization->slug}/{$event->slug}",
+    ];
+}
+
+function sessionDraftToken(Event $event): string
+{
+    return RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->latest('id')->firstOrFail()->resume_token;
 }
