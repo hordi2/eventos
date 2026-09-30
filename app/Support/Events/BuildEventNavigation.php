@@ -86,6 +86,7 @@ final class BuildEventNavigation
             // Un seul niveau de hiérarchie : une session n'a pas ses propres sessions.
             'subEvents' => $link($canUpdate && ! $event->isSubEvent(), route('events.sub-events.index', $event->id)),
             'speakers' => $link($canUpdate && ! $event->isSubEvent(), route('events.speakers.index', $event->id)),
+            'proposals' => $link($canUpdate && ! $event->isSubEvent(), route('events.proposals.index', $event->id)),
             'answers' => $link($gate->allows('viewGuests', $organization), route('events.answers.index', $event->id)),
             // Proposé seulement quand l'événement demande une validation, ou
             // qu'il reste des demandes d'un réglage désactivé depuis.

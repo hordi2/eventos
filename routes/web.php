@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Guest\FormThemeStyleController;
 use App\Http\Controllers\Guest\GuestInvitationController;
+use App\Http\Controllers\Guest\ProposalController as GuestProposalController;
 use App\Http\Controllers\Guest\RegistrationController;
 use App\Http\Controllers\Guest\SpeakerPortalController;
 use App\Http\Controllers\Guest\StaticPageController;
@@ -56,6 +57,7 @@ use App\Http\Controllers\Organizer\OrganizationBrandingController;
 use App\Http\Controllers\Organizer\OrganizationImageController;
 use App\Http\Controllers\Organizer\PageController;
 use App\Http\Controllers\Organizer\PromoCodeController;
+use App\Http\Controllers\Organizer\ProposalController;
 use App\Http\Controllers\Organizer\RegistrationFileController;
 use App\Http\Controllers\Organizer\SeatingController;
 use App\Http\Controllers\Organizer\SenderAgreementController;
@@ -281,6 +283,11 @@ Route::middleware('auth')->group(function (): void {
         Route::post('events/{event}/intervenants/{speaker}/lien', [SpeakerController::class, 'sendPortalLink'])->whereNumber('speaker')->middleware('throttle:20,1')->name('events.speakers.send-link');
         Route::post('events/{event}/intervenants/{speaker}/lien/renouveler', [SpeakerController::class, 'renewPortalLink'])->whereNumber('speaker')->name('events.speakers.renew-link');
         Route::get('events/{event}/intervenants/{speaker}/support', [SpeakerController::class, 'downloadSupport'])->whereNumber('speaker')->name('events.speakers.support');
+
+        // Appel à contributions (D6).
+        Route::get('events/{event}/appel-a-contributions', [ProposalController::class, 'index'])->name('events.proposals.index');
+        Route::post('events/{event}/appel-a-contributions', [ProposalController::class, 'save'])->name('events.proposals.save');
+        Route::post('events/{event}/appel-a-contributions/{proposal}/decision', [ProposalController::class, 'decide'])->whereNumber('proposal')->name('events.proposals.decide');
 
         Route::get('events/{event}/sub-events', [SubEventController::class, 'index'])->name('events.sub-events.index');
         Route::post('events/{event}/sub-events', [SubEventController::class, 'store'])->name('events.sub-events.store');
@@ -531,6 +538,17 @@ Route::middleware(['guest-locale', 'throttle:30,1'])
         Route::get('/', [SpeakerPortalController::class, 'show'])->name('show');
         Route::post('reponse', [SpeakerPortalController::class, 'respond'])->name('respond');
         Route::post('support', [SpeakerPortalController::class, 'uploadSupport'])->middleware('throttle:10,1')->name('support');
+    });
+
+// Appel à contributions (D6) : page publique où chacun propose un sujet.
+// Ouverte à qui a le lien, sans compte — d'où le débit limité, plus serré
+// encore sur l'envoi (§7 du CLAUDE.md).
+Route::middleware(['guest-locale', 'throttle:60,1'])
+    ->prefix('contributions/{organization}/{event}')
+    ->name('guest.proposals.')
+    ->group(function (): void {
+        Route::get('/', [GuestProposalController::class, 'show'])->name('show');
+        Route::post('/', [GuestProposalController::class, 'store'])->middleware('throttle:10,1')->name('store');
     });
 
 // Panier et paiement des billets (T-058/T-059, M5.4/M5.3) : même principe

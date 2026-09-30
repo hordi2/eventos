@@ -52,6 +52,7 @@ function buildSections(nav: EventNav): SidebarSection[] {
             items: [
                 { label: "Site web de l'événement", icon: 'website', linkKey: 'website' },
                 { label: 'Intervenants et programme', icon: 'team', linkKey: 'speakers' },
+                { label: 'Appel à contributions', icon: 'form', linkKey: 'proposals' },
                 { label: 'Formulaires', icon: 'form', linkKey: 'form' },
                 { label: "Paramètres de l'événement", icon: 'settings', linkKey: 'settings' },
                 {

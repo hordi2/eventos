@@ -8,6 +8,8 @@ use App\Domain\Contact\Listeners\CopyGuestListToDuplicatedEvent;
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Contact\Policies\ContactPolicy;
 use App\Domain\Event\Events\EventDuplicated;
+use App\Domain\Event\Events\ProposalDecided;
+use App\Domain\Event\Events\ProposalSubmitted;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\Venue;
 use App\Domain\Event\Policies\EventPolicy;
@@ -28,12 +30,14 @@ use App\Domain\Page\Listeners\CopyPageToDuplicatedEvent;
 use App\Domain\Ticketing\Events\OrderPaid;
 use App\Domain\Ticketing\Events\OrderPlaced;
 use App\Domain\Ticketing\Listeners\CopyTicketTypesToDuplicatedEvent;
+use App\Listeners\AcknowledgeProposal;
 use App\Listeners\ConfirmPromotedRegistration;
 use App\Listeners\LinkOrderToContact;
 use App\Listeners\LinkRegistrationToContact;
 use App\Listeners\Notifications\NotifyOrganizersOfRegistration;
 use App\Listeners\NotifyGuestOfRegistrationDecision;
 use App\Listeners\NotifyGuestOfRejectedFile;
+use App\Listeners\NotifyProposerOfDecision;
 use App\Listeners\OpenDonationOnApprovedRegistration;
 use App\Listeners\ReportHealthDiagnostics;
 use App\Listeners\SendConfirmationEmail;
@@ -114,6 +118,12 @@ class AppServiceProvider extends ServiceProvider
 
         // T-056 : reçu du don par e-mail une fois le paiement reçu.
         EventFacade::listen(OrderPaid::class, SendDonationReceipt::class);
+
+        // Appel à contributions (D6) : accusé de réception au dépôt, réponse
+        // une fois le sujet tranché. Toujours par e-mail : le proposant n'a
+        // pas de compte et n'a jamais donné son accord WhatsApp.
+        EventFacade::listen(ProposalSubmitted::class, AcknowledgeProposal::class);
+        EventFacade::listen(ProposalDecided::class, NotifyProposerOfDecision::class);
 
         // Fichier joint refusé par l'antivirus après l'inscription : l'invité est prévenu.
         EventFacade::listen(RegistrationFileRejected::class, NotifyGuestOfRejectedFile::class);
