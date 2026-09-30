@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Support\Registration;
 
 use App\Domain\Event\Models\Event;
-use App\Domain\Form\Models\FileScanStatus;
 use App\Domain\Form\Models\RegistrationFile;
 use App\Domain\Form\Support\FileUploadAnswer;
+use App\Support\Antivirus\FileScanStatus;
 use Carbon\CarbonImmutable;
 
 /**

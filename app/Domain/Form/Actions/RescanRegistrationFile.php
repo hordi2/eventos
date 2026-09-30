@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\Form\Actions;
 
-use App\Domain\Form\Models\FileScanStatus;
 use App\Domain\Form\Models\RegistrationFile;
 use App\Jobs\ScanRegistrationFileJob;
+use App\Support\Antivirus\FileScanStatus;
 
 /**
  * « Relancer l'analyse » : un fichier que ClamAV n'a pas pu analyser repart

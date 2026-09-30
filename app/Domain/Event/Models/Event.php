@@ -41,6 +41,7 @@ final class Event extends Model
         'is_online',
         'online_url',
         'room',
+        'speaker_briefing',
         'venue_id',
         'parent_event_id',
         'capacity',

@@ -65,6 +65,7 @@ final class SaveSpeaker
             'name' => $data['name'],
             'role' => $data['role'] ?? null,
             'company' => $data['company'] ?? null,
+            'email' => $data['email'] ?? null,
             'bio' => $data['bio'] ?? null,
             'website_url' => $data['website_url'] ?? null,
             'linkedin_url' => $data['linkedin_url'] ?? null,

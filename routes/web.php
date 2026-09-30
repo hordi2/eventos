@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Guest\FormThemeStyleController;
 use App\Http\Controllers\Guest\GuestInvitationController;
 use App\Http\Controllers\Guest\RegistrationController;
+use App\Http\Controllers\Guest\SpeakerPortalController;
 use App\Http\Controllers\Guest\StaticPageController;
 use App\Http\Controllers\Guest\StatusController;
 use App\Http\Controllers\Guest\TicketOrderController;
@@ -276,6 +277,10 @@ Route::middleware('auth')->group(function (): void {
         Route::patch('events/{event}/intervenants/{speaker}', [SpeakerController::class, 'update'])->whereNumber('speaker')->name('events.speakers.update');
         Route::delete('events/{event}/intervenants/{speaker}', [SpeakerController::class, 'destroy'])->whereNumber('speaker')->name('events.speakers.destroy');
         Route::post('events/{event}/intervenants/{speaker}/photo', [SpeakerController::class, 'uploadPhoto'])->whereNumber('speaker')->name('events.speakers.photo');
+        Route::post('events/{event}/intervenants/informations', [SpeakerController::class, 'saveBriefing'])->name('events.speakers.briefing');
+        Route::post('events/{event}/intervenants/{speaker}/lien', [SpeakerController::class, 'sendPortalLink'])->whereNumber('speaker')->middleware('throttle:20,1')->name('events.speakers.send-link');
+        Route::post('events/{event}/intervenants/{speaker}/lien/renouveler', [SpeakerController::class, 'renewPortalLink'])->whereNumber('speaker')->name('events.speakers.renew-link');
+        Route::get('events/{event}/intervenants/{speaker}/support', [SpeakerController::class, 'downloadSupport'])->whereNumber('speaker')->name('events.speakers.support');
 
         Route::get('events/{event}/sub-events', [SubEventController::class, 'index'])->name('events.sub-events.index');
         Route::post('events/{event}/sub-events', [SubEventController::class, 'store'])->name('events.sub-events.store');
@@ -513,6 +518,19 @@ Route::middleware(['resolve-guest-event', 'guest-locale'])
             Route::match(['GET', 'POST'], 'inscriptions/{registration}/modifier', [RegistrationController::class, 'edit'])->middleware('throttle:30,1')->name('edit');
             Route::match(['GET', 'POST'], 'inscriptions/{registration}/annuler', [RegistrationController::class, 'cancel'])->name('cancel');
         });
+    });
+
+// Portail intervenant (D6) : chacun confirme son créneau et dépose son
+// support depuis un lien personnel. Jamais d'authentification ; le slug de
+// l'organisation pose le contexte multi-tenant, le jeton fait la preuve
+// d'accès. Débit limité comme tout endpoint public (§7 du CLAUDE.md).
+Route::middleware(['guest-locale', 'throttle:30,1'])
+    ->prefix('intervenant/{organization}/{token}')
+    ->name('speaker-portal.')
+    ->group(function (): void {
+        Route::get('/', [SpeakerPortalController::class, 'show'])->name('show');
+        Route::post('reponse', [SpeakerPortalController::class, 'respond'])->name('respond');
+        Route::post('support', [SpeakerPortalController::class, 'uploadSupport'])->middleware('throttle:10,1')->name('support');
     });
 
 // Panier et paiement des billets (T-058/T-059, M5.4/M5.3) : même principe

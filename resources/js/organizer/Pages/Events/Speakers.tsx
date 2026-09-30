@@ -9,17 +9,31 @@ import Textarea from '../../Components/Textarea';
 import TextInput from '../../Components/TextInput';
 import EventLayout from '../../Layouts/EventLayout';
 
+type SlotStatus = 'pending' | 'confirmed' | 'declined';
+
+interface Support {
+    name: string;
+    size: string;
+    status: string;
+    isClean: boolean;
+}
+
 interface Speaker {
     id: number;
     name: string;
     role: string | null;
     company: string | null;
+    email: string | null;
     bio: string | null;
     photoUrl: string | null;
     websiteUrl: string | null;
     linkedinUrl: string | null;
     sessionIds: number[];
     sessions: string[];
+    portalUrl: string;
+    status: SlotStatus;
+    responseNote: string | null;
+    support: Support | null;
 }
 
 interface Session {
@@ -32,7 +46,7 @@ interface Session {
 }
 
 interface SpeakersPageProps {
-    event: { id: number; title: string };
+    event: { id: number; title: string; speakerBriefing: string | null };
     speakers: Speaker[];
     sessions: Session[];
     subEventsUrl: string;
@@ -40,9 +54,16 @@ interface SpeakersPageProps {
 
 const CARD = 'rounded-card border border-line bg-bg p-5';
 
+const STATUS: Record<SlotStatus, { label: string; variant: 'neutral' | 'success' | 'danger' }> = {
+    pending: { label: 'Sans réponse', variant: 'neutral' },
+    confirmed: { label: 'Créneau confirmé', variant: 'success' },
+    declined: { label: 'Ne viendra pas', variant: 'danger' },
+};
+
 /**
- * Intervenants de l'événement (D6) : leur fiche pour la page publique, et
- * les sessions où ils parlent. Les sessions elles-mêmes se règlent dans
+ * Intervenants de l'événement (D6) : leur fiche pour la page publique, les
+ * sessions où ils parlent, et leur portail — lien personnel, réponse au
+ * créneau et support déposé. Les sessions elles-mêmes se règlent dans
  * « Événements secondaires ».
  */
 export default function Speakers({ event, speakers, sessions, subEventsUrl }: SpeakersPageProps) {
@@ -85,45 +106,54 @@ export default function Speakers({ event, speakers, sessions, subEventsUrl }: Sp
             ) : (
                 <ul className="space-y-4">
                     {speakers.map((speaker) => (
-                        <li key={speaker.id} className={`${CARD} flex flex-wrap items-start gap-4`}>
-                            {speaker.photoUrl ? (
-                                <img src={speaker.photoUrl} alt="" className="h-16 w-16 shrink-0 rounded-full object-cover" />
-                            ) : (
-                                <span aria-hidden="true" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-bg-alt font-serif text-xl text-ink-soft">
-                                    {speaker.name.slice(0, 1)}
-                                </span>
-                            )}
-                            <div className="min-w-0 flex-1">
-                                <p className="text-lg text-ink">{speaker.name}</p>
-                                <p className="text-sm text-ink-soft">{[speaker.role, speaker.company].filter(Boolean).join(' · ') || '—'}</p>
-                                {speaker.sessions.length > 0 && (
-                                    <div className="mt-2 flex flex-wrap gap-2">
-                                        {speaker.sessions.map((session) => (
-                                            <Badge key={session}>{session}</Badge>
-                                        ))}
-                                    </div>
+                        <li key={speaker.id} className={CARD}>
+                            <div className="flex flex-wrap items-start gap-4">
+                                {speaker.photoUrl ? (
+                                    <img src={speaker.photoUrl} alt="" className="h-16 w-16 shrink-0 rounded-full object-cover" />
+                                ) : (
+                                    <span aria-hidden="true" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-bg-alt font-serif text-xl text-ink-soft">
+                                        {speaker.name.slice(0, 1)}
+                                    </span>
                                 )}
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <p className="text-lg text-ink">{speaker.name}</p>
+                                        <Badge variant={STATUS[speaker.status].variant}>{STATUS[speaker.status].label}</Badge>
+                                    </div>
+                                    <p className="text-sm text-ink-soft">{[speaker.role, speaker.company].filter(Boolean).join(' · ') || '—'}</p>
+                                    {speaker.sessions.length > 0 && (
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                            {speaker.sessions.map((session) => (
+                                                <Badge key={session}>{session}</Badge>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex gap-4 text-sm">
+                                    <button type="button" onClick={() => setEditing(speaker)} className="text-ink underline hover:no-underline">
+                                        Modifier
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (window.confirm(`Retirer ${speaker.name} du programme ?`)) {
+                                                router.delete(`/events/${event.id}/intervenants/${speaker.id}`, { preserveScroll: true });
+                                            }
+                                        }}
+                                        className="text-danger underline hover:no-underline"
+                                    >
+                                        Retirer
+                                    </button>
+                                </div>
                             </div>
-                            <div className="flex gap-4 text-sm">
-                                <button type="button" onClick={() => setEditing(speaker)} className="text-ink underline hover:no-underline">
-                                    Modifier
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        if (window.confirm(`Retirer ${speaker.name} du programme ?`)) {
-                                            router.delete(`/events/${event.id}/intervenants/${speaker.id}`, { preserveScroll: true });
-                                        }
-                                    }}
-                                    className="text-danger underline hover:no-underline"
-                                >
-                                    Retirer
-                                </button>
-                            </div>
+
+                            <SpeakerPortal event={event} speaker={speaker} />
                         </li>
                     ))}
                 </ul>
             )}
+
+            <BriefingForm event={event} />
 
             <section className="mt-12">
                 <h2 className="mb-1 font-serif text-xl italic">Programme</h2>
@@ -154,6 +184,113 @@ export default function Speakers({ event, speakers, sessions, subEventsUrl }: Sp
     );
 }
 
+interface SpeakerPortalProps {
+    event: { id: number };
+    speaker: Speaker;
+}
+
+/**
+ * Portail de l'intervenant vu par l'organisateur : le lien à lui envoyer,
+ * son message et le support qu'il a déposé.
+ */
+function SpeakerPortal({ event, speaker }: SpeakerPortalProps) {
+    const [copied, setCopied] = useState(false);
+
+    async function copyLink() {
+        await navigator.clipboard.writeText(speaker.portalUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    }
+
+    return (
+        <div className="mt-5 border-t border-line pt-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                <span className="font-label text-xs tracking-[0.1em] text-ink-soft uppercase">Espace intervenant</span>
+                <button type="button" onClick={() => void copyLink()} className="text-ink underline hover:no-underline">
+                    {copied ? 'Lien copié' : 'Copier le lien'}
+                </button>
+                <button
+                    type="button"
+                    onClick={() => router.post(`/events/${event.id}/intervenants/${speaker.id}/lien`, {}, { preserveScroll: true })}
+                    className="text-ink underline hover:no-underline"
+                    disabled={speaker.email === null}
+                    title={speaker.email === null ? "Ajoutez son adresse e-mail pour lui envoyer son lien" : undefined}
+                >
+                    Envoyer par e-mail
+                </button>
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (window.confirm("Renouveler ce lien ? L'ancien cessera aussitôt de fonctionner.")) {
+                            router.post(`/events/${event.id}/intervenants/${speaker.id}/lien/renouveler`, {}, { preserveScroll: true });
+                        }
+                    }}
+                    className="text-ink-soft underline hover:no-underline"
+                >
+                    Renouveler le lien
+                </button>
+            </div>
+
+            {speaker.responseNote && <p className="mt-3 text-sm text-ink-soft italic">« {speaker.responseNote} »</p>}
+
+            <p className="mt-3 text-sm text-ink-soft">
+                {speaker.support === null ? (
+                    'Aucun support déposé.'
+                ) : (
+                    <>
+                        Support :{' '}
+                        {speaker.support.isClean ? (
+                            <a href={`/events/${event.id}/intervenants/${speaker.id}/support`} className="text-ink underline hover:no-underline">
+                                {speaker.support.name}
+                            </a>
+                        ) : (
+                            <span className="text-ink">{speaker.support.name}</span>
+                        )}{' '}
+                        <span className="text-xs">
+                            ({speaker.support.size} · {speaker.support.status})
+                        </span>
+                    </>
+                )}
+            </p>
+        </div>
+    );
+}
+
+/**
+ * Informations pratiques communes : elles s'affichent sur le portail de
+ * chaque intervenant.
+ */
+function BriefingForm({ event }: { event: { id: number; speakerBriefing: string | null } }) {
+    const form = useForm({ speaker_briefing: event.speakerBriefing ?? '' });
+
+    function submit(submitEvent: FormEvent) {
+        submitEvent.preventDefault();
+        form.post(`/events/${event.id}/intervenants/informations`, { preserveScroll: true });
+    }
+
+    return (
+        <form onSubmit={submit} className={`${CARD} mt-12`}>
+            <h2 className="mb-1 font-serif text-xl italic">Informations pratiques</h2>
+            <p className="mb-4 text-sm text-ink-soft">
+                Heure d'arrivée, accueil, matériel disponible, personne à contacter : chaque intervenant les lit sur son espace.
+            </p>
+            <Textarea
+                id="speaker_briefing"
+                value={form.data.speaker_briefing}
+                onChange={(changeEvent) => form.setData('speaker_briefing', changeEvent.target.value)}
+                rows={5}
+                maxLength={5000}
+            />
+            <InputError message={form.errors.speaker_briefing} />
+            <div className="mt-4 flex justify-end">
+                <Button type="submit" disabled={form.processing} className="sm:w-auto">
+                    Enregistrer
+                </Button>
+            </div>
+        </form>
+    );
+}
+
 interface SpeakerFormProps {
     event: { id: number };
     sessions: Session[];
@@ -166,6 +303,7 @@ function SpeakerForm({ event, sessions, speaker, onDone }: SpeakerFormProps) {
         name: speaker?.name ?? '',
         role: speaker?.role ?? '',
         company: speaker?.company ?? '',
+        email: speaker?.email ?? '',
         bio: speaker?.bio ?? '',
         website_url: speaker?.websiteUrl ?? '',
         linkedin_url: speaker?.linkedinUrl ?? '',
@@ -220,6 +358,12 @@ function SpeakerForm({ event, sessions, speaker, onDone }: SpeakerFormProps) {
                 <div>
                     <InputLabel htmlFor="company">Organisation (optionnel)</InputLabel>
                     <TextInput id="company" value={form.data.company} onChange={(changeEvent) => form.setData('company', changeEvent.target.value)} />
+                </div>
+                <div>
+                    <InputLabel htmlFor="email">Adresse e-mail (optionnel)</InputLabel>
+                    <TextInput id="email" type="email" value={form.data.email} onChange={(changeEvent) => form.setData('email', changeEvent.target.value)} placeholder="awa@example.com" />
+                    <InputError message={form.errors.email} />
+                    <p className="mt-1 text-xs text-ink-soft">Elle sert à lui envoyer le lien de son espace intervenant.</p>
                 </div>
                 <div>
                     <InputLabel htmlFor="website_url">Site web (optionnel)</InputLabel>

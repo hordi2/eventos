@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Form\Support;
 
-use App\Domain\Form\Models\FileScanStatus;
 use App\Domain\Form\Models\RegistrationFile;
+use App\Support\Antivirus\FileScanStatus;
 use Illuminate\Support\Str;
 
 /**

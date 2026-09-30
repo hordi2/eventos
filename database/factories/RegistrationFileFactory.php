@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Domain\Event\Models\Event;
-use App\Domain\Form\Models\FileScanStatus;
 use App\Domain\Form\Models\RegistrationFile;
 use App\Domain\Organization\Models\Organization;
+use App\Support\Antivirus\FileScanStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;

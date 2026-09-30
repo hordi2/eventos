@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Domain\Form\Actions\RecordFileScanResult;
-use App\Domain\Form\Models\FileScanStatus;
 use App\Domain\Form\Models\RegistrationFile;
 use App\Support\Antivirus\FileScanner;
+use App\Support\Antivirus\FileScanStatus;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;

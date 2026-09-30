@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Form\Models;
 
+use App\Support\Antivirus\FileScanStatus;
 use App\Support\MultiTenancy\BelongsToOrganization;
 use Database\Factories\RegistrationFileFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

@@ -17,7 +17,8 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
-    // Fichiers joints des invités (bloc « Fichier joint ») : jamais un disque
+    // Fichiers joints des invités (bloc « Fichier joint ») et supports des
+    // intervenants (portail intervenant) : jamais un disque
     // public. « local » range sous storage/app/private ; en production, un
     // disque S3 compatible (Cloudflare R2).
     'registration_files_disk' => env('REGISTRATION_FILES_DISK', 'local'),

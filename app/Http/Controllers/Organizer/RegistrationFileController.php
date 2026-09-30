@@ -6,10 +6,10 @@ namespace App\Http\Controllers\Organizer;
 
 use App\Domain\Event\Models\Event;
 use App\Domain\Form\Actions\RescanRegistrationFile;
-use App\Domain\Form\Models\FileScanStatus;
 use App\Domain\Form\Models\RegistrationFile;
 use App\Domain\Organization\Actions\RecordAuditLog;
 use App\Http\Controllers\Controller;
+use App\Support\Antivirus\FileScanStatus;
 use App\Support\Registration\PresentReceivedFiles;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\RedirectResponse;

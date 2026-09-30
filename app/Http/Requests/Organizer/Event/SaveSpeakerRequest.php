@@ -22,6 +22,7 @@ final class SaveSpeakerRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'role' => ['nullable', 'string', 'max:255'],
             'company' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
             'bio' => ['nullable', 'string', 'max:2000'],
             'website_url' => ['nullable', 'url', 'max:2048'],
             'linkedin_url' => ['nullable', 'url', 'max:2048'],
@@ -37,6 +38,7 @@ final class SaveSpeakerRequest extends FormRequest
     {
         return [
             'name.required' => "Indiquez le nom de l'intervenant.",
+            'email.email' => "L'adresse e-mail de l'intervenant n'est pas valide.",
             'website_url.url' => 'Le site web doit être une adresse complète, avec https://.',
             'linkedin_url.url' => 'Le profil LinkedIn doit être une adresse complète, avec https://.',
         ];

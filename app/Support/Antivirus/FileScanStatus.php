@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Domain\Form\Models;
+namespace App\Support\Antivirus;
 
 /**
  * Analyse antivirus d'un fichier joint (S-06 du CDC) : seul un fichier sain

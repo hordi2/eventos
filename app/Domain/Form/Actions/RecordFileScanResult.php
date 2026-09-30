@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\Form\Actions;
 
 use App\Domain\Form\Events\RegistrationFileRejected;
-use App\Domain\Form\Models\FileScanStatus;
 use App\Domain\Form\Models\RegistrationFile;
+use App\Support\Antivirus\FileScanStatus;
 use App\Support\Antivirus\ScanResult;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Storage;

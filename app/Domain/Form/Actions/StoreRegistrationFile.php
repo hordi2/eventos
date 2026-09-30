@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domain\Form\Actions;
 
-use App\Domain\Form\Models\FileScanStatus;
 use App\Domain\Form\Models\FormField;
 use App\Domain\Form\Models\RegistrationFile;
 use App\Jobs\ScanRegistrationFileJob;
+use App\Support\Antivirus\FileScanStatus;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use RuntimeException;
