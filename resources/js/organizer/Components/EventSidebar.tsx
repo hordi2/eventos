@@ -94,6 +94,7 @@ function buildSections(nav: EventNav): SidebarSection[] {
                         { label: 'Codes promo', linkKey: 'promoCodes' },
                     ],
                 },
+                { label: 'Budget et rentabilité', icon: 'chart', linkKey: 'budget' },
                 { label: 'Exports', icon: 'download', linkKey: 'exports' },
             ],
         },

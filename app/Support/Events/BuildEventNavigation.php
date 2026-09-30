@@ -109,6 +109,7 @@ final class BuildEventNavigation
             'tickets' => $link($gate->allows('manageTicketing', $organization), route('events.ticket-types.index', $event->id)),
             'promoCodes' => $link($gate->allows('manageTicketing', $organization), route('events.promo-codes.index', $event->id)),
             'exports' => $link($gate->allows('exportData', $organization), route('events.exports.index', $event->id)),
+            'budget' => $link($gate->allows('viewFinancials', $organization) && ! $event->isSubEvent(), route('events.budget.index', $event->id)),
             'referral' => $link(! $isCollaborator && $gate->allows('manageBilling', $organization), route('settings.referral.edit')),
         ];
     }

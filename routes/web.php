@@ -27,6 +27,7 @@ use App\Http\Controllers\Organizer\Auth\RegisteredUserController;
 use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
 use App\Http\Controllers\Organizer\BadgeController;
 use App\Http\Controllers\Organizer\BillingController;
+use App\Http\Controllers\Organizer\BudgetController;
 use App\Http\Controllers\Organizer\CheckInController;
 use App\Http\Controllers\Organizer\CommunityController;
 use App\Http\Controllers\Organizer\ComplianceController;
@@ -286,6 +287,12 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/intervenants/{speaker}/support', [SpeakerController::class, 'downloadSupport'])->whereNumber('speaker')->name('events.speakers.support');
 
         // Appel à contributions (D6).
+        // Suivi budgétaire (D7) : réservé à qui peut voir les chiffres.
+        Route::get('events/{event}/budget', [BudgetController::class, 'index'])->name('events.budget.index');
+        Route::post('events/{event}/budget', [BudgetController::class, 'store'])->name('events.budget.store');
+        Route::patch('events/{event}/budget/{line}', [BudgetController::class, 'update'])->whereNumber('line')->name('events.budget.update');
+        Route::delete('events/{event}/budget/{line}', [BudgetController::class, 'destroy'])->whereNumber('line')->name('events.budget.destroy');
+
         Route::get('events/{event}/appel-a-contributions', [ProposalController::class, 'index'])->name('events.proposals.index');
         Route::post('events/{event}/appel-a-contributions', [ProposalController::class, 'save'])->name('events.proposals.save');
         Route::post('events/{event}/appel-a-contributions/{proposal}/decision', [ProposalController::class, 'decide'])->whereNumber('proposal')->name('events.proposals.decide');
