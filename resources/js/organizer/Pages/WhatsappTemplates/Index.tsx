@@ -247,7 +247,92 @@ function PreviewAndTest({ templates, contacts, events }: { templates: TemplateRo
     );
 }
 
-export default function Index({ templates, contacts, events }: { templates: TemplateRow[]; contacts: Option[]; events: Option[] }) {
+interface FollowUpSettings {
+    channel: string;
+    channels: { value: string; label: string }[];
+    messages: { value: string; label: string; hint: string }[];
+    templates: Record<string, number>;
+}
+
+/**
+ * Messages que l'application envoie d'elle-même à un invité : leur canal,
+ * et le modèle WhatsApp approuvé qui sert à chacun.
+ */
+function FollowUpMessages({ templates, followUp }: { templates: TemplateRow[]; followUp: FollowUpSettings }) {
+    const form = useForm<{ channel: string; templates: Record<string, string> }>({
+        channel: followUp.channel,
+        templates: Object.fromEntries(followUp.messages.map((message) => [message.value, String(followUp.templates[message.value] ?? '')])),
+    });
+
+    return (
+        <section className="mt-14">
+            <h2 className="mb-1 font-serif text-xl italic">Messages de suivi</h2>
+            <p className="mb-4 max-w-2xl text-sm text-ink-soft">
+                Ces messages partent tout seuls : inscription acceptée ou refusée, reçu de don, fichier refusé. WhatsApp n'accepte qu'un modèle
+                approuvé : sans modèle désigné, le message ne part pas par WhatsApp.
+            </p>
+
+            <form
+                onSubmit={(submitEvent) => {
+                    submitEvent.preventDefault();
+                    form.post('/whatsapp-templates/follow-up', { preserveScroll: true });
+                }}
+                className="rounded-card bg-bg p-6 ring-1 ring-line"
+            >
+                <div className="mb-6 max-w-xs">
+                    <InputLabel htmlFor="follow_up_channel">Canal</InputLabel>
+                    <Select id="follow_up_channel" value={form.data.channel} onChange={(changeEvent) => form.setData('channel', changeEvent.target.value)}>
+                        {followUp.channels.map((channel) => (
+                            <option key={channel.value} value={channel.value}>
+                                {channel.label}
+                            </option>
+                        ))}
+                    </Select>
+                    <InputError message={form.errors.channel} />
+                </div>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                    {followUp.messages.map((message) => (
+                        <div key={message.value}>
+                            <InputLabel htmlFor={`follow_up_${message.value}`}>{message.label}</InputLabel>
+                            <Select
+                                id={`follow_up_${message.value}`}
+                                value={form.data.templates[message.value] ?? ''}
+                                onChange={(changeEvent) => form.setData('templates', { ...form.data.templates, [message.value]: changeEvent.target.value })}
+                            >
+                                <option value="">Aucun modèle WhatsApp</option>
+                                {templates.map((template) => (
+                                    <option key={template.id} value={String(template.id)}>
+                                        {template.name}
+                                    </option>
+                                ))}
+                            </Select>
+                            <p className="mt-1.5 text-xs text-ink-soft">{message.hint}</p>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="mt-6">
+                    <Button type="submit" disabled={form.processing} className="w-auto px-6 py-2">
+                        Enregistrer
+                    </Button>
+                </div>
+            </form>
+        </section>
+    );
+}
+
+export default function Index({
+    templates,
+    contacts,
+    events,
+    followUp,
+}: {
+    templates: TemplateRow[];
+    contacts: Option[];
+    events: Option[];
+    followUp: FollowUpSettings;
+}) {
     const [editing, setEditing] = useState<TemplateRow | null | undefined>(undefined);
 
     function destroy(template: TemplateRow) {
@@ -299,6 +384,8 @@ export default function Index({ templates, contacts, events }: { templates: Temp
                 ]}
                 rows={templates}
             />
+
+            <FollowUpMessages templates={templates} followUp={followUp} />
 
             <PreviewAndTest templates={templates} contacts={contacts} events={events} />
 

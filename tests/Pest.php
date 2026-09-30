@@ -328,6 +328,47 @@ function formWithBuilderSettings(array $fields = []): array
 }
 
 /**
+ * Événement en validation manuelle, prêt pour les invités, avec un
+ * administrateur qui décide.
+ *
+ * @param  array<int, array<string, mixed>>  $fields
+ * @return array{organization: Organization, event: Event, admin: User, base: string}
+ */
+function makeApprovalEvent(array $fields = [], array $eventOverrides = []): array
+{
+    // Type professionnel : un événement personnel exigerait aussi le téléphone.
+    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent($fields, [
+        'type' => EventType::Conference,
+        'requires_approval' => true,
+        ...$eventOverrides,
+    ]);
+
+    app(CurrentOrganization::class)->set($organization);
+    $admin = User::factory()->create();
+    $admin->memberships()->create(['organization_id' => $organization->id, 'role' => MembershipRole::Admin]);
+    app(CurrentOrganization::class)->clear();
+
+    return ['organization' => $organization, 'event' => $event, 'admin' => $admin, 'base' => "/r/{$organization->slug}/{$event->slug}"];
+}
+
+/**
+ * Parcours invité complet jusqu'à la soumission ; renvoie l'inscription.
+ *
+ * @param  array<string, mixed>  $answers
+ */
+function answerAsGuest(TestCase $test, Event $event, string $base, string $email, array $answers = []): Registration
+{
+    $test->get("{$base}/commencer");
+    $token = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->latest('id')->firstOrFail()->resume_token;
+
+    $test->post("{$base}/{$token}/identite", ['email' => $email, 'first_name' => 'Awa', 'last_name' => 'Diallo']);
+    $test->post("{$base}/{$token}/reponses", $answers)->assertSessionHasNoErrors();
+    $test->post("{$base}/{$token}/recap");
+
+    return Registration::withoutGlobalScopes()->where('event_id', $event->id)->where('email', $email)->sole();
+}
+
+/**
  * Un événement principal et trois sessions : un dîner (2 places), un atelier
  * le lendemain (1 place, liste d'attente) et un cocktail qui chevauche le dîner.
  *

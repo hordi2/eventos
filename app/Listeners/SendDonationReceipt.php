@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace App\Listeners;
 
+use App\Domain\Contact\Models\Contact;
 use App\Domain\Event\Models\Event;
 use App\Domain\Form\Support\PostalAddress;
+use App\Domain\Messaging\Models\FollowUpMessage;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Ticketing\Events\OrderPaid;
 use App\Domain\Ticketing\Models\Donation;
+use App\Domain\Ticketing\Models\Order;
 use App\Domain\Ticketing\Models\Payment;
 use App\Domain\Ticketing\Models\PaymentStatus;
 use App\Mail\DonationReceiptMail;
+use App\Support\Messaging\SendFollowUpMessage;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Mail;
 
@@ -34,18 +38,35 @@ final class SendDonationReceipt
         'cash' => "Espèces, à l'accueil",
     ];
 
+    public function __construct(
+        private readonly SendFollowUpMessage $sendFollowUpMessage,
+    ) {}
+
+    private function contact(Order $order): ?Contact
+    {
+        return $order->contact_id === null ? null : Contact::query()->find($order->contact_id);
+    }
+
     public function handle(OrderPaid $orderPaid): void
     {
         $order = $orderPaid->order;
         $donations = Donation::query()->where('order_id', $order->id)->orderBy('id')->get();
 
-        // Sans adresse (commande anonymisée), pas de reçu à envoyer.
-        if ($donations->isEmpty() || $order->buyer_email === '') {
+        if ($donations->isEmpty()) {
             return;
         }
 
         $event = Event::query()->findOrFail($order->event_id);
         $organization = Organization::query()->findOrFail($order->organization_id);
+
+        // WhatsApp au même rang que l'e-mail (D1) : le reçu suit les canaux
+        // choisis par l'organisation.
+        $this->sendFollowUpMessage->sendWhatsapp($organization, $this->contact($order), FollowUpMessage::DonationReceipt, $event);
+
+        // Sans adresse (commande anonymisée), pas de reçu par e-mail.
+        if ($order->buyer_email === '' || ! $this->sendFollowUpMessage->sendsEmail($organization)) {
+            return;
+        }
         $paidAt = ($order->paid_at ?? CarbonImmutable::now())->setTimezone($event->timezone);
 
         $payment = Payment::query()

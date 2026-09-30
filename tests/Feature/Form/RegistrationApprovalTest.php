@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Domain\Event\Models\Event;
-use App\Domain\Event\Models\EventType;
 use App\Domain\Form\Actions\SubmitRegistration;
 use App\Domain\Form\Data\AttendeeIdentity;
 use App\Domain\Form\Data\EventRegistrationContext;
@@ -12,55 +10,12 @@ use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationDraft;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Organization\Models\MembershipRole;
-use App\Domain\Organization\Models\Organization;
 use App\Domain\Ticketing\Models\Order;
 use App\Mail\RegistrationDecisionMail;
 use App\Models\User;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use Tests\TestCase;
-
-/**
- * Événement en validation manuelle, prêt pour les invités, avec un
- * administrateur qui décide.
- *
- * @param  array<int, array<string, mixed>>  $fields
- * @return array{organization: Organization, event: Event, admin: User, base: string}
- */
-function makeApprovalEvent(array $fields = [], array $eventOverrides = []): array
-{
-    // Type professionnel : un événement personnel exigerait aussi le téléphone.
-    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent($fields, [
-        'type' => EventType::Conference,
-        'requires_approval' => true,
-        ...$eventOverrides,
-    ]);
-
-    app(CurrentOrganization::class)->set($organization);
-    $admin = User::factory()->create();
-    $admin->memberships()->create(['organization_id' => $organization->id, 'role' => MembershipRole::Admin]);
-    app(CurrentOrganization::class)->clear();
-
-    return ['organization' => $organization, 'event' => $event, 'admin' => $admin, 'base' => "/r/{$organization->slug}/{$event->slug}"];
-}
-
-/**
- * Parcours invité complet jusqu'à la soumission ; renvoie l'inscription.
- *
- * @param  array<string, mixed>  $answers
- */
-function answerAsGuest(TestCase $test, Event $event, string $base, string $email, array $answers = []): Registration
-{
-    $test->get("{$base}/commencer");
-    $token = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->latest('id')->firstOrFail()->resume_token;
-
-    $test->post("{$base}/{$token}/identite", ['email' => $email, 'first_name' => 'Awa', 'last_name' => 'Diallo']);
-    $test->post("{$base}/{$token}/reponses", $answers)->assertSessionHasNoErrors();
-    $test->post("{$base}/{$token}/recap");
-
-    return Registration::withoutGlobalScopes()->where('event_id', $event->id)->where('email', $email)->sole();
-}
 
 it('retient la place de l\'invité et attend la validation de l\'organisateur', function (): void {
     ['event' => $event, 'base' => $base, 'organization' => $organization] = makeApprovalEvent();

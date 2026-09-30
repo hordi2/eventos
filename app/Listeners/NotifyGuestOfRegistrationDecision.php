@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace App\Listeners;
 
+use App\Domain\Contact\Models\Contact;
 use App\Domain\Event\Models\Event;
 use App\Domain\Form\Events\RegistrationApproved;
 use App\Domain\Form\Events\RegistrationRejected;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationDraft;
+use App\Domain\Messaging\Models\FollowUpMessage;
 use App\Domain\Messaging\Models\MessageAutomation;
 use App\Domain\Messaging\Models\MessageAutomationStatus;
 use App\Domain\Messaging\Models\MessageAutomationType;
 use App\Domain\Messaging\Models\MessageChannel;
 use App\Mail\RegistrationDecisionMail;
+use App\Support\Messaging\SendFollowUpMessage;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -26,6 +29,10 @@ use Illuminate\Support\Facades\Mail;
  */
 final class NotifyGuestOfRegistrationDecision
 {
+    public function __construct(
+        private readonly SendFollowUpMessage $sendFollowUpMessage,
+    ) {}
+
     public function approved(RegistrationApproved $approved): void
     {
         if ($this->hasEmailConfirmation($approved->registration)) {
@@ -42,11 +49,20 @@ final class NotifyGuestOfRegistrationDecision
 
     private function notify(Registration $registration, bool $approved, ?string $reason = null): void
     {
-        if ($registration->email === '') {
+        $event = Event::query()->with('organization')->findOrFail($registration->event_id);
+
+        // WhatsApp au même rang que l'e-mail (D1) : un invité connu par son
+        // seul numéro est prévenu lui aussi.
+        $this->sendFollowUpMessage->sendWhatsapp(
+            $event->organization,
+            $registration->contact_id === null ? null : Contact::query()->find($registration->contact_id),
+            $approved ? FollowUpMessage::RegistrationApproved : FollowUpMessage::RegistrationRejected,
+            $event,
+        );
+
+        if ($registration->email === '' || ! $this->sendFollowUpMessage->sendsEmail($event->organization)) {
             return;
         }
-
-        $event = Event::query()->with('organization')->findOrFail($registration->event_id);
 
         Mail::to($registration->email)->queue(new RegistrationDecisionMail(
             approved: $approved,

@@ -28,6 +28,7 @@ final class Organization extends Model
         'logo_path',
         'primary_color',
         'ga4_measurement_id',
+        'follow_up_channel',
         'theme_mode',
         'plan',
         'stripe_customer_id',

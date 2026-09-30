@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Listeners;
 
+use App\Domain\Contact\Models\Contact;
 use App\Domain\Event\Models\Event;
 use App\Domain\Form\Data\EventEditPolicy;
 use App\Domain\Form\Events\RegistrationFileRejected;
 use App\Domain\Form\Models\FormField;
 use App\Domain\Form\Models\Registration;
+use App\Domain\Messaging\Models\FollowUpMessage;
 use App\Mail\RejectedRegistrationFileMail;
+use App\Support\Messaging\SendFollowUpMessage;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
@@ -24,16 +27,32 @@ use Illuminate\Support\Facades\URL;
  */
 final class NotifyGuestOfRejectedFile
 {
+    public function __construct(
+        private readonly SendFollowUpMessage $sendFollowUpMessage,
+    ) {}
+
     public function handle(RegistrationFileRejected $rejected): void
     {
         $file = $rejected->file;
         $registration = $file->registration_id !== null ? Registration::query()->find($file->registration_id) : null;
 
-        if ($registration === null || $registration->email === '') {
+        if ($registration === null) {
             return;
         }
 
         $event = Event::query()->with('organization')->findOrFail($file->event_id);
+
+        // WhatsApp au même rang que l'e-mail (D1).
+        $this->sendFollowUpMessage->sendWhatsapp(
+            $event->organization,
+            $registration->contact_id === null ? null : Contact::query()->find($registration->contact_id),
+            FollowUpMessage::RejectedFile,
+            $event,
+        );
+
+        if ($registration->email === '' || ! $this->sendFollowUpMessage->sendsEmail($event->organization)) {
+            return;
+        }
         $policy = new EventEditPolicy($event->allow_guest_edit, $event->edit_deadline, $event->timezone);
 
         $editUrl = $policy->isLocked() ? null : URL::temporarySignedRoute(

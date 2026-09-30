@@ -9,10 +9,14 @@ use App\Domain\Event\Models\Event;
 use App\Domain\Messaging\Actions\CreateWhatsappTemplate;
 use App\Domain\Messaging\Actions\DeleteWhatsappTemplate;
 use App\Domain\Messaging\Actions\UpdateWhatsappTemplate;
+use App\Domain\Messaging\Models\FollowUpChannel;
+use App\Domain\Messaging\Models\FollowUpMessage;
+use App\Domain\Messaging\Models\WhatsappFollowUpTemplate;
 use App\Domain\Messaging\Models\WhatsappTemplate;
 use App\Domain\Organization\Models\Organization;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\WhatsappTemplate\PreviewWhatsappTemplateRequest;
+use App\Http\Requests\Organizer\WhatsappTemplate\SaveFollowUpMessagesRequest;
 use App\Http\Requests\Organizer\WhatsappTemplate\SaveWhatsappTemplateRequest;
 use App\Http\Requests\Organizer\WhatsappTemplate\SendTestWhatsappRequest;
 use App\Support\Messaging\ResolveWhatsappTemplateVariables;
@@ -44,11 +48,50 @@ final class WhatsappTemplateController extends Controller
                 'updated_at' => $template->updated_at->toIso8601String(),
             ]);
 
+        $organization = $this->currentOrganization();
+
         return Inertia::render('WhatsappTemplates/Index', [
             'templates' => $templates,
             'contacts' => $this->contactOptions(),
             'events' => $this->eventOptions(),
+            // Messages de suivi (D1) : leur canal et le modèle approuvé de chacun.
+            'followUp' => [
+                'channel' => $organization->follow_up_channel ?? FollowUpChannel::Email->value,
+                'channels' => FollowUpChannel::options(),
+                'messages' => FollowUpMessage::options(),
+                'templates' => WhatsappFollowUpTemplate::query()
+                    ->get()
+                    ->mapWithKeys(fn (WhatsappFollowUpTemplate $row): array => [$row->purpose->value => $row->whatsapp_template_id]),
+            ],
         ]);
+    }
+
+    /**
+     * Canal des messages de suivi et modèle WhatsApp de chaque cas.
+     */
+    public function saveFollowUp(SaveFollowUpMessagesRequest $request): RedirectResponse
+    {
+        $organization = $this->currentOrganization();
+        Gate::authorize('create', [WhatsappTemplate::class, $organization]);
+
+        $organization->update(['follow_up_channel' => $request->validated('channel')]);
+
+        foreach (FollowUpMessage::cases() as $message) {
+            $templateId = $request->validated("templates.{$message->value}");
+
+            if ($templateId === null || $templateId === '') {
+                WhatsappFollowUpTemplate::query()->where('purpose', $message)->delete();
+
+                continue;
+            }
+
+            WhatsappFollowUpTemplate::query()->updateOrCreate(
+                ['organization_id' => $organization->id, 'purpose' => $message],
+                ['whatsapp_template_id' => WhatsappTemplate::query()->findOrFail((int) $templateId)->id],
+            );
+        }
+
+        return back()->with('status', 'follow-up-saved');
     }
 
     public function store(SaveWhatsappTemplateRequest $request, CreateWhatsappTemplate $action): RedirectResponse

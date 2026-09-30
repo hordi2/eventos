@@ -454,6 +454,7 @@ Route::middleware('auth')->group(function (): void {
 
         Route::get('whatsapp-templates', [WhatsappTemplateController::class, 'index'])->name('whatsapp-templates.index');
         Route::post('whatsapp-templates', [WhatsappTemplateController::class, 'store'])->name('whatsapp-templates.store');
+        Route::post('whatsapp-templates/follow-up', [WhatsappTemplateController::class, 'saveFollowUp'])->name('whatsapp-templates.follow-up');
         Route::patch('whatsapp-templates/{whatsappTemplate}', [WhatsappTemplateController::class, 'update'])->name('whatsapp-templates.update');
         Route::delete('whatsapp-templates/{whatsappTemplate}', [WhatsappTemplateController::class, 'destroy'])->name('whatsapp-templates.destroy');
         Route::get('whatsapp-templates/{whatsappTemplate}/preview', [WhatsappTemplateController::class, 'preview'])->name('whatsapp-templates.preview');
