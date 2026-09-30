@@ -185,6 +185,7 @@ final class EventController extends Controller
             'venueId' => $event->venue_id,
             'venueName' => $event->venue?->name,
             'venueAddress' => $event->venue?->address,
+            'externalInvitationUrl' => $event->external_invitation_url,
         ];
     }
 

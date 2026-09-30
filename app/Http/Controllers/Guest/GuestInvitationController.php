@@ -9,6 +9,7 @@ use App\Domain\Event\Models\Event;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Guest\FindInvitationRequest;
 use App\Support\GuestList\IdentifyGuestInvitee;
+use App\Support\Invitation\ExternalInvitationLink;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -52,6 +53,14 @@ final class GuestInvitationController extends Controller
     private function remember(Request $request, EventInvitee $invitee, string $organization, string $event): RedirectResponse
     {
         $request->session()->put("guest_invitee.{$invitee->event_id}", ['id' => $invitee->id, 'token' => $invitee->invitation_token]);
+
+        // Invitation hébergée ailleurs : l'invité y va directement, avec de
+        // quoi personnaliser la page (jeton, code QR, lien de réponse).
+        $external = app(ExternalInvitationLink::class)->urlFor($this->event($request), $invitee);
+
+        if ($external !== null) {
+            return redirect()->away($external);
+        }
 
         return redirect()->route('guest.registration.start', [$organization, $event]);
     }

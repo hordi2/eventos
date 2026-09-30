@@ -46,6 +46,7 @@ interface EventDraft {
     venueId: number | null;
     venueName: string | null;
     venueAddress: string | null;
+    externalInvitationUrl: string | null;
 }
 
 interface CreateEventPageProps {
@@ -146,6 +147,7 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
         venue_address: '',
         venue_access_instructions: '',
         venue_parking_info: '',
+        external_invitation_url: event?.externalInvitationUrl ?? '',
     });
 
     function selectVenueMode(mode: 'none' | 'existing' | 'new') {
@@ -485,6 +487,46 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                             onChange={(e) => setData('description', e.target.value)}
                         />
                         <InputError message={errors.description} />
+                    </div>
+
+                    {/* Invitation faite ailleurs : Itaza s'efface derrière le
+                        site de l'organisateur, et lui fournit ce qu'il ne
+                        peut pas produire — le code QR de chaque invité. */}
+                    <div>
+                        <InputLabel htmlFor="external_invitation_url">Site d'invitation externe (optionnel)</InputLabel>
+                        <p className="mb-2 text-xs text-ink-soft">
+                            Votre invitation est déjà en ligne ailleurs ? Collez son adresse : le lien personnel de chaque
+                            invité y mènera directement.
+                        </p>
+                        <TextInput
+                            id="external_invitation_url"
+                            type="url"
+                            value={data.external_invitation_url}
+                            onChange={(e) => setData('external_invitation_url', e.target.value)}
+                            placeholder="https://mon-mariage.example"
+                        />
+                        <InputError message={errors.external_invitation_url} />
+                        {data.external_invitation_url !== '' && (
+                            <div className="mt-3 rounded-card border border-line bg-bg-alt p-4 text-xs text-ink-soft">
+                                <p className="mb-2 text-ink">Itaza ajoute trois paramètres à cette adresse :</p>
+                                <ul className="mb-3 space-y-1">
+                                    <li>
+                                        <code className="text-ink">invitation</code> — le jeton de l'invité
+                                    </li>
+                                    <li>
+                                        <code className="text-ink">qr</code> — l'adresse de son code QR
+                                    </li>
+                                    <li>
+                                        <code className="text-ink">rsvp</code> — l'adresse de sa page de réponse
+                                    </li>
+                                </ul>
+                                <p className="mb-2 text-ink">À donner à qui a fait votre site :</p>
+                                <pre className="overflow-x-auto text-[11px] whitespace-pre-wrap text-ink">
+{`<img src="{qr}" alt="Votre code d'entrée">
+<a href="{rsvp}">Confirmer ma présence</a>`}
+                                </pre>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex gap-4">

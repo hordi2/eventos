@@ -48,6 +48,21 @@ final class UpdateEventRequest extends FormRequest
             'venue_address' => ['nullable', 'string', 'required_with:venue_name'],
             'venue_access_instructions' => ['nullable', 'string'],
             'venue_parking_info' => ['nullable', 'string'],
+            // Invitation hébergée ailleurs : une adresse complète, en https
+            // — un site d'invitation se visite depuis un téléphone, et un
+            // lien non chiffré y est bloqué par les navigateurs modernes.
+            'external_invitation_url' => ['nullable', 'url', 'starts_with:https://', 'max:2048'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'external_invitation_url.url' => "L'adresse de votre site d'invitation doit être complète, par exemple https://mon-mariage.example.",
+            'external_invitation_url.starts_with' => "L'adresse doit commencer par https://.",
         ];
     }
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Guest\FormThemeStyleController;
 use App\Http\Controllers\Guest\GuestInvitationController;
+use App\Http\Controllers\Guest\InvitationPdfController;
+use App\Http\Controllers\Guest\InvitationQrController;
 use App\Http\Controllers\Guest\PersonalAgendaController;
 use App\Http\Controllers\Guest\ProposalController as GuestProposalController;
 use App\Http\Controllers\Guest\RegistrationController;
@@ -434,6 +436,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/seating/export/lists', [SeatingController::class, 'exportLists'])->name('events.seating.export.lists');
 
         Route::get('events/{event}/page', [PageController::class, 'edit'])->name('events.page.edit');
+        Route::get('events/{event}/faire-part.pdf', [PageController::class, 'invitationPdf'])->name('events.page.invitation-pdf');
         Route::patch('events/{event}/page', [PageController::class, 'update'])->name('events.page.update');
         Route::post('events/{event}/page/banner', [PageController::class, 'uploadBanner'])->name('events.page.banner');
         Route::post('events/{event}/page/images', [PageController::class, 'uploadImage'])->name('events.page.images');
@@ -494,6 +497,12 @@ Route::middleware(['resolve-guest-event', 'guest-locale'])
         // Événement réservé à sa liste d'invités : lien personnel, ou
         // recherche par e-mail ou numéro WhatsApp (débit limité).
         Route::get('invitation/{invitationToken}', [GuestInvitationController::class, 'open'])->name('invitation.open');
+        // Faire-part en PDF : le même que la page web, à garder ou à
+        // imprimer. Débit limité, il coûte un rendu (§7 du CLAUDE.md).
+        Route::get('invitation/{invitationToken}/faire-part.pdf', [InvitationPdfController::class, 'forInvitee'])->middleware('throttle:20,1')->name('invitation.pdf');
+        // Code QR personnel, servi en image : c'est lui qu'une invitation
+        // hébergée ailleurs pose dans une balise <img>.
+        Route::get('invitation/{invitationToken}/qr.png', InvitationQrController::class)->middleware('throttle:60,1')->name('invitation.qr');
         Route::get('retrouver-mon-invitation', [GuestInvitationController::class, 'find'])->name('invitation.find');
         Route::post('retrouver-mon-invitation', [GuestInvitationController::class, 'lookup'])->middleware('throttle:10,1')->name('invitation.lookup');
 
@@ -536,6 +545,7 @@ Route::middleware(['resolve-guest-event', 'guest-locale'])
             // celui des sessions qu'il a choisies.
             Route::get('inscriptions/{registration}/mon-agenda', [PersonalAgendaController::class, 'show'])->whereNumber('registration')->name('agenda');
             Route::get('inscriptions/{registration}/mon-agenda.ics', [PersonalAgendaController::class, 'calendar'])->whereNumber('registration')->name('agenda.ics');
+            Route::get('inscriptions/{registration}/faire-part.pdf', [InvitationPdfController::class, 'forRegistration'])->whereNumber('registration')->middleware('throttle:20,1')->name('invitation-pdf');
         });
     });
 
