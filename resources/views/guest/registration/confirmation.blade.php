@@ -90,6 +90,15 @@
             </div>
         @endif
 
+        {{-- Faire-part en PDF : la même invitation, à garder ou à imprimer. --}}
+        @if (($invitationPdfUrl ?? null) && $registration->status->value !== 'declined')
+            <div class="mb-8 flex justify-center">
+                <a href="{{ $invitationPdfUrl }}" class="inline-flex min-h-11 items-center rounded-pill border border-line px-5 py-2.5 text-sm font-medium text-ink">
+                    {{ __('Télécharger mon invitation (PDF)') }}
+                </a>
+            </div>
+        @endif
+
         {{-- Programme personnel (D6) : seulement pour qui a choisi des sessions. --}}
         @if (($agendaUrl ?? null) && $registration->status->value !== 'declined')
             <div class="mb-8 flex justify-center">

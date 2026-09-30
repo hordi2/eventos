@@ -316,6 +316,12 @@ final class RegistrationController extends Controller
             'cancelUrl' => $hideLinks ? null : $this->signedCancelUrl($organization, $event, $eventModel, $registration),
             // « Mon agenda » (D6) : proposé à qui a choisi au moins une session.
             'agendaUrl' => $this->personalAgendaUrl($eventModel, $registration),
+            // Faire-part en PDF : le même que la page, à garder ou imprimer.
+            'invitationPdfUrl' => URL::temporarySignedRoute(
+                'guest.registration.invitation-pdf',
+                $this->linkExpiry($eventModel),
+                [$organization, $event, $registration->id],
+            ),
             'qrCodes' => app(RenderAttendeeQrCodes::class)->handle($eventModel, $registration),
             'calendar' => [
                 'google' => app(EventCalendarLinks::class)->googleUrl($eventModel),

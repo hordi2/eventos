@@ -16,9 +16,12 @@ use App\Http\Requests\Organizer\Page\UpdatePageRequest;
 use App\Http\Requests\Organizer\Page\UploadPageBannerRequest;
 use App\Http\Requests\Organizer\Page\UploadPageImageRequest;
 use App\Models\User;
+use App\Support\Invitation\BuildInvitationPdf;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 
@@ -40,6 +43,22 @@ final class PageController extends Controller
                 'blocks' => $this->presentBlocks($page),
             ],
             'blockTypes' => PageBlockType::options(),
+        ]);
+    }
+
+    /**
+     * Faire-part en PDF, tel que le recevra un invité : de quoi le relire
+     * avant de l'envoyer. Sans invité désigné, il porte le lien public de
+     * l'événement et aucun code d'entrée.
+     */
+    public function invitationPdf(int $event, BuildInvitationPdf $buildInvitationPdf): Response
+    {
+        $eventModel = $this->findEvent($event);
+        Gate::authorize('updateEvents', $eventModel->organization);
+
+        return response($buildInvitationPdf->handle($eventModel), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.(Str::slug($eventModel->title) ?: 'invitation').'.pdf"',
         ]);
     }
 
