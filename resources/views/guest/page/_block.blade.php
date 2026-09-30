@@ -63,21 +63,24 @@
 
     @case('program')
         @if (($block['items'] ?? []) !== [])
-            <section class="mb-10">
-                <h2 class="mb-3 font-serif text-xl italic">{{ $blockTitle ?? __('Programme') }}</h2>
-                <ul class="space-y-3">
-                    @foreach ($block['items'] as $item)
-                        <li class="flex gap-4">
-                            <span class="w-16 shrink-0 font-medium">{{ $item['time'] ?? '' }}</span>
-                            <div>
-                                <p class="font-medium">{{ $item['title'] ?? '' }}</p>
-                                @if (! empty($item['description']))
-                                    <p class="text-sm text-ink-soft">{{ $item['description'] }}</p>
-                                @endif
-                            </div>
+            {{-- Le programme comme une affiche : chaque moment numéroté,
+                 son heure au-dessus de son titre. --}}
+            <section class="mb-14 text-center">
+                <h2 class="mb-8 font-serif text-2xl italic">{{ $blockTitle ?? __('Programme') }}</h2>
+                <ol class="mx-auto max-w-[30rem] space-y-8">
+                    @foreach ($block['items'] as $index => $item)
+                        <li>
+                            <p class="font-label text-[0.6rem] tracking-[0.25em] text-ink-soft">{{ str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) }}</p>
+                            @if (! empty($item['time']))
+                                <p class="mt-2 font-serif text-2xl text-ink">{{ $item['time'] }}</p>
+                            @endif
+                            <p class="mt-1 font-label text-xs tracking-[0.2em] text-ink uppercase">{{ $item['title'] ?? '' }}</p>
+                            @if (! empty($item['description']))
+                                <p class="mt-2 text-sm text-ink-soft">{{ $item['description'] }}</p>
+                            @endif
                         </li>
                     @endforeach
-                </ul>
+                </ol>
             </section>
         @endif
         @break
@@ -190,23 +193,42 @@
 
     @case('countdown')
         {{-- Compte à rebours : calculé chez l'invité, à partir de l'instant
-             de début envoyé en UTC — jamais l'heure du serveur. --}}
+             de début envoyé en UTC — jamais l'heure du serveur. Quatre
+             cases, comme sur un faire-part : le chiffre se lit de loin,
+             l'unité se lit de près. --}}
         <section
-            class="mb-10 rounded-card bg-bg px-4 py-6 text-center ring-1 ring-line"
+            class="mb-14 text-center"
             x-data="{
-                left: '',
+                parts: { days: '00', hours: '00', minutes: '00', seconds: '00' },
+                started: false,
                 tick() {
                     const total = Math.max(0, Math.floor((new Date('{{ $event->start_at->toIso8601String() }}') - new Date()) / 1000));
-                    const days = Math.floor(total / 86400);
-                    const hours = Math.floor((total % 86400) / 3600);
-                    const minutes = Math.floor((total % 3600) / 60);
-                    this.left = total === 0 ? '{{ __("C'est aujourd'hui !") }}' : `${days} {{ __('j') }} ${hours} {{ __('h') }} ${minutes} {{ __('min') }}`;
+                    this.started = total === 0;
+                    const pad = (value) => String(value).padStart(2, '0');
+                    this.parts = {
+                        days: pad(Math.floor(total / 86400)),
+                        hours: pad(Math.floor((total % 86400) / 3600)),
+                        minutes: pad(Math.floor((total % 3600) / 60)),
+                        seconds: pad(total % 60),
+                    };
                 },
             }"
-            x-init="tick(); setInterval(() => tick(), 30000)"
+            x-init="tick(); setInterval(() => tick(), 1000)"
         >
-            <h2 class="mb-2 font-serif text-xl italic">{{ $blockTitle ?? __('Compte à rebours') }}</h2>
-            <p class="text-2xl font-medium text-ink" x-text="left">—</p>
+            <h2 class="mb-6 font-label text-[0.68rem] tracking-[0.25em] text-ink-soft uppercase">
+                {{ $blockTitle ?? __('Le grand jour approche') }}
+            </h2>
+
+            <p x-show="started" x-cloak class="font-serif text-3xl italic">{{ __("C'est aujourd'hui !") }}</p>
+
+            <div x-show="! started" class="mx-auto grid max-w-[26rem] grid-cols-4 gap-3">
+                @foreach ([['days', __('Jours')], ['hours', __('Heures')], ['minutes', __('Minutes')], ['seconds', __('Secondes')]] as [$key, $unit])
+                    <div class="rounded-card border border-line bg-bg px-2 py-4">
+                        <p class="font-serif text-2xl tabular-nums text-ink sm:text-3xl" x-text="parts.{{ $key }}">00</p>
+                        <p class="mt-1 font-label text-[0.6rem] tracking-[0.15em] text-ink-soft uppercase">{{ $unit }}</p>
+                    </div>
+                @endforeach
+            </div>
         </section>
         @break
 @endswitch
