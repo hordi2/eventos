@@ -27,6 +27,7 @@ final class SaveSubEventRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'start_at' => ['required', 'date'],
             'end_at' => ['required', 'date', 'after:start_at'],
+            'room' => ['nullable', 'string', 'max:120'],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:1000000'],
             'allow_waitlist' => ['boolean'],
         ];

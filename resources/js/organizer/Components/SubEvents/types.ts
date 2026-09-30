@@ -5,6 +5,8 @@ export interface SubEventRow {
     endAt: string;
     schedule: string;
     capacity: number | null;
+    room: string | null;
+    speakers: string[];
     allowWaitlist: boolean;
     people: number;
     confirmed: number;

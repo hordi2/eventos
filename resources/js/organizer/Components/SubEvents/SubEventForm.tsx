@@ -17,6 +17,7 @@ interface SubEventDraft {
     start_at: string;
     end_at: string;
     capacity: string;
+    room: string;
     allow_waitlist: boolean;
 }
 
@@ -30,6 +31,7 @@ export default function SubEventForm({ eventId, subEvent, onDone }: SubEventForm
         start_at: subEvent?.startAt ?? '',
         end_at: subEvent?.endAt ?? '',
         capacity: subEvent?.capacity != null ? String(subEvent.capacity) : '',
+        room: subEvent?.room ?? '',
         allow_waitlist: subEvent?.allowWaitlist ?? false,
     });
     const prefix = subEvent ? `sub_event_${subEvent.id}` : 'sub_event_new';
@@ -95,6 +97,16 @@ export default function SubEventForm({ eventId, subEvent, onDone }: SubEventForm
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2 sm:items-end">
+                <div>
+                    <InputLabel htmlFor={`${prefix}_room`}>Salle (optionnel)</InputLabel>
+                    <TextInput
+                        id={`${prefix}_room`}
+                        value={form.data.room}
+                        onChange={(changeEvent) => form.setData('room', changeEvent.target.value)}
+                        placeholder="Grand amphithéâtre"
+                    />
+                    <InputError message={form.errors.room} />
+                </div>
                 <div>
                     <InputLabel htmlFor={`${prefix}_capacity`}>Capacité (personnes)</InputLabel>
                     <TextInput

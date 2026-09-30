@@ -51,6 +51,7 @@ function buildSections(nav: EventNav): SidebarSection[] {
             title: 'Personnaliser',
             items: [
                 { label: "Site web de l'événement", icon: 'website', linkKey: 'website' },
+                { label: 'Intervenants et programme', icon: 'team', linkKey: 'speakers' },
                 { label: 'Formulaires', icon: 'form', linkKey: 'form' },
                 { label: "Paramètres de l'événement", icon: 'settings', linkKey: 'settings' },
                 {

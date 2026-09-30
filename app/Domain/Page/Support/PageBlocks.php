@@ -78,7 +78,7 @@ final class PageBlocks
             PageBlockType::Video => ['url' => self::text($block['url'] ?? null)],
             PageBlockType::Program => ['items' => self::items($block['items'] ?? null, ['time', 'title', 'description'])],
             PageBlockType::Faq => ['items' => self::items($block['items'] ?? null, ['question', 'answer'])],
-            PageBlockType::Venue, PageBlockType::Countdown => [],
+            PageBlockType::Venue, PageBlockType::Countdown, PageBlockType::Speakers, PageBlockType::Sessions => [],
         };
     }
 

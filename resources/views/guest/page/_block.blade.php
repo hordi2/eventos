@@ -121,6 +121,73 @@
         @endif
         @break
 
+    @case('speakers')
+        @if ($page->speakers !== [])
+            <section class="mb-10">
+                <h2 class="mb-3 font-serif text-xl italic">{{ $blockTitle ?? __('Intervenants') }}</h2>
+                <ul class="grid gap-4 sm:grid-cols-2">
+                    @foreach ($page->speakers as $speaker)
+                        <li class="rounded-card bg-bg p-4 ring-1 ring-line">
+                            <div class="mb-2 flex items-center gap-3">
+                                @if ($speaker['photoUrl'])
+                                    <img src="{{ $speaker['photoUrl'] }}" alt="" loading="lazy" class="h-14 w-14 rounded-full object-cover">
+                                @endif
+                                <div class="min-w-0">
+                                    <p class="font-medium text-ink">{{ $speaker['name'] }}</p>
+                                    <p class="text-sm text-ink-soft">{{ collect([$speaker['role'], $speaker['company']])->filter()->implode(' · ') }}</p>
+                                </div>
+                            </div>
+                            @if ($speaker['bio'])
+                                <p class="text-sm whitespace-pre-line text-ink-soft">{{ $speaker['bio'] }}</p>
+                            @endif
+                            @if ($speaker['sessions'] !== [])
+                                <p class="mt-2 text-xs text-ink-soft">{{ __('Intervient dans :sessions', ['sessions' => implode(', ', $speaker['sessions'])]) }}</p>
+                            @endif
+                            <div class="mt-2 flex flex-wrap gap-3 text-sm">
+                                @if ($speaker['websiteUrl'])
+                                    <a href="{{ $speaker['websiteUrl'] }}" target="_blank" rel="noopener nofollow" class="text-accent underline">{{ __('Site web') }}</a>
+                                @endif
+                                @if ($speaker['linkedinUrl'])
+                                    <a href="{{ $speaker['linkedinUrl'] }}" target="_blank" rel="noopener nofollow" class="text-accent underline">LinkedIn</a>
+                                @endif
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
+        @break
+
+    @case('sessions')
+        @if ($page->sessions !== [])
+            <section class="mb-10">
+                <h2 class="mb-3 font-serif text-xl italic">{{ $blockTitle ?? __('Programme') }}</h2>
+                @php($days = collect($page->sessions)->groupBy('day'))
+                @foreach ($days as $day => $daySessions)
+                    @if ($days->count() > 1)
+                        <h3 class="mt-4 mb-2 font-medium text-ink">{{ $day }}</h3>
+                    @endif
+                    <ul class="space-y-3">
+                        @foreach ($daySessions as $session)
+                            <li class="flex gap-4">
+                                <span class="w-28 shrink-0 text-sm font-medium text-ink">{{ $session['time'] }}</span>
+                                <div>
+                                    <p class="font-medium text-ink">{{ $session['title'] }}</p>
+                                    @if ($session['room'])
+                                        <p class="text-sm text-ink-soft">{{ $session['room'] }}</p>
+                                    @endif
+                                    @if ($session['speakers'] !== [])
+                                        <p class="text-sm text-ink-soft">{{ __('Avec :speakers', ['speakers' => implode(', ', $session['speakers'])]) }}</p>
+                                    @endif
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endforeach
+            </section>
+        @endif
+        @break
+
     @case('countdown')
         {{-- Compte à rebours : calculé chez l'invité, à partir de l'instant
              de début envoyé en UTC — jamais l'heure du serveur. --}}

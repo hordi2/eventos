@@ -22,6 +22,7 @@ export type EventNavLinkKey =
     | 'checklist'
     | 'responses'
     | 'subEvents'
+    | 'speakers'
     | 'answers'
     | 'approvals'
     | 'files'

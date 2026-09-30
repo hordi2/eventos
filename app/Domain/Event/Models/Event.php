@@ -12,6 +12,7 @@ use Database\Factories\EventFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -39,6 +40,7 @@ final class Event extends Model
         'locale',
         'is_online',
         'online_url',
+        'room',
         'venue_id',
         'parent_event_id',
         'capacity',
@@ -116,6 +118,16 @@ final class Event extends Model
     public function subEvents(): HasMany
     {
         return $this->hasMany(self::class, 'parent_event_id');
+    }
+
+    /**
+     * Intervenants de cette session (D6).
+     *
+     * @return BelongsToMany<Speaker, $this>
+     */
+    public function speakers(): BelongsToMany
+    {
+        return $this->belongsToMany(Speaker::class, 'session_speakers', 'event_id', 'speaker_id')->withTimestamps();
     }
 
     public function isSubEvent(): bool

@@ -18,6 +18,30 @@ use App\Support\Capacity\Models\CapacityHoldStatus;
 final class PresentSubEvents
 {
     /**
+     * Sessions qui se chevauchent dans une même salle.
+     *
+     * @param  list<Event>  $sessions
+     * @return list<array{0: Event, 1: Event}>
+     */
+    private function roomClashes(array $sessions): array
+    {
+        $clashes = [];
+
+        foreach ($sessions as $index => $session) {
+            foreach (array_slice($sessions, $index + 1) as $other) {
+                $sameRoom = $session->room !== null && $other->room !== null
+                    && mb_strtolower(trim($session->room)) === mb_strtolower(trim($other->room));
+
+                if ($sameRoom && $session->start_at->lessThan($other->end_at) && $other->start_at->lessThan($session->end_at)) {
+                    $clashes[] = [$session, $other];
+                }
+            }
+        }
+
+        return $clashes;
+    }
+
+    /**
      * @return list<array{
      *     id: int, title: string, startAt: string, endAt: string, schedule: string,
      *     capacity: ?int, allowWaitlist: bool, people: int, confirmed: int, waitlisted: int,
@@ -26,7 +50,7 @@ final class PresentSubEvents
      */
     public function handle(Event $parent): array
     {
-        $subEvents = $parent->subEvents()->orderBy('start_at')->get();
+        $subEvents = $parent->subEvents()->with('speakers')->orderBy('start_at')->get();
         $ids = $subEvents->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
 
         $people = CapacityHold::query()
@@ -52,6 +76,13 @@ final class PresentSubEvents
             $conflicts[$second->id][] = $first->title;
         }
 
+        // Deux sessions dans la même salle au même moment : le public ne
+        // peut pas être aux deux, et la salle encore moins (D6).
+        foreach ($this->roomClashes($subEvents->all()) as [$first, $second]) {
+            $conflicts[$first->id][] = "{$second->title} (même salle)";
+            $conflicts[$second->id][] = "{$first->title} (même salle)";
+        }
+
         return $subEvents->map(function (Event $subEvent) use ($people, $counts, $conflicts): array {
             $start = $subEvent->start_at->setTimezone($subEvent->timezone);
             $end = $subEvent->end_at->setTimezone($subEvent->timezone);
@@ -66,6 +97,8 @@ final class PresentSubEvents
                 'endAt' => $end->format('Y-m-d\TH:i'),
                 'schedule' => $start->translatedFormat('l j F Y \à H\hi').' – '.$end->translatedFormat($start->isSameDay($end) ? 'H\hi' : 'l j F \à H\hi'),
                 'capacity' => $subEvent->capacity,
+                'room' => $subEvent->room,
+                'speakers' => $subEvent->speakers->pluck('name')->values()->all(),
                 'allowWaitlist' => $subEvent->allow_waitlist,
                 'people' => (int) ($people[(string) $subEvent->id] ?? 0),
                 // Une demande en attente tient déjà sa place dans la session.

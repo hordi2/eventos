@@ -8,6 +8,8 @@ use App\Domain\Event\Models\Event;
 use App\Domain\Page\Data\EventPageData;
 use App\Domain\Page\Models\Page;
 use App\Domain\Page\Support\PageBlocks;
+use App\Support\Events\PresentEventSessions;
+use App\Support\Events\PresentEventSpeakers;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -46,6 +48,8 @@ final class GetEventPage
             programItems: $page !== null ? $page->program_items : [],
             faqItems: $page !== null ? $page->faq_items : [],
             blocks: PageBlocks::resolve($page),
+            speakers: app(PresentEventSpeakers::class)->handle($event),
+            sessions: app(PresentEventSessions::class)->handle($event),
             organizationLogoUrl: $event->organization->logo_path !== null
                 ? Storage::disk('public')->url($event->organization->logo_path)
                 : null,

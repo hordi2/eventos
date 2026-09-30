@@ -16,6 +16,8 @@ enum PageBlockType: string
     case Venue = 'venue';
     case Video = 'video';
     case Countdown = 'countdown';
+    case Speakers = 'speakers';
+    case Sessions = 'sessions';
 
     public function label(): string
     {
@@ -27,6 +29,8 @@ enum PageBlockType: string
             self::Venue => 'Lieu et plan',
             self::Video => 'Vidéo',
             self::Countdown => 'Compte à rebours',
+            self::Speakers => 'Intervenants',
+            self::Sessions => 'Programme des sessions',
         };
     }
 
@@ -40,6 +44,8 @@ enum PageBlockType: string
             self::Venue => "L'adresse de l'événement et son plan.",
             self::Video => 'Une vidéo YouTube ou Vimeo, chargée au clic.',
             self::Countdown => "Le temps qu'il reste avant le début.",
+            self::Speakers => 'Les fiches des intervenants, avec photo et biographie.',
+            self::Sessions => 'Vos sessions, avec leur horaire, leur salle et leurs intervenants.',
         };
     }
 

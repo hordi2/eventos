@@ -66,6 +66,7 @@ use App\Http\Controllers\Organizer\Settings\ProfileController;
 use App\Http\Controllers\Organizer\Settings\ReferralController;
 use App\Http\Controllers\Organizer\Settings\SecurityController;
 use App\Http\Controllers\Organizer\Settings\WhiteLabelController;
+use App\Http\Controllers\Organizer\SpeakerController;
 use App\Http\Controllers\Organizer\StockPhotoController;
 use App\Http\Controllers\Organizer\SubEventController;
 use App\Http\Controllers\Organizer\SwitchOrganizationController;
@@ -268,6 +269,13 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/edit', [EventController::class, 'edit'])->name('events.edit');
         Route::patch('events/{event}', [EventController::class, 'update'])->name('events.update');
         Route::post('events/{event}/duplicate', [EventController::class, 'duplicate'])->name('events.duplicate');
+
+        // Intervenants et programme (D6).
+        Route::get('events/{event}/intervenants', [SpeakerController::class, 'index'])->name('events.speakers.index');
+        Route::post('events/{event}/intervenants', [SpeakerController::class, 'store'])->name('events.speakers.store');
+        Route::patch('events/{event}/intervenants/{speaker}', [SpeakerController::class, 'update'])->whereNumber('speaker')->name('events.speakers.update');
+        Route::delete('events/{event}/intervenants/{speaker}', [SpeakerController::class, 'destroy'])->whereNumber('speaker')->name('events.speakers.destroy');
+        Route::post('events/{event}/intervenants/{speaker}/photo', [SpeakerController::class, 'uploadPhoto'])->whereNumber('speaker')->name('events.speakers.photo');
 
         Route::get('events/{event}/sub-events', [SubEventController::class, 'index'])->name('events.sub-events.index');
         Route::post('events/{event}/sub-events', [SubEventController::class, 'store'])->name('events.sub-events.store');
