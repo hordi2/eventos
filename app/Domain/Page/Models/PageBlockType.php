@@ -25,6 +25,7 @@ enum PageBlockType: string
     case EntryQr = 'entry_qr';
     case Gallery = 'gallery';
     case Rsvp = 'rsvp';
+    case FullPhoto = 'full_photo';
 
     public function label(): string
     {
@@ -45,6 +46,7 @@ enum PageBlockType: string
             self::EntryQr => 'Votre entrée (code QR)',
             self::Gallery => 'Galerie photo',
             self::Rsvp => 'Confirmez votre présence',
+            self::FullPhoto => 'Photo pleine page',
         };
     }
 
@@ -67,6 +69,7 @@ enum PageBlockType: string
             self::EntryQr => "Le code d'entrée de l'invité, à présenter à l'accueil.",
             self::Gallery => 'Vos photos, en grille, agrandies au clic.',
             self::Rsvp => 'Les trois réponses possibles, en gros boutons.',
+            self::FullPhoto => "Une photo qui occupe tout l'écran, avec un mot par-dessus.",
         };
     }
 

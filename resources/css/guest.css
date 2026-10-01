@@ -240,3 +240,43 @@ h3 {
         left: -0.25rem;
     }
 }
+
+/*
+ * Bloc posé sur un fond sombre (photo ou couleur) : le texte, les filets et
+ * les cartes passent en clair. Les classes visées sont celles des blocs —
+ * on ne redéfinit pas le thème entier, seulement ce qui se lit par-dessus.
+ */
+.itaza-on-dark,
+.itaza-on-dark h2,
+.itaza-on-dark .text-ink {
+    color: #ffffff;
+}
+
+.itaza-on-dark .text-ink-soft {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.itaza-on-dark .border-line {
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+.itaza-on-dark .bg-bg {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.itaza-on-dark .ring-line {
+    --tw-ring-color: rgba(255, 255, 255, 0.22);
+}
+
+.itaza-on-dark .bg-bg-alt {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.itaza-on-dark .bg-ink {
+    background-color: #ffffff;
+    color: #1b1611;
+}
+
+.itaza-on-dark .text-bg {
+    color: #1b1611;
+}

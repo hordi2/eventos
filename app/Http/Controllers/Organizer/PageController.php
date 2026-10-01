@@ -116,6 +116,15 @@ final class PageController extends Controller
             fn (array $block): array => [
                 ...$block,
                 'url' => isset($block['path']) ? Storage::disk('public')->url($block['path']) : null,
+                'backgroundUrl' => isset($block['background']) ? Storage::disk('public')->url($block['background']) : null,
+                // Chaque photo de galerie porte aussi son adresse d'aperçu.
+                'items' => array_map(
+                    fn (array $item): array => [
+                        ...$item,
+                        'url' => isset($item['path']) ? Storage::disk('public')->url($item['path']) : null,
+                    ],
+                    $block['items'] ?? [],
+                ),
             ],
             PageBlocks::resolve($page),
         );

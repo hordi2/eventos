@@ -549,4 +549,34 @@
         </section>
         @break
 
+    @case('full_photo')
+        {{-- Photo pleine page : elle occupe tout l'écran, recadrée au
+             centre quel que soit le format — portrait sur téléphone,
+             paysage sur ordinateur. Le mot, s'il y en a un, se lit par
+             dessus. --}}
+        @if (! empty($block['path']))
+            <section class="itaza-section relative -mx-5 isolate flex min-h-[100svh] items-end overflow-hidden">
+                <img
+                    src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($block['path']) }}"
+                    alt="{{ $blockTitle ?? '' }}"
+                    loading="lazy"
+                    class="absolute inset-0 -z-20 h-full w-full object-cover"
+                >
+
+                @if ($blockTitle || ! empty($block['body']))
+                    <div aria-hidden="true" class="absolute inset-0 -z-10 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
+
+                    <div class="relative w-full px-6 pb-16 text-center text-white">
+                        @if ($blockTitle)
+                            <p class="font-serif text-3xl italic sm:text-4xl">{{ $blockTitle }}</p>
+                        @endif
+                        @if (! empty($block['body']))
+                            <p class="mx-auto mt-3 max-w-[30rem] text-sm text-white/85">{{ $block['body'] }}</p>
+                        @endif
+                    </div>
+                @endif
+            </section>
+        @endif
+        @break
+
 @endswitch

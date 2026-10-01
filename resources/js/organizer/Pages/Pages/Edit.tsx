@@ -23,6 +23,12 @@ interface Block {
     id: string;
     type: string;
     title: string | null;
+    // Fond du bloc : image de la bibliothèque, couleur, voile et couleur du texte.
+    background?: string | null;
+    backgroundUrl?: string | null;
+    backgroundColor?: string | null;
+    backgroundOverlay?: number;
+    textTone?: 'light' | 'dark';
     body?: string | null;
     path?: string | null;
     url?: string | null;
@@ -62,6 +68,10 @@ function emptyBlock(type: string): Block {
         url: null,
         alt: null,
         items: type === 'program' || type === 'faq' || type === 'details' || type === 'gallery' ? [{}] : [],
+        background: null,
+        backgroundColor: null,
+        backgroundOverlay: 45,
+        textTone: 'dark',
     };
 }
 
@@ -134,6 +144,20 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
                 i === blockIndex ? { ...block, items: (block.items ?? []).map((item, j) => (j === itemIndex ? { ...item, ...changes } : item)) } : block,
             ),
         );
+    }
+
+    /** Fond d'un bloc : même bibliothèque que les blocs image. */
+    async function uploadBackground(index: number, file: File) {
+        const formData = new FormData();
+        formData.append('image', file);
+        setUploading(true);
+
+        try {
+            const response = await window.axios.post<{ path: string; url: string }>(`/events/${event.id}/page/images`, formData);
+            update(index, { background: response.data.path, backgroundUrl: response.data.url });
+        } finally {
+            setUploading(false);
+        }
     }
 
     /** Photo d'une galerie : même bibliothèque que les blocs image. */
@@ -385,6 +409,121 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
                                             maxLength={255}
                                         />
                                     </div>
+                                </div>
+                            )}
+
+                            {/* Fond du bloc : ce qui se voit derrière, et la
+                                couleur du texte posé dessus. */}
+                            <details className="mb-4 rounded-control border border-line px-4 py-3">
+                                <summary className="cursor-pointer text-sm text-ink-soft">Fond de ce bloc</summary>
+
+                                <div className="mt-4 space-y-4">
+                                    {block.backgroundUrl && <img src={block.backgroundUrl} alt="" className="aspect-[3/1] w-full rounded-control object-cover" />}
+
+                                    <input
+                                        type="file"
+                                        accept="image/png,image/jpeg,image/webp"
+                                        onChange={(changeEvent) => {
+                                            const file = changeEvent.target.files?.[0];
+
+                                            if (file) {
+                                                void uploadBackground(index, file);
+                                            }
+                                        }}
+                                        className="block w-full text-sm text-ink-soft file:mr-3 file:min-h-9 file:cursor-pointer file:rounded-pill file:border file:border-line file:bg-bg file:px-4 file:py-1.5 file:text-sm file:text-ink"
+                                    />
+
+                                    {block.background && (
+                                        <button
+                                            type="button"
+                                            onClick={() => update(index, { background: null, backgroundUrl: null })}
+                                            className="text-sm text-danger underline hover:no-underline"
+                                        >
+                                            Retirer l'image de fond
+                                        </button>
+                                    )}
+
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <InputLabel htmlFor={`bgcolor_${block.id}`}>Couleur de fond</InputLabel>
+                                            <div className="mt-1 flex items-center gap-3">
+                                                <input
+                                                    id={`bgcolor_${block.id}`}
+                                                    type="color"
+                                                    value={block.backgroundColor ?? '#1b1611'}
+                                                    onChange={(changeEvent) => update(index, { backgroundColor: changeEvent.target.value })}
+                                                    className="h-9 w-14 cursor-pointer rounded-control border border-line"
+                                                />
+                                                {block.backgroundColor && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => update(index, { backgroundColor: null })}
+                                                        className="text-sm text-ink-soft underline hover:no-underline"
+                                                    >
+                                                        Sans couleur
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <InputLabel htmlFor={`tone_${block.id}`}>Couleur du texte</InputLabel>
+                                            <Select
+                                                id={`tone_${block.id}`}
+                                                value={block.textTone ?? 'dark'}
+                                                onChange={(changeEvent) => update(index, { textTone: changeEvent.target.value as 'light' | 'dark' })}
+                                            >
+                                                <option value="dark">Texte sombre</option>
+                                                <option value="light">Texte clair</option>
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    {block.background && (
+                                        <div>
+                                            <InputLabel htmlFor={`overlay_${block.id}`}>
+                                                Voile sur l'image — {block.backgroundOverlay ?? 45} %
+                                            </InputLabel>
+                                            <input
+                                                id={`overlay_${block.id}`}
+                                                type="range"
+                                                min={0}
+                                                max={90}
+                                                step={5}
+                                                value={block.backgroundOverlay ?? 45}
+                                                onChange={(changeEvent) => update(index, { backgroundOverlay: Number(changeEvent.target.value) })}
+                                                className="mt-2 w-full accent-ink"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </details>
+
+                            {block.type === 'full_photo' && (
+                                <div className="space-y-3">
+                                    {block.url && <img src={block.url} alt="" className="aspect-[3/2] w-full rounded-card object-cover" />}
+                                    <input
+                                        type="file"
+                                        accept="image/png,image/jpeg,image/webp"
+                                        onChange={(changeEvent) => {
+                                            const file = changeEvent.target.files?.[0];
+
+                                            if (file) {
+                                                void uploadImage(index, file);
+                                            }
+                                        }}
+                                        className="block w-full text-sm text-ink-soft file:mr-3 file:min-h-9 file:cursor-pointer file:rounded-pill file:border file:border-line file:bg-bg file:px-4 file:py-1.5 file:text-sm file:text-ink"
+                                    />
+                                    <Textarea
+                                        value={block.body ?? ''}
+                                        onChange={(e) => update(index, { body: e.target.value })}
+                                        rows={2}
+                                        placeholder="Un mot par-dessus la photo (optionnel)"
+                                    />
+                                    <p className="text-xs text-ink-soft">
+                                        La photo occupe tout l'écran, recadrée au centre. Une image haute (portrait) tient mieux
+                                        sur téléphone ; prévoyez au moins 1600 px de large.
+                                    </p>
                                 </div>
                             )}
 

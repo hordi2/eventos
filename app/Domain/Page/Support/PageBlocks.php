@@ -59,11 +59,35 @@ final class PageBlocks
                 'id' => is_string($block['id'] ?? null) && $block['id'] !== '' ? $block['id'] : (string) Str::uuid(),
                 'type' => $type->value,
                 'title' => self::text($block['title'] ?? null),
+                ...self::background($block),
                 ...self::payload($type, $block),
             ];
         }
 
         return $normalized;
+    }
+
+    /**
+     * Fond d'un bloc, commun à tous les types : une image de la
+     * bibliothèque, l'épaisseur du voile posé dessus, et la couleur du
+     * texte — clair sur une photo sombre, sombre sur une photo claire.
+     *
+     * @param  array<string, mixed>  $block
+     * @return array{background: ?string, backgroundColor: ?string, backgroundOverlay: int, textTone: string}
+     */
+    private static function background(array $block): array
+    {
+        $tone = $block['textTone'] ?? null;
+        $color = self::text($block['backgroundColor'] ?? null);
+
+        return [
+            'background' => self::text($block['background'] ?? null),
+            // Couleur revérifiée : seul un code hexadécimal entre dans le
+            // style de la page.
+            'backgroundColor' => $color !== null && preg_match('/^#[0-9a-fA-F]{6}$/', $color) === 1 ? $color : null,
+            'backgroundOverlay' => max(0, min(90, is_numeric($block['backgroundOverlay'] ?? null) ? (int) $block['backgroundOverlay'] : 45)),
+            'textTone' => $tone === 'light' ? 'light' : 'dark',
+        ];
     }
 
     /**
@@ -85,6 +109,7 @@ final class PageBlocks
             PageBlockType::EntryQr, PageBlockType::Rsvp => ['body' => self::text($block['body'] ?? null) ?? ''],
             // Une photo de la galerie : son chemin dans la bibliothèque et sa légende.
             PageBlockType::Gallery => ['items' => self::items($block['items'] ?? null, ['path', 'description'])],
+            PageBlockType::FullPhoto => ['path' => self::text($block['path'] ?? null), 'body' => self::text($block['body'] ?? null) ?? ''],
             PageBlockType::Venue, PageBlockType::Countdown, PageBlockType::Speakers,
             PageBlockType::Sessions, PageBlockType::GuestBook => [],
         };

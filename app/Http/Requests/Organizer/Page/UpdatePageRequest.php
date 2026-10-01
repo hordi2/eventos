@@ -31,6 +31,11 @@ final class UpdatePageRequest extends FormRequest
             'blocks.*.id' => ['nullable', 'string', 'max:64'],
             'blocks.*.type' => ['required', Rule::enum(PageBlockType::class)],
             'blocks.*.title' => ['nullable', 'string', 'max:255'],
+            // Fond du bloc : image de la bibliothèque, voile et couleur du texte.
+            'blocks.*.background' => ['nullable', 'string', 'max:255'],
+            'blocks.*.backgroundColor' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'blocks.*.backgroundOverlay' => ['nullable', 'integer', 'min:0', 'max:90'],
+            'blocks.*.textTone' => ['nullable', 'string', 'in:light,dark'],
             'blocks.*.body' => ['nullable', 'string', 'max:5000'],
             // Chemin d'une image de la bibliothèque, jamais une adresse libre.
             'blocks.*.path' => ['nullable', 'string', 'max:255'],
