@@ -78,6 +78,14 @@
             {{ $start->format('H\hi') }}@if ($place) · {{ $place }}@endif
         </p>
 
+        @if (($invitee ?? null)?->contact !== null)
+            {{-- L'invité est nommé dès la couverture, comme sur un
+                 faire-part adressé. --}}
+            <p class="itaza-reveal mt-8 font-serif text-lg text-white/90 italic" style="--itaza-delay: 460ms">
+                {{ __('Invitation adressée à :name', ['name' => $invitee->contact->fullName()]) }}
+            </p>
+        @endif
+
         <a
             href="{{ $beginUrl }}"
             class="itaza-reveal mt-10 inline-flex min-h-12 items-center justify-center rounded-pill px-10 py-3 font-label text-xs tracking-[0.18em] text-ink uppercase transition-transform duration-300 hover:scale-[1.03] {{ $page->organizationPrimaryColor === null ? 'bg-white' : 'text-bg' }}"

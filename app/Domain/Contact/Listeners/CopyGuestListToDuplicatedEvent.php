@@ -7,7 +7,6 @@ namespace App\Domain\Contact\Listeners;
 use App\Domain\Contact\Models\EventInvitee;
 use App\Domain\Event\Data\EventDuplicationPart;
 use App\Domain\Event\Events\EventDuplicated;
-use Illuminate\Support\Str;
 
 /**
  * Recopie la liste d'invités d'un événement dupliqué : mêmes contacts,
@@ -31,7 +30,8 @@ final class CopyGuestListToDuplicatedEvent
                     'organization_id' => $invitee->organization_id,
                     'event_id' => $copyEventId,
                     'contact_id' => $invitee->contact_id,
-                    'invitation_token' => Str::random(40),
+                    // Le jeton se pose tout seul à la création (EventInvitee) :
+                    // la copie reçoit un lien neuf, au nom de son invité.
                     'group_key' => $invitee->group_key,
                     'companions_allowed' => $invitee->companions_allowed,
                     'cc_email' => $invitee->cc_email,

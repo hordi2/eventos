@@ -3,7 +3,14 @@
 @section('title', ($registration->status->value === 'declined' ? __('Réponse enregistrée') : __('Inscription confirmée')).' — '.$event->title)
 
 @section('content')
+    @php($guestName = trim("{$registration->first_name} {$registration->last_name}"))
+
     <div class="mx-auto max-w-lg px-4 py-16 text-center">
+        {{-- L'invité est nommé jusqu'au bout : il doit reconnaître sa
+             réponse, pas celle d'un inconnu. --}}
+        @if ($guestName !== '')
+            <p class="mb-5 font-label text-[0.68rem] tracking-[0.25em] text-ink-soft uppercase">{{ $guestName }}</p>
+        @endif
         @if ($registration->status->value === 'pending')
             {{-- Validation manuelle : la place est retenue, la confirmation viendra de l'organisateur. --}}
             <h1 class="mb-4 text-2xl">{{ __('Votre demande est bien arrivée') }}</h1>
@@ -11,7 +18,7 @@
                 {{ __(":event demande une validation : votre place est retenue le temps que l'organisateur examine votre demande. Vous recevrez un message dès qu'elle sera acceptée.", ['event' => $event->title]) }}
             </p>
         @elseif ($registration->status->value === 'declined')
-            <h1 class="mb-4 text-2xl">{{ $settings['decline_screen']['title'] !== '' ? $settings['decline_screen']['title'] : __('Merci pour votre réponse') }}</h1>
+            <h1 class="mb-4 text-2xl">{{ $settings['decline_screen']['title'] !== '' ? $settings['decline_screen']['title'] : ($guestName !== '' ? __('Merci pour votre réponse, :name', ['name' => $guestName]) : __('Merci pour votre réponse')) }}</h1>
 
             @if ($settings['decline_screen']['message'] !== '')
                 <p class="mb-8 whitespace-pre-line text-ink-soft">{{ $settings['decline_screen']['message'] }}</p>
@@ -21,7 +28,7 @@
             <p class="mb-8 text-ink-soft">{{ __(':event affiche complet pour le moment. Nous vous préviendrons si une place se libère.', ['event' => $event->title]) }}</p>
         @else
             <h1 class="mb-4 text-2xl">{{ $settings['confirmation']['title'] !== '' ? $settings['confirmation']['title'] : __('Inscription confirmée') }}</h1>
-            <p class="mb-8 whitespace-pre-line text-ink-soft">{{ $settings['confirmation']['message'] !== '' ? $settings['confirmation']['message'] : __('Merci, votre inscription à :event est enregistrée.', ['event' => $event->title]) }}</p>
+            <p class="mb-8 whitespace-pre-line text-ink-soft">{{ $settings['confirmation']['message'] !== '' ? $settings['confirmation']['message'] : ($guestName !== '' ? __(':name, votre présence à :event est enregistrée.', ['name' => $guestName, 'event' => $event->title]) : __('Merci, votre inscription à :event est enregistrée.', ['event' => $event->title])) }}</p>
         @endif
 
         {{-- Don promis dans le formulaire, réglé après l'inscription (T-056). --}}

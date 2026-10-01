@@ -280,8 +280,10 @@ it('montre les textes par défaut quand un titre ou un message est laissé vide'
     $this->post("{$base}/{$token}/reponses", []);
     $this->post("{$base}/{$token}/recap");
 
+    // Sans texte propre, la confirmation nomme l'invité : il doit
+    // reconnaître sa réponse, pas celle d'un inconnu.
     $this->get("{$base}/{$token}/confirmation")
         ->assertOk()
         ->assertSee('Inscription confirmée')
-        ->assertSee("Merci, votre inscription à {$event->title} est enregistrée.", false);
+        ->assertSee("Awa, votre présence à {$event->title} est enregistrée.", false);
 });

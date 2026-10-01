@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domain\Contact\Models;
 
+use App\Support\GuestList\InvitationToken;
 use App\Support\MultiTenancy\BelongsToOrganization;
 use Database\Factories\EventInviteeFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 /**
  * Un contact de l'organisation inscrit sur la liste d'invités d'un
@@ -55,13 +55,16 @@ final class EventInvitee extends Model
     }
 
     /**
-     * Lien personnel : un jeton aléatoire, jamais un identifiant devinable,
-     * posé une fois pour toutes à la création.
+     * Lien personnel, posé une fois pour toutes à la création : le nom de
+     * l'invité suivi d'un tirage aléatoire (InvitationToken) — il se
+     * reconnaît dès l'adresse, et le lien reste indevinable.
      */
     protected static function booted(): void
     {
         self::creating(function (self $invitee): void {
-            $invitee->invitation_token ??= Str::random(40);
+            // Contact chargé explicitement : la relation n'est pas encore
+            // résolue à la création, et le chargement paresseux est interdit.
+            $invitee->invitation_token ??= InvitationToken::for(Contact::query()->find($invitee->contact_id));
         });
     }
 

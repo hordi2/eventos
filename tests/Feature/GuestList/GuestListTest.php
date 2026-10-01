@@ -316,3 +316,34 @@ it('ne retire jamais un accord WhatsApp déjà donné en ajoutant un contact con
     expect($connu->fresh()->whatsapp_consent)->toBeTrue();
     expect($connu->fresh()->whatsapp_consent_source)->toBe('registration');
 });
+
+it('donne à chaque invité un lien à son nom, suivi d\'un tirage aléatoire', function (): void {
+    [$organization] = organizationWithContactRole(MembershipRole::Admin);
+    $event = Event::factory()->for($organization)->create();
+    $contact = Contact::factory()->create([
+        'organization_id' => $organization->id,
+        'first_name' => 'Hordy',
+        'last_name' => 'Lusala',
+    ]);
+
+    $invitee = EventInvitee::query()->create([
+        'organization_id' => $organization->id,
+        'event_id' => $event->id,
+        'contact_id' => $contact->id,
+    ]);
+
+    expect($invitee->invitation_token)->toStartWith('cher-hordy-lusala-')
+        // Le tirage qui suit le nom : six caractères, sans quoi le lien se devinerait.
+        ->and(mb_strlen(mb_substr($invitee->invitation_token, mb_strlen('cher-hordy-lusala-'))))->toBe(6);
+
+    // Deux invités du même nom ne partagent jamais le même lien.
+    $second = EventInvitee::query()->create([
+        'organization_id' => $organization->id,
+        'event_id' => Event::factory()->for($organization)->create()->id,
+        'contact_id' => $contact->id,
+    ]);
+
+    expect($second->invitation_token)->not->toBe($invitee->invitation_token);
+
+    app(CurrentOrganization::class)->clear();
+});

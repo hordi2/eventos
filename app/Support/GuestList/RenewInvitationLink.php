@@ -9,7 +9,6 @@ use App\Domain\Form\Models\RegistrationDraft;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 
 /**
  * Remplace le lien personnel d'un invité, par exemple transmis à la mauvaise
@@ -29,7 +28,7 @@ final class RenewInvitationLink
         Gate::forUser($user)->authorize('updateGuests', $invitee->contact->organization);
 
         DB::transaction(function () use ($invitee): void {
-            $invitee->update(['invitation_token' => Str::random(40)]);
+            $invitee->update(['invitation_token' => InvitationToken::for($invitee->contact)]);
 
             RegistrationDraft::query()
                 ->where('event_invitee_id', $invitee->id)
