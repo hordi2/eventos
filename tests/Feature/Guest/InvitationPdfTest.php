@@ -78,8 +78,10 @@ it('porte le nom de l\'invité, le programme et son lien personnel', function ()
     expect($data->guestName)->toBe('Awa Diallo')
         ->and($data->eyebrow)->toBe('Vous êtes invité')
         ->and($data->rsvpUrl)->toContain($invitee->invitation_token)
-        ->and($data->programme)->toHaveCount(1)
-        ->and($data->programme[0]['title'])->toBe('Bénédiction nuptiale')
+        // Le faire-part suit la page : un feuillet par bloc composé.
+        ->and($data->blocks)->toHaveCount(1)
+        ->and($data->blocks[0]['type'])->toBe('program')
+        ->and($data->blocks[0]['items'][0]['title'])->toBe('Bénédiction nuptiale')
         // Aucun code d'entrée tant que l'invité n'est pas inscrit.
         ->and($data->entryQr)->toBeNull()
         ->and($data->rsvpQr)->toStartWith('data:image/png;base64,');
@@ -127,4 +129,27 @@ it('laisse l\'organisateur relire le faire-part avant de l\'envoyer', function (
     expect(substr($response->getContent(), 0, 5))->toBe('%PDF-');
 
     $this->actingAs($viewer)->get("/events/{$event->id}/faire-part.pdf")->assertForbidden();
+});
+
+it('imprime un feuillet par bloc, avec son fond, et écarte ce qui n\'a pas de sens sur papier', function (): void {
+    ['organization' => $organization, 'event' => $event, 'invitee' => $invitee] = eventWithInvitationPdf();
+
+    app(CurrentOrganization::class)->set($organization);
+    Page::query()->where('event_id', $event->id)->sole()->update(['blocks' => [
+        ['id' => 'a', 'type' => 'countdown', 'title' => null],
+        ['id' => 'b', 'type' => 'guest_book', 'title' => null],
+        ['id' => 'c', 'type' => 'details', 'title' => 'Bon à savoir', 'items' => [
+            ['title' => 'Thème', 'time' => 'Chic et élégant', 'description' => null],
+        ], 'background' => 'organization-images/1/fond.jpg', 'backgroundOverlay' => 70, 'textTone' => 'light'],
+    ]]);
+    $data = app(BuildInvitationPdf::class)->data($event->fresh(), $invitee);
+    app(CurrentOrganization::class)->clear();
+
+    // Le décompte et le livre d'or ne s'impriment pas.
+    expect($data->blocks)->toHaveCount(1)
+        ->and($data->blocks[0]['type'])->toBe('details')
+        ->and($data->blocks[0]['onDark'])->toBeTrue()
+        ->and($data->blocks[0]['overlay'])->toBe(0.7)
+        // L'image du fond n'existe pas sur le disque : la mise en page tient sans elle.
+        ->and($data->blocks[0]['backgroundImage'])->toBeNull();
 });

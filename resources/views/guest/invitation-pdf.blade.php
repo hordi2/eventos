@@ -27,7 +27,7 @@
 
         .page:last-child { page-break-after: auto; }
 
-        .cover-image {
+        .bleed {
             position: absolute;
             top: 0;
             left: 0;
@@ -37,16 +37,7 @@
 
         /* rgba() plutôt qu'opacity : dompdf éclaircit tout le bloc avec
            opacity, alors qu'il pose une couleur translucide correctement. */
-        .cover-veil {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 210mm;
-            height: 297mm;
-            background-color: rgba(20, 16, 12, 0.58);
-        }
-
-        .cover-veil.solid { background-color: #1b1611; }
+        .veil { position: absolute; top: 0; left: 0; width: 210mm; height: 297mm; }
 
         .cover-inner {
             position: absolute;
@@ -59,31 +50,32 @@
 
         .inner {
             position: absolute;
-            top: 32mm;
+            top: 30mm;
             left: 22mm;
             width: 166mm;
             text-align: center;
         }
 
-        .eyebrow {
-            font-size: 9px;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            margin: 0 0 10mm 0;
-        }
+        .on-dark { color: #ffffff; }
+        .on-dark .muted { color: rgba(255, 255, 255, 0.75); }
+        .on-dark .rule td { border-color: rgba(255, 255, 255, 0.35); }
+        .on-dark .card { border-color: rgba(255, 255, 255, 0.35); }
 
-        .title {
-            font-family: serif;
-            font-size: 54px;
-            line-height: 1.05;
-            margin: 0;
-        }
+        .eyebrow { font-size: 9px; letter-spacing: 4px; text-transform: uppercase; margin: 0 0 10mm 0; }
+        .script { font-family: serif; font-style: italic; font-size: 26px; margin: 0 0 4mm 0; }
 
-        .subtitle {
+        .title { font-family: serif; font-size: 54px; line-height: 1.05; margin: 0; }
+        .subtitle { font-family: serif; font-style: italic; font-size: 16px; margin: 6mm 0 0 0; }
+
+        .monogram {
+            position: absolute;
+            top: 95mm;
+            left: 0;
+            width: 210mm;
+            text-align: center;
             font-family: serif;
-            font-style: italic;
-            font-size: 16px;
-            margin: 6mm 0 0 0;
+            font-size: 150px;
+            color: rgba(255, 255, 255, 0.09);
         }
 
         .date-rule {
@@ -98,14 +90,7 @@
         .date-rule td.month { font-family: sans-serif; font-size: 10px; letter-spacing: 4px; }
 
         .cover-meta { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; margin: 6mm 0 0 0; }
-
-        .guest {
-            margin: 12mm 0 0 0;
-            font-family: serif;
-            font-style: italic;
-            font-size: 15px;
-        }
-
+        .guest { margin: 12mm 0 0 0; font-family: serif; font-style: italic; font-size: 15px; }
         .logo { height: 16mm; margin-bottom: 10mm; }
 
         h2 {
@@ -117,6 +102,7 @@
         }
 
         .lead { font-size: 13px; line-height: 1.7; margin: 0 auto; width: 130mm; }
+        .muted { color: #6d655c; }
 
         .facts { margin: 12mm auto 0 auto; width: 130mm; }
         .facts td { padding: 4mm 0; border-bottom: 1px solid #e3e3e0; font-size: 12px; text-align: left; }
@@ -125,29 +111,72 @@
         .programme { margin: 0 auto; width: 130mm; }
         .programme td { padding: 6mm 0; border-bottom: 1px solid #e3e3e0; text-align: left; vertical-align: top; }
         .programme td.time { width: 34mm; font-family: serif; font-size: 20px; }
-        .programme .name { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; }
+        .programme .name { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; margin: 0; }
         .programme .note { font-size: 12px; color: #6d655c; margin: 2mm 0 0 0; }
+
+        .cards { margin: 0 auto; width: 150mm; border-collapse: separate; border-spacing: 4mm; }
+        .cards td { width: 50%; padding: 6mm 4mm; border: 1px solid #e3e3e0; text-align: center; vertical-align: top; }
+        .cards .label { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: #6d655c; margin: 0; }
+        .cards .value { font-family: serif; font-size: 18px; margin: 3mm 0 0 0; }
+
+        .calendar { margin: 6mm auto 0 auto; width: 110mm; }
+        .calendar th { font-size: 8px; font-weight: normal; letter-spacing: 2px; text-transform: uppercase; color: #6d655c; padding-bottom: 2mm; }
+        .calendar td { font-size: 11px; text-align: center; padding: 1.5mm 0; color: #6d655c; }
+        /* Le jour de l'événement, entouré de noir comme sur un faire-part. */
+        .calendar .today {
+            display: inline-block;
+            width: 7mm;
+            height: 7mm;
+            line-height: 7mm;
+            border-radius: 4mm;
+            background-color: #1b1611;
+            color: #ffffff;
+        }
+
+        .big-date { margin: 10mm auto 0 auto; }
+        .big-date td { font-family: serif; font-size: 26px; text-align: center; vertical-align: middle; padding: 0 3mm; }
+        .big-date td.day { background-color: #1b1611; color: #ffffff; font-size: 40px; padding: 2mm 5mm; }
+
+        .gallery { margin: 0 auto; width: 150mm; border-collapse: separate; border-spacing: 3mm; }
+        .gallery td { width: 50%; text-align: center; }
+        .gallery img { width: 70mm; height: 52mm; }
 
         .qr { margin: 8mm auto 0 auto; width: 70mm; }
         .note { font-size: 12px; line-height: 1.7; color: #6d655c; margin: 8mm auto 0 auto; width: 110mm; }
-        .link { font-size: 11px; color: #1b1611; margin: 6mm auto 0 auto; width: 150mm; word-wrap: break-word; }
+        .link { font-size: 11px; margin: 6mm auto 0 auto; width: 150mm; word-wrap: break-word; }
+        .answers { margin: 8mm auto 0 auto; width: 110mm; }
+        .answers td { padding: 3mm 0; }
+        .answers .choice { border: 1px solid #1b1611; border-radius: 20px; padding: 3mm 6mm; font-size: 11px; text-align: center; }
+        .answers .choice.first { background-color: #1b1611; color: #ffffff; }
         .footer { position: absolute; bottom: 20mm; left: 22mm; width: 166mm; text-align: center; font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: #6d655c; }
+
+        .photo-caption { position: absolute; bottom: 24mm; left: 20mm; width: 170mm; text-align: center; color: #ffffff; }
     </style>
 </head>
 <body>
 
-{{-- 1. La couverture : la photo, le titre, la date. --}}
+{{-- 1. La couverture : la photo, le titre, la date, le nom de l'invité. --}}
 <div class="page">
     @if ($invitation->coverImage)
-        <img src="{{ $invitation->coverImage }}" alt="" class="cover-image">
-        <div class="cover-veil"></div>
+        <img src="{{ $invitation->coverImage }}" alt="" class="bleed">
+        <div class="veil" style="background-color: rgba(20, 16, 12, {{ $invitation->coverOverlay }})"></div>
     @else
-        <div class="cover-veil solid"></div>
+        <div class="veil" style="background-color: #1b1611"></div>
+    @endif
+
+    @if ($invitation->monogram)
+        <p class="monogram">{{ $invitation->monogram }}</p>
     @endif
 
     <div class="cover-inner">
         <p class="eyebrow">{{ $invitation->eyebrow }}</p>
+
+        @if ($invitation->script)
+            <p class="script">{{ $invitation->script }}</p>
+        @endif
+
         <h1 class="title">{{ $invitation->title }}</h1>
+
         @if ($invitation->subtitle)
             <p class="subtitle">{{ $invitation->subtitle }}</p>
         @endif
@@ -207,33 +236,15 @@
     <p class="footer">{{ $invitation->title }} &middot; {{ $invitation->fullDate }}</p>
 </div>
 
-{{-- 3. Le programme, quand l'organisateur en a écrit un. --}}
-@if ($invitation->programme !== [])
-    <div class="page">
-        <div class="inner">
-            <h2>{{ __('Programme') }}</h2>
+{{-- 3. Un feuillet par bloc composé par l'organisateur, dans son ordre et
+       avec son fond : le papier suit la page web. --}}
+@foreach ($invitation->blocks as $block)
+    @include('guest.page._pdf-block', ['block' => $block, 'invitation' => $invitation])
+@endforeach
 
-            <table class="programme">
-                @foreach ($invitation->programme as $item)
-                    <tr>
-                        <td class="time">{{ $item['time'] ?? '' }}</td>
-                        <td>
-                            <p class="name">{{ $item['title'] }}</p>
-                            @if ($item['description'])
-                                <p class="note">{{ $item['description'] }}</p>
-                            @endif
-                        </td>
-                    </tr>
-                @endforeach
-            </table>
-        </div>
-
-        <p class="footer">{{ $invitation->title }} &middot; {{ $invitation->fullDate }}</p>
-    </div>
-@endif
-
-{{-- 4. L'entrée : le code QR à présenter, quand l'invité est inscrit. --}}
-@if ($invitation->entryQr)
+{{-- 4. L'entrée, quand l'invité est inscrit et qu'aucun bloc ne l'a déjà
+       montrée. --}}
+@if ($invitation->entryQr && ! collect($invitation->blocks)->contains('type', 'entry_qr'))
     <div class="page">
         <div class="inner">
             <h2>{{ __('Votre entrée') }}</h2>
@@ -245,17 +256,24 @@
     </div>
 @endif
 
-{{-- 5. La réponse : le lien, et son QR pour ceux qui tiennent le papier. --}}
-<div class="page">
-    <div class="inner">
-        <h2>{{ __('Confirmez votre présence') }}</h2>
-        <p class="note" style="margin-top: 0">{{ __('Scannez ce code, ou ouvrez le lien ci-dessous.') }}</p>
-        <img src="{{ $invitation->rsvpQr }}" alt="" class="qr">
-        <p class="link">{{ $invitation->rsvpUrl }}</p>
-    </div>
+{{-- 5. La réponse, toujours en dernier. --}}
+@unless (collect($invitation->blocks)->contains('type', 'rsvp'))
+    <div class="page">
+        <div class="inner">
+            <h2>{{ __('Confirmez votre présence') }}</h2>
 
-    <p class="footer">{{ __('Cordiale bienvenue') }}</p>
-</div>
+            @if ($invitation->guestName)
+                <p class="note" style="margin-top: 0">{{ __('Invitation adressée à :name', ['name' => $invitation->guestName]) }}</p>
+            @endif
+
+            <p class="note" style="margin-top: 2mm">{{ __('Scannez ce code, ou ouvrez le lien ci-dessous.') }}</p>
+            <img src="{{ $invitation->rsvpQr }}" alt="" class="qr">
+            <p class="link">{{ $invitation->rsvpUrl }}</p>
+        </div>
+
+        <p class="footer">{{ __('Cordiale bienvenue') }}</p>
+    </div>
+@endunless
 
 </body>
 </html>

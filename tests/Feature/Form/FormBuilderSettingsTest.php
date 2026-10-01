@@ -285,5 +285,7 @@ it('montre les textes par défaut quand un titre ou un message est laissé vide'
     $this->get("{$base}/{$token}/confirmation")
         ->assertOk()
         ->assertSee('Inscription confirmée')
-        ->assertSee("Awa, votre présence à {$event->title} est enregistrée.", false);
+        // Sans le second argument : le titre tiré au sort peut porter une
+        // apostrophe, échappée dans le HTML comme dans l'attendu.
+        ->assertSee("Awa, votre présence à {$event->title} est enregistrée.");
 });
