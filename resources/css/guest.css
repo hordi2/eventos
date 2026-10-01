@@ -280,3 +280,19 @@ h3 {
 .itaza-on-dark .text-bg {
     color: #1b1611;
 }
+
+/* Illustration d'un moment du programme, au-dessus de son heure. */
+.itaza-timeline-icon {
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+@media (min-width: 640px) {
+    .itaza-timeline-item .itaza-timeline-icon svg {
+        margin-left: auto;
+    }
+
+    .itaza-timeline-item.itaza-timeline-right .itaza-timeline-icon svg {
+        margin-left: 0;
+    }
+}

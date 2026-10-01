@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { type ChangeEvent, useRef, useState } from 'react';
 import Button from '../../Components/Button';
+import Checkbox from '../../Components/Checkbox';
 import InputLabel from '../../Components/InputLabel';
 import Select from '../../Components/Select';
 import Textarea from '../../Components/Textarea';
@@ -17,6 +18,8 @@ interface BlockItem {
     // pour l'aperçu de l'éditeur.
     path?: string;
     url?: string;
+    // Illustration d'un moment du programme.
+    icon?: string;
 }
 
 interface Block {
@@ -29,6 +32,8 @@ interface Block {
     backgroundColor?: string | null;
     backgroundOverlay?: number;
     textTone?: 'light' | 'dark';
+    // Programme : les illustrations s'affichent, ou pas.
+    showIcons?: boolean;
     body?: string | null;
     path?: string | null;
     url?: string | null;
@@ -72,8 +77,24 @@ function emptyBlock(type: string): Block {
         backgroundColor: null,
         backgroundOverlay: 45,
         textTone: 'dark',
+        showIcons: false,
     };
 }
+
+/** Les illustrations proposées pour un moment du programme. */
+const PROGRAMME_ICONS: { value: string; label: string }[] = [
+    { value: 'etoile', label: 'Étoile' },
+    { value: 'accueil', label: 'Accueil' },
+    { value: 'ceremonie', label: 'Cérémonie' },
+    { value: 'couple', label: 'Les mariés' },
+    { value: 'danse', label: 'Danse' },
+    { value: 'repas', label: 'Dîner' },
+    { value: 'cadeau', label: 'Cadeaux' },
+    { value: 'musique', label: 'Cocktail' },
+    { value: 'discours', label: 'Discours' },
+    { value: 'photo', label: 'Photos' },
+    { value: 'fin', label: 'Fin de soirée' },
+];
 
 const CARD = 'mb-4 rounded-card bg-bg p-5 ring-1 ring-line';
 const SMALL_BUTTON = 'inline-flex min-h-9 items-center rounded-pill border border-line px-3 py-1 text-sm text-ink hover:border-ink disabled:opacity-40';
@@ -625,18 +646,49 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
                                 </div>
                             )}
 
+                            {block.type === 'program' && (
+                                <label className="mb-4 flex cursor-pointer items-start gap-3">
+                                    <Checkbox
+                                        checked={block.showIcons ?? false}
+                                        onChange={(changeEvent) => update(index, { showIcons: changeEvent.target.checked })}
+                                        className="mt-1"
+                                    />
+                                    <span>
+                                        <span className="block text-sm text-ink">Afficher une illustration par moment</span>
+                                        <span className="block text-xs text-ink-soft">
+                                            Un dessin au trait au-dessus de chaque heure, sur la page comme sur le PDF.
+                                        </span>
+                                    </span>
+                                </label>
+                            )}
+
                             {(block.type === 'program' || block.type === 'faq' || block.type === 'details') && (
                                 <div className="space-y-3">
                                     {(block.items ?? []).map((item, itemIndex) => (
                                         <div key={itemIndex} className="rounded-control border border-line p-3">
                                             {block.type === 'program' ? (
                                                 <div className="grid gap-3 sm:grid-cols-[6rem_1fr]">
-                                                    <TextInput
-                                                        value={item.time ?? ''}
-                                                        onChange={(changeEvent) => updateItem(index, itemIndex, { time: changeEvent.target.value })}
-                                                        placeholder="18h00"
-                                                        aria-label="Heure"
-                                                    />
+                                                    <div className="space-y-2">
+                                                        <TextInput
+                                                            value={item.time ?? ''}
+                                                            onChange={(changeEvent) => updateItem(index, itemIndex, { time: changeEvent.target.value })}
+                                                            placeholder="18h00"
+                                                            aria-label="Heure"
+                                                        />
+                                                        {block.showIcons && (
+                                                            <Select
+                                                                value={item.icon ?? 'etoile'}
+                                                                onChange={(changeEvent) => updateItem(index, itemIndex, { icon: changeEvent.target.value })}
+                                                                aria-label="Illustration"
+                                                            >
+                                                                {PROGRAMME_ICONS.map((icon) => (
+                                                                    <option key={icon.value} value={icon.value}>
+                                                                        {icon.label}
+                                                                    </option>
+                                                                ))}
+                                                            </Select>
+                                                        )}
+                                                    </div>
                                                     <div className="space-y-2">
                                                         <TextInput
                                                             value={item.title ?? ''}

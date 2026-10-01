@@ -100,7 +100,12 @@ final class PageBlocks
             PageBlockType::Text => ['body' => self::text($block['body'] ?? null) ?? ''],
             PageBlockType::Image => ['path' => self::text($block['path'] ?? null), 'alt' => self::text($block['alt'] ?? null)],
             PageBlockType::Video => ['url' => self::text($block['url'] ?? null)],
-            PageBlockType::Program => ['items' => self::items($block['items'] ?? null, ['time', 'title', 'description'])],
+            PageBlockType::Program => [
+                // Les illustrations s'affichent, ou pas : c'est l'organisateur
+                // qui tranche, d'un interrupteur.
+                'showIcons' => (bool) ($block['showIcons'] ?? false),
+                'items' => self::items($block['items'] ?? null, ['time', 'title', 'description', 'icon']),
+            ],
             PageBlockType::Faq => ['items' => self::items($block['items'] ?? null, ['question', 'answer'])],
             PageBlockType::SaveTheDate => ['body' => self::text($block['body'] ?? null) ?? ''],
             // Une carte : son intitulé (title), sa valeur (time) et sa note.

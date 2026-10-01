@@ -111,6 +111,8 @@
         .programme { margin: 0 auto; width: 130mm; }
         .programme td { padding: 6mm 0; border-bottom: 1px solid #e3e3e0; text-align: left; vertical-align: top; }
         .programme td.time { width: 34mm; font-family: serif; font-size: 20px; }
+        /* L'illustration se pose au-dessus de l'heure, dans la même colonne. */
+        .programme .icon { display: block; margin-bottom: 2mm; }
         .programme .name { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; margin: 0; }
         .programme .note { font-size: 12px; color: #6d655c; margin: 2mm 0 0 0; }
 

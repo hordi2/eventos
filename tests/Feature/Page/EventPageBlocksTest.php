@@ -128,3 +128,35 @@ function memberOfOrganization(Organization $organization, MembershipRole $role):
 
     return $user;
 }
+
+it('affiche les illustrations du programme seulement si l\'organisateur les demande', function (): void {
+    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent();
+    $admin = memberOfOrganization($organization, MembershipRole::Admin);
+
+    $this->actingAs($admin)->patchJson("/events/{$event->id}/page", ['blocks' => [[
+        'id' => 'p',
+        'type' => 'program',
+        'title' => 'Programme',
+        'showIcons' => true,
+        'items' => [['time' => '19 h', 'title' => 'Accueil', 'icon' => 'accueil']],
+    ]]])->assertOk();
+
+    app(CurrentOrganization::class)->set($organization);
+    $block = Page::query()->where('event_id', $event->id)->sole()->blocks[0];
+    app(CurrentOrganization::class)->clear();
+
+    expect($block['showIcons'])->toBeTrue()
+        ->and($block['items'][0]['icon'])->toBe('accueil');
+
+    // Sans réglage, aucune illustration : la page reste sobre par défaut.
+    $this->actingAs($admin)->patchJson("/events/{$event->id}/page", ['blocks' => [[
+        'id' => 'p',
+        'type' => 'program',
+        'title' => 'Programme',
+        'items' => [['time' => '19 h', 'title' => 'Accueil']],
+    ]]])->assertOk();
+
+    app(CurrentOrganization::class)->set($organization);
+    expect(Page::query()->where('event_id', $event->id)->sole()->blocks[0]['showIcons'])->toBeFalse();
+    app(CurrentOrganization::class)->clear();
+});

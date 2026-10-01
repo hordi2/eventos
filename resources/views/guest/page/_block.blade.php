@@ -76,6 +76,11 @@
                         <li class="itaza-timeline-item{{ $index % 2 === 1 ? ' itaza-timeline-right' : '' }}">
                             <span aria-hidden="true" class="itaza-timeline-dot"></span>
                             <div class="itaza-timeline-body">
+                                @if ($block['showIcons'] ?? false)
+                                    <span class="itaza-timeline-icon text-ink">
+                                        @include('guest.page._programme-icon', ['icon' => $item['icon'] ?? null])
+                                    </span>
+                                @endif
                                 @if (! empty($item['time']))
                                     <p class="font-serif text-2xl leading-none text-ink">{{ $item['time'] }}</p>
                                 @endif

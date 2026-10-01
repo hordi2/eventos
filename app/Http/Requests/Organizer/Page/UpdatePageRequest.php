@@ -42,6 +42,8 @@ final class UpdatePageRequest extends FormRequest
             'blocks.*.alt' => ['nullable', 'string', 'max:255'],
             'blocks.*.url' => ['nullable', 'string', 'max:2048'],
             'blocks.*.items' => ['array', 'max:100'],
+            'blocks.*.showIcons' => ['nullable', 'boolean'],
+            'blocks.*.items.*.icon' => ['nullable', 'string', 'max:20'],
             'blocks.*.items.*.time' => ['nullable', 'string', 'max:50'],
             // Chemin d'une image de la bibliothèque (galerie), jamais une adresse libre.
             'blocks.*.items.*.path' => ['nullable', 'string', 'max:255'],

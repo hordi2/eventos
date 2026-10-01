@@ -95,7 +95,21 @@
                 <table class="programme">
                     @foreach ($block['items'] ?? [] as $item)
                         <tr>
-                            <td class="time">{{ $item['time'] ?? '' }}</td>
+                            <td class="time">
+                                @if ($block['showIcons'] ?? false)
+                                    {{-- dompdf ne dessine pas un <svg> posé dans la
+                                         page, mais sait lire une image SVG : le
+                                         dessin part donc en data URI. --}}
+                                    @php($iconSvg = view('guest.page._programme-icon', [
+                                        'icon' => $item['icon'] ?? null,
+                                        'color' => $onDark ? '#ffffff' : '#1b1611',
+                                    ])->render())
+                                    {{-- Dans son propre bloc : dompdf pose une
+                                         image en ligne, à côté de l'heure. --}}
+                                    <div class="icon"><img src="data:image/svg+xml;base64,{{ base64_encode($iconSvg) }}" alt="" width="26" height="26"></div>
+                                @endif
+                                {{ $item['time'] ?? '' }}
+                            </td>
                             <td>
                                 <p class="name">{{ $item['title'] ?? '' }}</p>
                                 @if (! empty($item['description']))
