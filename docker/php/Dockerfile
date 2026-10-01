@@ -20,10 +20,14 @@ RUN printf "upload_max_filesize=12M\npost_max_size=64M\n" > /usr/local/etc/php/c
 
 WORKDIR /var/www/html
 
+COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 EXPOSE 8000
 
 # On n'utilise pas `artisan serve` : cette commande démarre le serveur PHP
 # intégré dans un sous-processus avec un environnement restreint (seulement
 # PATH et APP_ENV), ce qui masque les variables injectées par Docker Compose
 # (DB_HOST, REDIS_HOST). `php -S` en direct hérite de tout l'environnement.
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]

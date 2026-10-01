@@ -20,9 +20,14 @@ Le projet n'est pas encore hébergé : ces réglages se posent chez l'hébergeur
       dépendent.
 - [ ] **Tâches planifiées** : `php artisan schedule:run` chaque minute
       (purge des fichiers jamais rattachés à une inscription, entre autres).
-- [ ] **Images publiques** : le disque `public` doit être servi —
-      `php artisan storage:link`, ou un disque R2 public. Logos, fonds,
-      images des blocs et « Mes images » en dépendent.
+- [ ] **Images publiques** : le disque `public` doit être servi — un lien
+      `public/storage`, ou un disque R2 public. Logos, fonds, images des
+      blocs et « Mes images » en dépendent. Attention : `php artisan
+      storage:link` écrit un lien **absolu** vers le chemin de la machine,
+      qui ne vaut rien dans un conteneur ; le conteneur du projet repose
+      donc un lien relatif à chaque démarrage (`docker/php/entrypoint.sh`).
+      Sur une autre machine, poser `ln -s ../storage/app/public
+      public/storage` plutôt que la commande artisan.
 - [ ] **Réglages PHP** : extensions `gd` et `exif` (redimensionnement des
       images), `upload_max_filesize` ≥ 12M et `post_max_size` ≥ 64M (fichiers
       joints). Déjà réglés dans l'image Docker du projet.
