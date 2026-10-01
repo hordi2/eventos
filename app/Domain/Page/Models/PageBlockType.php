@@ -19,6 +19,9 @@ enum PageBlockType: string
     case Speakers = 'speakers';
     case Sessions = 'sessions';
     case GuestBook = 'guest_book';
+    case SaveTheDate = 'save_the_date';
+    case Details = 'details';
+    case WelcomeMessage = 'welcome_message';
 
     public function label(): string
     {
@@ -33,6 +36,9 @@ enum PageBlockType: string
             self::Speakers => 'Intervenants',
             self::Sessions => 'Programme des sessions',
             self::GuestBook => "Livre d'or",
+            self::SaveTheDate => 'Save the date',
+            self::Details => 'Informations en cartes',
+            self::WelcomeMessage => "Mot d'accueil",
         };
     }
 
@@ -49,6 +55,9 @@ enum PageBlockType: string
             self::Speakers => 'Les fiches des intervenants, avec photo et biographie.',
             self::Sessions => 'Vos sessions, avec leur horaire, leur salle et leurs intervenants.',
             self::GuestBook => 'Vos invités laissent un mot, que tout le monde peut lire.',
+            self::SaveTheDate => 'Le calendrier du mois, la date en grand et votre mot de convocation.',
+            self::Details => 'Thème, tenue, tapis rouge, cadeaux : une carte par information.',
+            self::WelcomeMessage => 'Une vidéo ou un enregistrement audio, joué au clic.',
         };
     }
 

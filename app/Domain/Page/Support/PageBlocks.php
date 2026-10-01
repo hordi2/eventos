@@ -78,6 +78,10 @@ final class PageBlocks
             PageBlockType::Video => ['url' => self::text($block['url'] ?? null)],
             PageBlockType::Program => ['items' => self::items($block['items'] ?? null, ['time', 'title', 'description'])],
             PageBlockType::Faq => ['items' => self::items($block['items'] ?? null, ['question', 'answer'])],
+            PageBlockType::SaveTheDate => ['body' => self::text($block['body'] ?? null) ?? ''],
+            // Une carte : son intitulé (title), sa valeur (time) et sa note.
+            PageBlockType::Details => ['items' => self::items($block['items'] ?? null, ['title', 'time', 'description'])],
+            PageBlockType::WelcomeMessage => ['url' => self::text($block['url'] ?? null), 'body' => self::text($block['body'] ?? null) ?? ''],
             PageBlockType::Venue, PageBlockType::Countdown, PageBlockType::Speakers,
             PageBlockType::Sessions, PageBlockType::GuestBook => [],
         };

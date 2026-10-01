@@ -19,7 +19,12 @@ final class UpdatePage
      * des blocs correspondants : ils servent encore aux pages jamais
      * recomposées et aux exports.
      *
+     * $cover : les réglages de la couverture (phrase d'ouverture, mot
+     * manuscrit, monogramme, voile, libellé du bouton). Absent, rien n'y
+     * est touché.
+     *
      * @param  list<array<string, mixed>>  $blocks
+     * @param  array<string, mixed>  $cover
      */
     public function handle(
         Organization $organization,
@@ -27,6 +32,7 @@ final class UpdatePage
         ?string $metaDescription,
         array $blocks,
         User $user,
+        array $cover = [],
     ): Page {
         Gate::forUser($user)->authorize('updateEvents', $organization);
 
@@ -37,11 +43,34 @@ final class UpdatePage
             [
                 'organization_id' => $organization->id,
                 'meta_description' => $metaDescription,
+                ...$this->coverAttributes($cover),
                 'blocks' => $blocks,
                 'program_items' => $this->itemsOf($blocks, PageBlockType::Program),
                 'faq_items' => $this->itemsOf($blocks, PageBlockType::Faq),
             ],
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $cover
+     * @return array<string, mixed>
+     */
+    private function coverAttributes(array $cover): array
+    {
+        $attributes = [];
+
+        foreach (['cover_eyebrow', 'cover_script', 'cover_monogram', 'cover_cta_label'] as $key) {
+            if (array_key_exists($key, $cover)) {
+                $value = is_string($cover[$key]) ? trim($cover[$key]) : null;
+                $attributes[$key] = $value === '' ? null : $value;
+            }
+        }
+
+        if (array_key_exists('cover_overlay', $cover) && is_numeric($cover['cover_overlay'])) {
+            $attributes['cover_overlay'] = max(0, min(90, (int) $cover['cover_overlay']));
+        }
+
+        return $attributes;
     }
 
     /**

@@ -40,6 +40,11 @@ final class PageController extends Controller
             'page' => [
                 'banner_url' => $page !== null && $page->banner_path !== null ? Storage::disk('public')->url($page->banner_path) : null,
                 'meta_description' => $page?->meta_description,
+                'cover_eyebrow' => $page?->cover_eyebrow,
+                'cover_script' => $page?->cover_script,
+                'cover_monogram' => $page?->cover_monogram,
+                'cover_overlay' => $page === null ? 50 : $page->cover_overlay,
+                'cover_cta_label' => $page?->cover_cta_label,
                 'blocks' => $this->presentBlocks($page),
             ],
             'blockTypes' => PageBlockType::options(),
@@ -72,6 +77,7 @@ final class PageController extends Controller
             metaDescription: $request->string('meta_description')->toString() ?: null,
             blocks: $request->input('blocks', []),
             user: $request->user(),
+            cover: $request->only(['cover_eyebrow', 'cover_script', 'cover_monogram', 'cover_overlay', 'cover_cta_label']),
         );
 
         return response()->json(['status' => 'ok']);

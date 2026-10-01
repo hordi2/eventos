@@ -60,7 +60,7 @@
 
     <div class="mx-auto max-w-2xl px-5 py-14 sm:py-20">
         @if ($page->description !== null)
-            <section class="mb-14 text-center">
+            <section class="itaza-section mb-14 text-center">
                 <h2 class="mb-4 font-serif text-2xl italic">{{ __('À propos') }}</h2>
                 <p class="mx-auto max-w-[32rem] leading-relaxed whitespace-pre-line text-ink">{{ $page->description }}</p>
             </section>
@@ -72,7 +72,7 @@
         @endforeach
 
         @isset($calendar)
-            <div class="mb-14 flex flex-wrap justify-center gap-3 text-sm">
+            <div class="itaza-section mb-14 flex flex-wrap justify-center gap-3 text-sm">
                 <a href="{{ $calendar['google'] }}" target="_blank" rel="noopener" class="inline-flex min-h-10 items-center rounded-pill border border-line px-4 py-2 text-ink">
                     {{ __('Ajouter à Google Agenda') }}
                 </a>
@@ -84,7 +84,7 @@
 
         {{-- Dernier appel : l'invité qui a tout lu ne doit pas remonter
              jusqu'à la couverture pour répondre. --}}
-        <div class="border-t border-line pt-12 text-center">
+        <div class="itaza-section border-t border-line pt-12 text-center">
             <p class="mb-6 font-serif text-2xl italic">{{ __('Nous vous attendons') }}</p>
             <a
                 href="{{ $beginUrl }}"

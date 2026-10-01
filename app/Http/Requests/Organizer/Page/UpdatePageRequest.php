@@ -22,6 +22,11 @@ final class UpdatePageRequest extends FormRequest
     {
         return [
             'meta_description' => ['nullable', 'string', 'max:160'],
+            'cover_eyebrow' => ['nullable', 'string', 'max:120'],
+            'cover_script' => ['nullable', 'string', 'max:120'],
+            'cover_monogram' => ['nullable', 'string', 'max:12'],
+            'cover_overlay' => ['nullable', 'integer', 'min:0', 'max:90'],
+            'cover_cta_label' => ['nullable', 'string', 'max:60'],
             'blocks' => ['array', 'max:40'],
             'blocks.*.id' => ['nullable', 'string', 'max:64'],
             'blocks.*.type' => ['required', Rule::enum(PageBlockType::class)],

@@ -58,6 +58,13 @@ final class GetEventPage
             subtitle: $event->subtitle,
             description: $event->description,
             bannerUrl: $page !== null && $page->banner_path !== null ? Storage::disk('public')->url($page->banner_path) : null,
+            coverEyebrow: $page?->cover_eyebrow,
+            coverScript: $page?->cover_script,
+            coverMonogram: $page?->cover_monogram,
+            // Un voile par défaut à mi-chemin : la photo reste lisible, le
+            // texte aussi, quelle que soit l'image déposée.
+            coverOverlay: $page === null ? 50 : $page->cover_overlay,
+            coverCtaLabel: $page?->cover_cta_label,
             metaDescription: $page !== null && $page->meta_description !== null
                 ? $page->meta_description
                 : Str::limit(strip_tags((string) $event->description), 155),

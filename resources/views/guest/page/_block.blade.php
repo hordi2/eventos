@@ -4,7 +4,7 @@
 
 @switch($block['type'])
     @case('text')
-        <section class="mb-10">
+        <section class="itaza-section mb-14">
             @if ($blockTitle)
                 <h2 class="mb-3 font-serif text-xl italic">{{ $blockTitle }}</h2>
             @endif
@@ -31,7 +31,7 @@
     @case('video')
         @php($video = \App\Domain\Form\Support\VideoEmbed::from($block['url'] ?? null))
         @if ($video !== null)
-            <section class="mb-10">
+            <section class="itaza-section mb-14">
                 @if ($blockTitle)
                     <h2 class="mb-3 font-serif text-xl italic">{{ $blockTitle }}</h2>
                 @endif
@@ -63,21 +63,27 @@
 
     @case('program')
         @if (($block['items'] ?? []) !== [])
-            {{-- Le programme comme une affiche : chaque moment numéroté,
-                 son heure au-dessus de son titre. --}}
-            <section class="mb-14 text-center">
-                <h2 class="mb-8 font-serif text-2xl italic">{{ $blockTitle ?? __('Programme') }}</h2>
-                <ol class="mx-auto max-w-[30rem] space-y-8">
+            {{-- Le programme en frise : une ligne verticale, les moments de
+                 part et d'autre sur grand écran, tous du même côté sur
+                 téléphone — comme sur un faire-part imprimé. --}}
+            <section class="itaza-section mb-16">
+                <h2 class="mb-10 text-center font-serif text-2xl italic">{{ $blockTitle ?? __('Programme') }}</h2>
+
+                <ol class="itaza-timeline relative mx-auto max-w-[34rem]">
                     @foreach ($block['items'] as $index => $item)
-                        <li>
-                            <p class="font-label text-[0.6rem] tracking-[0.25em] text-ink-soft">{{ str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) }}</p>
-                            @if (! empty($item['time']))
-                                <p class="mt-2 font-serif text-2xl text-ink">{{ $item['time'] }}</p>
-                            @endif
-                            <p class="mt-1 font-label text-xs tracking-[0.2em] text-ink uppercase">{{ $item['title'] ?? '' }}</p>
-                            @if (! empty($item['description']))
-                                <p class="mt-2 text-sm text-ink-soft">{{ $item['description'] }}</p>
-                            @endif
+                        {{-- Une seule liste de classes : deux attributs class
+                             sur le même élément et le navigateur ignore le second. --}}
+                        <li class="itaza-timeline-item{{ $index % 2 === 1 ? ' itaza-timeline-right' : '' }}">
+                            <span aria-hidden="true" class="itaza-timeline-dot"></span>
+                            <div class="itaza-timeline-body">
+                                @if (! empty($item['time']))
+                                    <p class="font-serif text-2xl leading-none text-ink">{{ $item['time'] }}</p>
+                                @endif
+                                <p class="mt-2 font-label text-[0.7rem] tracking-[0.2em] text-ink uppercase">{{ $item['title'] ?? '' }}</p>
+                                @if (! empty($item['description']))
+                                    <p class="mt-2 text-sm text-ink-soft">{{ $item['description'] }}</p>
+                                @endif
+                            </div>
                         </li>
                     @endforeach
                 </ol>
@@ -87,7 +93,7 @@
 
     @case('faq')
         @if (($block['items'] ?? []) !== [])
-            <section class="mb-10">
+            <section class="itaza-section mb-14">
                 <h2 class="mb-3 font-serif text-xl italic">{{ $blockTitle ?? __('Questions fréquentes') }}</h2>
                 <div class="space-y-2">
                     @foreach ($block['items'] as $item)
@@ -106,7 +112,7 @@
 
     @case('venue')
         @if (! $page->isOnline && $page->venueName !== null)
-            <section class="mb-10">
+            <section class="itaza-section mb-14">
                 <h2 class="mb-3 font-serif text-xl italic">{{ $blockTitle ?? __('Lieu') }}</h2>
                 <p class="mb-3">{{ $page->venueName }}</p>
                 @if ($page->venueAddress !== null)
@@ -126,7 +132,7 @@
 
     @case('speakers')
         @if ($page->speakers !== [])
-            <section class="mb-10">
+            <section class="itaza-section mb-14">
                 <h2 class="mb-3 font-serif text-xl italic">{{ $blockTitle ?? __('Intervenants') }}</h2>
                 <ul class="grid gap-4 sm:grid-cols-2">
                     @foreach ($page->speakers as $speaker)
@@ -163,7 +169,7 @@
 
     @case('sessions')
         @if ($page->sessions !== [])
-            <section class="mb-10">
+            <section class="itaza-section mb-14">
                 <h2 class="mb-3 font-serif text-xl italic">{{ $blockTitle ?? __('Programme') }}</h2>
                 @php($days = collect($page->sessions)->groupBy('day'))
                 @foreach ($days as $day => $daySessions)
@@ -197,7 +203,7 @@
              cases, comme sur un faire-part : le chiffre se lit de loin,
              l'unité se lit de près. --}}
         <section
-            class="mb-14 text-center"
+            class="itaza-section mb-14 text-center"
             x-data="{
                 parts: { days: '00', hours: '00', minutes: '00', seconds: '00' },
                 started: false,
@@ -234,7 +240,7 @@
     @case('guest_book')
         {{-- Livre d'or : les mots déjà laissés, puis de quoi en écrire un.
              Publié aussitôt, masquable par l'organisateur. --}}
-        <section class="mb-14 text-center">
+        <section class="itaza-section mb-14 text-center">
             <h2 class="mb-8 font-serif text-2xl italic">{{ $blockTitle ?? __("Livre d'or") }}</h2>
 
             @if (session('status') === 'guest-book-signed')
@@ -278,6 +284,140 @@
                 <button type="submit" class="form-button min-h-11 w-full rounded-pill px-8 py-3 font-medium">{{ __('Laisser mon message') }}</button>
             </form>
         </section>
+        @break
+
+    @case('save_the_date')
+        {{-- « Save the date » : le mini-calendrier du mois avec le jour
+             entouré, le mot manuscrit, la phrase de l'organisateur, puis la
+             date en grand — la page 2 des faire-part imprimés. --}}
+        @php($start = $event->start_at->setTimezone($event->timezone))
+        @php($offset = (int) $start->copy()->startOfMonth()->dayOfWeekIso - 1)
+        @php($daysInMonth = (int) $start->daysInMonth)
+        <section class="itaza-section mb-16 text-center">
+            <p class="font-label text-[0.68rem] tracking-[0.3em] text-ink-soft uppercase">{{ $start->translatedFormat('F') }}</p>
+
+            <table class="mx-auto mt-5 w-full max-w-[22rem] table-fixed">
+                <thead>
+                    <tr>
+                        @foreach ([__('Lu'), __('Ma'), __('Me'), __('Je'), __('Ve'), __('Sa'), __('Di')] as $weekday)
+                            <th scope="col" class="pb-2 font-label text-[0.6rem] font-normal tracking-[0.1em] text-ink-soft uppercase">{{ $weekday }}</th>
+                        @endforeach
+                    </tr>
+                </thead>
+                <tbody>
+                    @for ($week = 0; $week < ceil(($offset + $daysInMonth) / 7); $week++)
+                        <tr>
+                            @for ($weekday = 0; $weekday < 7; $weekday++)
+                                @php($day = $week * 7 + $weekday - $offset + 1)
+                                <td class="py-1.5 text-sm">
+                                    @if ($day >= 1 && $day <= $daysInMonth)
+                                        @if ($day === (int) $start->day)
+                                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink text-bg">{{ str_pad((string) $day, 2, '0', STR_PAD_LEFT) }}</span>
+                                        @else
+                                            <span class="text-ink-soft">{{ str_pad((string) $day, 2, '0', STR_PAD_LEFT) }}</span>
+                                        @endif
+                                    @endif
+                                </td>
+                            @endfor
+                        </tr>
+                    @endfor
+                </tbody>
+            </table>
+
+            <p class="mt-8 font-serif text-4xl text-ink italic sm:text-5xl">{{ $blockTitle ?? __('Save the date') }}</p>
+
+            @if (! empty($block['body']))
+                <p class="mx-auto mt-6 max-w-[30rem] leading-relaxed whitespace-pre-line text-ink">{{ $block['body'] }}</p>
+            @endif
+
+            <p class="mt-8 flex items-center justify-center gap-3 text-ink">
+                {{-- translatedFormat('M') : l'abréviation du mois dans la
+                     langue de l'invité (« oct. », « sept. »). --}}
+                <span class="font-serif text-2xl uppercase">{{ $start->translatedFormat('M') }}</span>
+                <span class="inline-flex h-16 w-16 items-center justify-center bg-ink font-serif text-4xl text-bg">{{ $start->format('d') }}</span>
+                <span class="font-serif text-2xl">{{ $start->format('Y') }}</span>
+            </p>
+
+            <p class="mt-6 font-label text-sm tracking-[0.15em] text-ink uppercase">
+                {{ $start->format('H\hi') }}@if (! $page->isOnline && $page->venueName) | {{ $page->venueName }}@endif
+            </p>
+
+            @if (! $page->isOnline && $page->venueAddress)
+                <p class="mt-2 text-sm text-ink-soft">{{ $page->venueAddress }}</p>
+            @endif
+        </section>
+        @break
+
+    @case('details')
+        {{-- Cartes libres : thème, tenue, tapis rouge, cadeaux… ce que
+             l'organisateur veut dire en un mot chacun. --}}
+        @if (($block['items'] ?? []) !== [])
+            <section class="itaza-section mb-16">
+                @if ($blockTitle)
+                    <h2 class="mb-8 text-center font-serif text-2xl italic">{{ $blockTitle }}</h2>
+                @endif
+
+                <ul class="mx-auto grid max-w-[34rem] gap-4 sm:grid-cols-2">
+                    @foreach ($block['items'] as $item)
+                        <li class="rounded-card border border-line bg-bg px-5 py-6 text-center">
+                            <p class="font-label text-[0.62rem] tracking-[0.25em] text-ink-soft uppercase">{{ $item['title'] ?? '' }}</p>
+                            @if (! empty($item['time']))
+                                <p class="mt-3 font-serif text-xl text-ink">{{ $item['time'] }}</p>
+                            @endif
+                            @if (! empty($item['description']))
+                                <p class="mt-2 text-sm text-ink-soft">{{ $item['description'] }}</p>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
+        @break
+
+    @case('welcome_message')
+        {{-- Mot d'accueil : une vidéo YouTube ou Vimeo, ou un fichier audio
+             ou vidéo déposé ailleurs. Rien ne se charge avant le clic — la
+             page reste légère en 3G. --}}
+        @php($url = trim((string) ($block['url'] ?? '')))
+        @php($extension = mb_strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION)))
+        @php($isAudio = in_array($extension, ['mp3', 'm4a', 'ogg', 'oga', 'wav'], true))
+        @php($isVideoFile = in_array($extension, ['mp4', 'webm', 'ogv'], true))
+        @php($embed = $isAudio || $isVideoFile ? null : \App\Domain\Form\Support\VideoEmbed::from($url))
+        @if ($url !== '' && ($isAudio || $isVideoFile || $embed !== null))
+            <section class="itaza-section mb-16 text-center">
+                <h2 class="mb-3 font-serif text-2xl italic">{{ $blockTitle ?? __("Mot d'accueil") }}</h2>
+
+                @if (! empty($block['body']))
+                    <p class="mx-auto mb-6 max-w-[30rem] text-ink-soft">{{ $block['body'] }}</p>
+                @endif
+
+                <div x-data="{ playing: false }" class="mx-auto max-w-[34rem]">
+                    <template x-if="playing">
+                        <div>
+                            @if ($isAudio)
+                                <audio src="{{ $url }}" controls autoplay class="w-full"></audio>
+                            @elseif ($isVideoFile)
+                                <video src="{{ $url }}" controls autoplay playsinline class="w-full rounded-card"></video>
+                            @else
+                                <div class="aspect-video w-full overflow-hidden rounded-card">
+                                    <iframe src="{{ $embed?->embedUrl }}" title="{{ $blockTitle ?? __("Mot d'accueil") }}" loading="lazy" allow="accelerometer; autoplay; encrypted-media; picture-in-picture" allowfullscreen class="h-full w-full"></iframe>
+                                </div>
+                            @endif
+                        </div>
+                    </template>
+
+                    <button
+                        type="button"
+                        x-show="! playing"
+                        @click="playing = true"
+                        class="inline-flex min-h-12 items-center gap-3 rounded-pill border border-line bg-bg px-7 py-3 font-label text-xs tracking-[0.18em] text-ink uppercase transition-transform duration-300 hover:scale-[1.03]"
+                    >
+                        <span aria-hidden="true" class="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-bg">▶</span>
+                        {{ $isAudio ? __('Écouter le mot') : __('Voir le mot') }}
+                    </button>
+                </div>
+            </section>
+        @endif
         @break
 
 @endswitch

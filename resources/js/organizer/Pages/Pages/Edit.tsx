@@ -38,6 +38,11 @@ interface Props {
     page: {
         banner_url: string | null;
         meta_description: string | null;
+        cover_eyebrow: string | null;
+        cover_script: string | null;
+        cover_monogram: string | null;
+        cover_overlay: number;
+        cover_cta_label: string | null;
         blocks: Block[];
     };
     blockTypes: BlockTypeOption[];
@@ -52,7 +57,7 @@ function emptyBlock(type: string): Block {
         path: null,
         url: null,
         alt: null,
-        items: type === 'program' || type === 'faq' ? [{}] : [],
+        items: type === 'program' || type === 'faq' || type === 'details' ? [{}] : [],
     };
 }
 
@@ -67,6 +72,13 @@ const SMALL_BUTTON = 'inline-flex min-h-9 items-center rounded-pill border borde
 export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
     const [bannerUrl, setBannerUrl] = useState(page.banner_url);
     const [metaDescription, setMetaDescription] = useState(page.meta_description ?? '');
+    const [cover, setCover] = useState({
+        eyebrow: page.cover_eyebrow ?? '',
+        script: page.cover_script ?? '',
+        monogram: page.cover_monogram ?? '',
+        overlay: page.cover_overlay,
+        ctaLabel: page.cover_cta_label ?? '',
+    });
     const [blocks, setBlocks] = useState<Block[]>(page.blocks);
     const [newType, setNewType] = useState(blockTypes[0]?.value ?? 'text');
     const [uploading, setUploading] = useState(false);
@@ -137,7 +149,15 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
         setSaving(true);
 
         try {
-            await window.axios.patch(`/events/${event.id}/page`, { meta_description: metaDescription || null, blocks });
+            await window.axios.patch(`/events/${event.id}/page`, {
+                meta_description: metaDescription || null,
+                cover_eyebrow: cover.eyebrow || null,
+                cover_script: cover.script || null,
+                cover_monogram: cover.monogram || null,
+                cover_overlay: cover.overlay,
+                cover_cta_label: cover.ctaLabel || null,
+                blocks,
+            });
             setSaved(true);
             window.setTimeout(() => setSaved(false), 3000);
         } finally {
@@ -162,6 +182,75 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
                 <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="w-auto px-6 py-2">
                     {uploading ? 'Envoi…' : bannerUrl ? 'Remplacer la bannière' : 'Ajouter une bannière'}
                 </Button>
+            </div>
+
+            {/* La couverture est le premier écran de l'invitation : tout ce
+                qui s'y lit se règle ici. */}
+            <div className="mb-8 rounded-card bg-bg p-6 ring-1 ring-line">
+                <h2 className="mb-1 font-serif text-lg italic">Couverture</h2>
+                <p className="mb-5 text-sm text-ink-soft">
+                    Le premier écran de votre invitation : votre photo en fond, et ces mots par-dessus.
+                </p>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                    <div>
+                        <InputLabel htmlFor="cover_eyebrow">Phrase d'ouverture</InputLabel>
+                        <TextInput
+                            id="cover_eyebrow"
+                            value={cover.eyebrow}
+                            onChange={(changeEvent) => setCover({ ...cover, eyebrow: changeEvent.target.value })}
+                            maxLength={120}
+                            placeholder="Vous êtes invité"
+                        />
+                    </div>
+                    <div>
+                        <InputLabel htmlFor="cover_script">Mot manuscrit</InputLabel>
+                        <TextInput
+                            id="cover_script"
+                            value={cover.script}
+                            onChange={(changeEvent) => setCover({ ...cover, script: changeEvent.target.value })}
+                            maxLength={120}
+                            placeholder="Save the date"
+                        />
+                    </div>
+                    <div>
+                        <InputLabel htmlFor="cover_monogram">Monogramme en filigrane</InputLabel>
+                        <TextInput
+                            id="cover_monogram"
+                            value={cover.monogram}
+                            onChange={(changeEvent) => setCover({ ...cover, monogram: changeEvent.target.value })}
+                            maxLength={12}
+                            placeholder="M & A"
+                        />
+                        <p className="mt-1.5 text-xs text-ink-soft">Vos initiales, très grandes et très discrètes derrière le titre.</p>
+                    </div>
+                    <div>
+                        <InputLabel htmlFor="cover_cta_label">Libellé du bouton</InputLabel>
+                        <TextInput
+                            id="cover_cta_label"
+                            value={cover.ctaLabel}
+                            onChange={(changeEvent) => setCover({ ...cover, ctaLabel: changeEvent.target.value })}
+                            maxLength={60}
+                            placeholder="Répondre à l'invitation"
+                        />
+                    </div>
+                    <div className="sm:col-span-2">
+                        <InputLabel htmlFor="cover_overlay">Voile sur la photo — {cover.overlay} %</InputLabel>
+                        <input
+                            id="cover_overlay"
+                            type="range"
+                            min={0}
+                            max={90}
+                            step={5}
+                            value={cover.overlay}
+                            onChange={(changeEvent) => setCover({ ...cover, overlay: Number(changeEvent.target.value) })}
+                            className="mt-2 w-full accent-ink"
+                        />
+                        <p className="mt-1.5 text-xs text-ink-soft">
+                            Plus le voile est épais, plus le texte ressort — et moins la photo se voit.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <div className="mb-8 rounded-card bg-bg p-6 ring-1 ring-line">
@@ -281,6 +370,35 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
                                 </div>
                             )}
 
+                            {block.type === 'save_the_date' && (
+                                <Textarea
+                                    value={block.body ?? ''}
+                                    onChange={(e) => update(index, { body: e.target.value })}
+                                    rows={4}
+                                    placeholder="Les familles X et Y ont l'honneur de vous convier…"
+                                />
+                            )}
+
+                            {block.type === 'welcome_message' && (
+                                <div className="space-y-3">
+                                    <TextInput
+                                        value={block.url ?? ''}
+                                        onChange={(e) => update(index, { url: e.target.value })}
+                                        placeholder="https://youtu.be/… ou https://…/mot-accueil.mp3"
+                                    />
+                                    <Textarea
+                                        value={block.body ?? ''}
+                                        onChange={(e) => update(index, { body: e.target.value })}
+                                        rows={2}
+                                        placeholder="Quelques mots avant le bouton (optionnel)"
+                                    />
+                                    <p className="text-xs text-ink-soft">
+                                        YouTube, Vimeo, ou l'adresse d'un fichier audio (.mp3, .m4a) ou vidéo (.mp4). Rien ne se
+                                        charge avant que l'invité ne clique.
+                                    </p>
+                                </div>
+                            )}
+
                             {block.type === 'video' && (
                                 <div>
                                     <InputLabel htmlFor={`url_${block.id}`}>Adresse de la vidéo (YouTube ou Vimeo)</InputLabel>
@@ -293,7 +411,7 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
                                 </div>
                             )}
 
-                            {(block.type === 'program' || block.type === 'faq') && (
+                            {(block.type === 'program' || block.type === 'faq' || block.type === 'details') && (
                                 <div className="space-y-3">
                                     {(block.items ?? []).map((item, itemIndex) => (
                                         <div key={itemIndex} className="rounded-control border border-line p-3">
@@ -320,6 +438,28 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
                                                             aria-label="Détail"
                                                         />
                                                     </div>
+                                                </div>
+                                            ) : block.type === 'details' ? (
+                                                <div className="space-y-2">
+                                                    <TextInput
+                                                        value={item.title ?? ''}
+                                                        onChange={(changeEvent) => updateItem(index, itemIndex, { title: changeEvent.target.value })}
+                                                        placeholder="Thème"
+                                                        aria-label="Intitulé de la carte"
+                                                    />
+                                                    <TextInput
+                                                        value={item.time ?? ''}
+                                                        onChange={(changeEvent) => updateItem(index, itemIndex, { time: changeEvent.target.value })}
+                                                        placeholder="Chic et élégant"
+                                                        aria-label="Valeur"
+                                                    />
+                                                    <Textarea
+                                                        value={item.description ?? ''}
+                                                        onChange={(changeEvent) => updateItem(index, itemIndex, { description: changeEvent.target.value })}
+                                                        rows={2}
+                                                        placeholder="Précision (optionnel)"
+                                                        aria-label="Précision"
+                                                    />
                                                 </div>
                                             ) : (
                                                 <div className="space-y-2">
