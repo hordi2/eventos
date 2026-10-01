@@ -18,6 +18,7 @@ enum PageBlockType: string
     case Countdown = 'countdown';
     case Speakers = 'speakers';
     case Sessions = 'sessions';
+    case GuestBook = 'guest_book';
 
     public function label(): string
     {
@@ -31,6 +32,7 @@ enum PageBlockType: string
             self::Countdown => 'Compte à rebours',
             self::Speakers => 'Intervenants',
             self::Sessions => 'Programme des sessions',
+            self::GuestBook => "Livre d'or",
         };
     }
 
@@ -46,6 +48,7 @@ enum PageBlockType: string
             self::Countdown => "Le temps qu'il reste avant le début.",
             self::Speakers => 'Les fiches des intervenants, avec photo et biographie.',
             self::Sessions => 'Vos sessions, avec leur horaire, leur salle et leurs intervenants.',
+            self::GuestBook => 'Vos invités laissent un mot, que tout le monde peut lire.',
         };
     }
 

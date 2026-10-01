@@ -231,4 +231,53 @@
             </div>
         </section>
         @break
+    @case('guest_book')
+        {{-- Livre d'or : les mots déjà laissés, puis de quoi en écrire un.
+             Publié aussitôt, masquable par l'organisateur. --}}
+        <section class="mb-14 text-center">
+            <h2 class="mb-8 font-serif text-2xl italic">{{ $blockTitle ?? __("Livre d'or") }}</h2>
+
+            @if (session('status') === 'guest-book-signed')
+                <p role="status" class="mx-auto mb-8 max-w-[30rem] rounded-card bg-bg px-4 py-3 text-sm text-ink ring-1 ring-line">
+                    {{ __('Merci, votre mot est enregistré.') }}
+                </p>
+            @endif
+
+            @if ($page->guestBookMessages !== [])
+                <ul class="mx-auto mb-10 max-w-[30rem] space-y-6 text-left">
+                    @foreach ($page->guestBookMessages as $entry)
+                        <li class="rounded-card border border-line bg-bg px-5 py-4">
+                            <p class="whitespace-pre-line text-ink italic">« {{ $entry['message'] }} »</p>
+                            <p class="mt-3 font-label text-[0.62rem] tracking-[0.2em] text-ink-soft uppercase">
+                                {{ $entry['author'] }} · {{ $entry['writtenAt'] }}
+                            </p>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+
+            <form method="POST" action="{{ route('guest.registration.guest-book', [request()->route('organization'), request()->route('event')]) }}" class="mx-auto max-w-[30rem] text-left">
+                @csrf
+
+                <div class="mb-4">
+                    <label for="guest_book_author" class="mb-1.5 block text-sm font-medium text-ink">{{ __('Votre nom') }}</label>
+                    <input type="text" id="guest_book_author" name="author_name" value="{{ old('author_name') }}" required maxlength="120" class="w-full rounded-control border border-line px-3 py-2 text-ink">
+                    @error('author_name')
+                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="mb-5">
+                    <label for="guest_book_message" class="mb-1.5 block text-sm font-medium text-ink">{{ __('Votre message') }}</label>
+                    <textarea id="guest_book_message" name="message" rows="4" required maxlength="1000" class="w-full rounded-control border border-line px-3 py-2 text-ink">{{ old('message') }}</textarea>
+                    @error('message')
+                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <button type="submit" class="form-button min-h-11 w-full rounded-pill px-8 py-3 font-medium">{{ __('Laisser mon message') }}</button>
+            </form>
+        </section>
+        @break
+
 @endswitch

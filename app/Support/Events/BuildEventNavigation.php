@@ -13,6 +13,7 @@ use App\Domain\Form\Models\FormField;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Organization\Services\CollaboratorAccess;
+use App\Domain\Page\Models\GuestBookMessage;
 use App\Models\User;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Auth\Access\Gate as AccessGate;
@@ -110,6 +111,8 @@ final class BuildEventNavigation
             'promoCodes' => $link($gate->allows('manageTicketing', $organization), route('events.promo-codes.index', $event->id)),
             'exports' => $link($gate->allows('exportData', $organization), route('events.exports.index', $event->id)),
             'budget' => $link($gate->allows('viewFinancials', $organization) && ! $event->isSubEvent(), route('events.budget.index', $event->id)),
+            // Proposé dès qu'un invité a laissé un mot : avant, il n'y a rien à modérer.
+            'guestBook' => $link($canUpdate && $this->hasGuestBookMessages($event->id), route('events.guest-book.index', $event->id)),
             'referral' => $link(! $isCollaborator && $gate->allows('manageBilling', $organization), route('settings.referral.edit')),
         ];
     }
@@ -119,6 +122,11 @@ final class BuildEventNavigation
      * n'ont de sens que si l'un des formulaires pose, ou a posé dans l'une de
      * ses versions, la question correspondante.
      */
+    private function hasGuestBookMessages(int $eventId): bool
+    {
+        return GuestBookMessage::query()->where('event_id', $eventId)->exists();
+    }
+
     private function needsApproval(Event $event): bool
     {
         return $event->requires_approval || Registration::query()

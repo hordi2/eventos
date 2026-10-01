@@ -12,6 +12,7 @@ final class EventPageData
      * @param  list<array<string, mixed>>  $blocks  page composée par l'organisateur, dans son ordre
      * @param  list<array<string, mixed>>  $speakers  fiches des intervenants (D6)
      * @param  list<array<string, mixed>>  $sessions  programme, session par session (D6)
+     * @param  list<array{author: string, message: string, writtenAt: string}>  $guestBookMessages  livre d'or, les plus récents d'abord
      */
     public function __construct(
         public readonly string $title,
@@ -29,6 +30,7 @@ final class EventPageData
         public readonly array $blocks,
         public readonly array $speakers,
         public readonly array $sessions,
+        public readonly array $guestBookMessages,
         public readonly ?string $organizationLogoUrl,
         public readonly ?string $organizationPrimaryColor,
     ) {}

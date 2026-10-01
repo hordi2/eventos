@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Guest\FormThemeStyleController;
+use App\Http\Controllers\Guest\GuestBookController;
 use App\Http\Controllers\Guest\GuestInvitationController;
 use App\Http\Controllers\Guest\InvitationPdfController;
 use App\Http\Controllers\Guest\InvitationQrController;
@@ -54,6 +55,7 @@ use App\Http\Controllers\Organizer\FormBlockImageController;
 use App\Http\Controllers\Organizer\FormController;
 use App\Http\Controllers\Organizer\FormPreviewController;
 use App\Http\Controllers\Organizer\FormThemeImageController;
+use App\Http\Controllers\Organizer\GuestBookController as OrganizerGuestBookController;
 use App\Http\Controllers\Organizer\HelpController;
 use App\Http\Controllers\Organizer\KioskController;
 use App\Http\Controllers\Organizer\MessageAutomationController;
@@ -290,6 +292,11 @@ Route::middleware('auth')->group(function (): void {
 
         // Appel à contributions (D6).
         // Suivi budgétaire (D7) : réservé à qui peut voir les chiffres.
+        // Livre d'or (D1) : modération des mots laissés par les invités.
+        Route::get('events/{event}/livre-d-or', [OrganizerGuestBookController::class, 'index'])->name('events.guest-book.index');
+        Route::patch('events/{event}/livre-d-or/{message}', [OrganizerGuestBookController::class, 'toggle'])->whereNumber('message')->name('events.guest-book.toggle');
+        Route::delete('events/{event}/livre-d-or/{message}', [OrganizerGuestBookController::class, 'destroy'])->whereNumber('message')->name('events.guest-book.destroy');
+
         Route::get('events/{event}/budget', [BudgetController::class, 'index'])->name('events.budget.index');
         Route::post('events/{event}/budget', [BudgetController::class, 'store'])->name('events.budget.store');
         Route::patch('events/{event}/budget/{line}', [BudgetController::class, 'update'])->whereNumber('line')->name('events.budget.update');
@@ -519,6 +526,9 @@ Route::middleware(['resolve-guest-event', 'guest-locale'])
         // CSS personnalisé du thème (plans payants), servi comme feuille de
         // style pour être mis en cache d'un écran à l'autre du parcours.
         Route::get('theme.css', [FormThemeStyleController::class, 'show'])->name('theme-style');
+
+        // Livre d'or : un mot laissé depuis la page publique, sans compte.
+        Route::post('livre-d-or', [GuestBookController::class, 'store'])->middleware('throttle:10,1')->name('guest-book');
 
         Route::get('{token}/accueil', [RegistrationController::class, 'welcomeShow'])->name('welcome.show');
 

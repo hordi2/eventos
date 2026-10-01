@@ -95,6 +95,7 @@ function buildSections(nav: EventNav): SidebarSection[] {
                     ],
                 },
                 { label: 'Budget et rentabilité', icon: 'chart', linkKey: 'budget' },
+                { label: "Livre d'or", icon: 'megaphone', linkKey: 'guestBook' },
                 { label: 'Exports', icon: 'download', linkKey: 'exports' },
             ],
         },

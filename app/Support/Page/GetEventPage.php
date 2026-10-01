@@ -6,6 +6,7 @@ namespace App\Support\Page;
 
 use App\Domain\Event\Models\Event;
 use App\Domain\Page\Data\EventPageData;
+use App\Domain\Page\Models\GuestBookMessage;
 use App\Domain\Page\Models\Page;
 use App\Domain\Page\Support\PageBlocks;
 use App\Support\Events\PresentEventSessions;
@@ -24,6 +25,29 @@ use Illuminate\Support\Str;
  */
 final class GetEventPage
 {
+    /**
+     * Livre d'or : les mots publiés, les plus récents d'abord. Les dates
+     * s'affichent dans le fuseau de l'événement (règle 4.3).
+     *
+     * @return list<array{author: string, message: string, writtenAt: string}>
+     */
+    private function guestBook(Event $event): array
+    {
+        return GuestBookMessage::query()
+            ->where('event_id', $event->id)
+            ->published()
+            ->latest('id')
+            ->limit(100)
+            ->get()
+            ->map(fn (GuestBookMessage $message): array => [
+                'author' => $message->author_name,
+                'message' => $message->message,
+                'writtenAt' => $message->created_at?->setTimezone($event->timezone)->translatedFormat('j F Y') ?? '',
+            ])
+            ->values()
+            ->all();
+    }
+
     public function handle(Event $event): EventPageData
     {
         $event->loadMissing(['venue', 'organization']);
@@ -50,6 +74,7 @@ final class GetEventPage
             blocks: PageBlocks::resolve($page),
             speakers: app(PresentEventSpeakers::class)->handle($event),
             sessions: app(PresentEventSessions::class)->handle($event),
+            guestBookMessages: $this->guestBook($event),
             organizationLogoUrl: $event->organization->logo_path !== null
                 ? Storage::disk('public')->url($event->organization->logo_path)
                 : null,

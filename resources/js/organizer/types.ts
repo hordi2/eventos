@@ -43,6 +43,7 @@ export type EventNavLinkKey =
     | 'promoCodes'
     | 'exports'
     | 'budget'
+    | 'guestBook'
     | 'referral';
 
 /**
