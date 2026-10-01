@@ -82,6 +82,9 @@ final class PageBlocks
             // Une carte : son intitulé (title), sa valeur (time) et sa note.
             PageBlockType::Details => ['items' => self::items($block['items'] ?? null, ['title', 'time', 'description'])],
             PageBlockType::WelcomeMessage => ['url' => self::text($block['url'] ?? null), 'body' => self::text($block['body'] ?? null) ?? ''],
+            PageBlockType::EntryQr, PageBlockType::Rsvp => ['body' => self::text($block['body'] ?? null) ?? ''],
+            // Une photo de la galerie : son chemin dans la bibliothèque et sa légende.
+            PageBlockType::Gallery => ['items' => self::items($block['items'] ?? null, ['path', 'description'])],
             PageBlockType::Venue, PageBlockType::Countdown, PageBlockType::Speakers,
             PageBlockType::Sessions, PageBlockType::GuestBook => [],
         };

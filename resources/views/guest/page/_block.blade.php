@@ -420,4 +420,133 @@
         @endif
         @break
 
+    @case('entry_qr')
+        {{-- Votre entrée : le code personnel de l'invité, celui que
+             l'accueil scanne. Il n'existe que pour qui est arrivé par son
+             lien personnel — sinon, on lui dit où le trouver. --}}
+        <section class="itaza-section mb-16 text-center">
+            <h2 class="mb-3 font-serif text-2xl italic">{{ $blockTitle ?? __('Votre entrée') }}</h2>
+
+            @if (($invitee ?? null) !== null)
+                <img
+                    src="{{ route('guest.registration.invitation.qr', [request()->route('organization'), request()->route('event'), $invitee->invitation_token]) }}"
+                    alt="{{ __('Votre code d\'entrée') }}"
+                    loading="lazy"
+                    class="mx-auto mt-6 h-56 w-56 rounded-card bg-bg p-3 ring-1 ring-line"
+                >
+                <p class="mx-auto mt-6 max-w-[28rem] text-sm leading-relaxed text-ink-soft">
+                    {{ $block['body'] ?: __("Présentez ce code à l'accueil. Inutile de l'imprimer : votre téléphone suffit.") }}
+                </p>
+            @else
+                <p class="mx-auto mt-4 max-w-[28rem] rounded-card border border-dashed border-line bg-bg px-5 py-8 text-sm text-ink-soft">
+                    {{ __('Votre code personnel apparaît ici dès que vous ouvrez votre invitation depuis le lien que vous avez reçu.') }}
+                </p>
+            @endif
+        </section>
+        @break
+
+    @case('gallery')
+        {{-- Galerie : deux colonnes sur téléphone, trois à partir du
+             format tablette, et la photo s'agrandit au clic. --}}
+        @php($photos = array_values(array_filter($block['items'] ?? [], fn (array $item): bool => ! empty($item['path']))))
+        @if ($photos !== [])
+            <section class="itaza-section mb-16" x-data="{ open: null }">
+                @if ($blockTitle)
+                    <h2 class="mb-8 text-center font-serif text-2xl italic">{{ $blockTitle }}</h2>
+                @endif
+
+                <ul class="mx-auto grid max-w-[46rem] grid-cols-2 gap-3 sm:grid-cols-3">
+                    @foreach ($photos as $index => $photo)
+                        <li>
+                            <button
+                                type="button"
+                                @click="open = {{ $index }}"
+                                class="group block w-full overflow-hidden rounded-card"
+                                aria-label="{{ $photo['description'] ?: __('Agrandir la photo') }}"
+                            >
+                                <img
+                                    src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($photo['path']) }}"
+                                    alt="{{ $photo['description'] ?? '' }}"
+                                    loading="lazy"
+                                    class="aspect-square w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                                >
+                            </button>
+                        </li>
+                    @endforeach
+                </ul>
+
+                {{-- La photo en grand, par-dessus la page. --}}
+                @foreach ($photos as $index => $photo)
+                    <div
+                        x-show="open === {{ $index }}"
+                        x-cloak
+                        @click="open = null"
+                        @keydown.escape.window="open = null"
+                        class="fixed inset-0 z-40 flex items-center justify-center bg-black/85 p-4"
+                        role="dialog"
+                        aria-modal="true"
+                    >
+                        <figure class="max-h-full max-w-3xl text-center">
+                            <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($photo['path']) }}" alt="{{ $photo['description'] ?? '' }}" class="max-h-[80svh] w-auto rounded-card">
+                            @if (! empty($photo['description']))
+                                <figcaption class="mt-3 text-sm text-white/80">{{ $photo['description'] }}</figcaption>
+                            @endif
+                            <p class="mt-2 font-label text-[0.6rem] tracking-[0.2em] text-white/50 uppercase">{{ __('Toucher pour fermer') }}</p>
+                        </figure>
+                    </div>
+                @endforeach
+            </section>
+        @endif
+        @break
+
+    @case('rsvp')
+        {{-- Confirmez votre présence : les trois réponses possibles, en
+             gros boutons — comme la dernière page des faire-part. --}}
+        <section class="itaza-section mb-16 text-center">
+            <h2 class="mb-3 font-serif text-2xl italic">{{ $blockTitle ?? __('Confirmez votre présence') }}</h2>
+
+            @if (($invitee ?? null)?->contact !== null)
+                <p class="mb-6 text-sm text-ink-soft">
+                    {{ __('Invitation adressée à :name', ['name' => $invitee->contact->fullName()]) }}
+                </p>
+            @endif
+
+            @if ($block['body'])
+                <p class="mx-auto mb-8 max-w-[30rem] text-ink-soft">{{ $block['body'] }}</p>
+            @endif
+
+            <div class="mx-auto flex max-w-[26rem] flex-col gap-3" x-data="{ later: false }">
+                <a
+                    href="{{ $beginUrl }}"
+                    class="inline-flex min-h-12 items-center justify-center rounded-pill bg-ink px-8 py-3 font-label text-xs tracking-[0.18em] text-bg uppercase transition-transform duration-300 hover:scale-[1.02]"
+                >
+                    {{ __('Je confirme ma présence') }}
+                </a>
+
+                @if ($declineEnabled ?? false)
+                    <a
+                        href="{{ $beginUrl }}{{ str_contains($beginUrl, '?') ? '&' : '?' }}reponse=non"
+                        class="inline-flex min-h-12 items-center justify-center rounded-pill border border-ink px-8 py-3 font-label text-xs tracking-[0.18em] text-ink uppercase transition-transform duration-300 hover:scale-[1.02]"
+                    >
+                        {{ __('Je ne pourrai pas répondre présent') }}
+                    </a>
+                @endif
+
+                <button
+                    type="button"
+                    @click="later = true"
+                    class="inline-flex min-h-12 items-center justify-center rounded-pill bg-bg-alt px-8 py-3 font-label text-xs tracking-[0.18em] text-ink-soft uppercase"
+                >
+                    {{ __('Je vais confirmer plus tard') }}
+                </button>
+
+                <p x-show="later" x-cloak class="mt-2 text-sm text-ink-soft">
+                    {{ __('Gardez le lien de cette page : il vous ramènera ici pour répondre quand vous voudrez.') }}
+                </p>
+            </div>
+
+            <p class="mt-10 font-label text-[0.62rem] tracking-[0.25em] text-ink-soft uppercase">{{ __('Cordiale bienvenue') }}</p>
+        </section>
+        @break
+
 @endswitch

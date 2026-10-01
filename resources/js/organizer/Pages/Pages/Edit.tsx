@@ -13,6 +13,10 @@ interface BlockItem {
     description?: string;
     question?: string;
     answer?: string;
+    // Photo d'une galerie : son chemin en bibliothèque, et son adresse
+    // pour l'aperçu de l'éditeur.
+    path?: string;
+    url?: string;
 }
 
 interface Block {
@@ -57,7 +61,7 @@ function emptyBlock(type: string): Block {
         path: null,
         url: null,
         alt: null,
-        items: type === 'program' || type === 'faq' || type === 'details' ? [{}] : [],
+        items: type === 'program' || type === 'faq' || type === 'details' || type === 'gallery' ? [{}] : [],
     };
 }
 
@@ -130,6 +134,20 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
                 i === blockIndex ? { ...block, items: (block.items ?? []).map((item, j) => (j === itemIndex ? { ...item, ...changes } : item)) } : block,
             ),
         );
+    }
+
+    /** Photo d'une galerie : même bibliothèque que les blocs image. */
+    async function uploadItemImage(blockIndex: number, itemIndex: number, file: File) {
+        const formData = new FormData();
+        formData.append('image', file);
+        setUploading(true);
+
+        try {
+            const response = await window.axios.post<{ path: string; url: string }>(`/events/${event.id}/page/images`, formData);
+            updateItem(blockIndex, itemIndex, { path: response.data.path, url: response.data.url });
+        } finally {
+            setUploading(false);
+        }
     }
 
     async function uploadImage(index: number, file: File) {
@@ -370,6 +388,19 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
                                 </div>
                             )}
 
+                            {(block.type === 'entry_qr' || block.type === 'rsvp') && (
+                                <Textarea
+                                    value={block.body ?? ''}
+                                    onChange={(e) => update(index, { body: e.target.value })}
+                                    rows={2}
+                                    placeholder={
+                                        block.type === 'entry_qr'
+                                            ? "Présentez ce code à l'accueil…"
+                                            : 'Merci de nous dire si vous serez des nôtres.'
+                                    }
+                                />
+                            )}
+
                             {block.type === 'save_the_date' && (
                                 <Textarea
                                     value={block.body ?? ''}
@@ -408,6 +439,50 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
                                         onChange={(changeEvent) => update(index, { url: changeEvent.target.value })}
                                         placeholder="https://www.youtube.com/watch?v=…"
                                     />
+                                </div>
+                            )}
+
+                            {block.type === 'gallery' && (
+                                <div className="space-y-3">
+                                    <div className="grid gap-3 sm:grid-cols-3">
+                                        {(block.items ?? []).map((item, itemIndex) => (
+                                            <div key={itemIndex} className="rounded-control border border-line p-3">
+                                                {item.url && <img src={item.url} alt="" className="mb-2 aspect-square w-full rounded-control object-cover" />}
+                                                <input
+                                                    type="file"
+                                                    accept="image/png,image/jpeg,image/webp"
+                                                    onChange={(changeEvent) => {
+                                                        const file = changeEvent.target.files?.[0];
+
+                                                        if (file) {
+                                                            void uploadItemImage(index, itemIndex, file);
+                                                        }
+                                                    }}
+                                                    className="mb-2 block w-full text-xs text-ink-soft file:mr-2 file:min-h-8 file:cursor-pointer file:rounded-pill file:border file:border-line file:bg-bg file:px-3 file:py-1 file:text-xs file:text-ink"
+                                                />
+                                                <TextInput
+                                                    value={item.description ?? ''}
+                                                    onChange={(changeEvent) => updateItem(index, itemIndex, { description: changeEvent.target.value })}
+                                                    placeholder="Légende (optionnel)"
+                                                    aria-label="Légende de la photo"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => update(index, { items: (block.items ?? []).filter((_, j) => j !== itemIndex) })}
+                                                    className="mt-2 text-xs text-danger underline hover:no-underline"
+                                                >
+                                                    Retirer
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => update(index, { items: [...(block.items ?? []), {}] })}
+                                        className={SMALL_BUTTON}
+                                    >
+                                        + Ajouter une photo
+                                    </button>
                                 </div>
                             )}
 

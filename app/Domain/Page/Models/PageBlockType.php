@@ -22,6 +22,9 @@ enum PageBlockType: string
     case SaveTheDate = 'save_the_date';
     case Details = 'details';
     case WelcomeMessage = 'welcome_message';
+    case EntryQr = 'entry_qr';
+    case Gallery = 'gallery';
+    case Rsvp = 'rsvp';
 
     public function label(): string
     {
@@ -39,6 +42,9 @@ enum PageBlockType: string
             self::SaveTheDate => 'Save the date',
             self::Details => 'Informations en cartes',
             self::WelcomeMessage => "Mot d'accueil",
+            self::EntryQr => 'Votre entrée (code QR)',
+            self::Gallery => 'Galerie photo',
+            self::Rsvp => 'Confirmez votre présence',
         };
     }
 
@@ -58,6 +64,9 @@ enum PageBlockType: string
             self::SaveTheDate => 'Le calendrier du mois, la date en grand et votre mot de convocation.',
             self::Details => 'Thème, tenue, tapis rouge, cadeaux : une carte par information.',
             self::WelcomeMessage => 'Une vidéo ou un enregistrement audio, joué au clic.',
+            self::EntryQr => "Le code d'entrée de l'invité, à présenter à l'accueil.",
+            self::Gallery => 'Vos photos, en grille, agrandies au clic.',
+            self::Rsvp => 'Les trois réponses possibles, en gros boutons.',
         };
     }
 

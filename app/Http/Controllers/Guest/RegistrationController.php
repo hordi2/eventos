@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Guest;
 
+use App\Domain\Contact\Models\EventInvitee;
 use App\Domain\Event\Models\Event;
 use App\Domain\Form\Actions\CancelRegistration;
 use App\Domain\Form\Actions\SaveRegistrationDraft;
@@ -136,7 +137,11 @@ final class RegistrationController extends Controller
             ? 'guest.registration.welcome.show'
             : 'guest.registration.identity.show';
 
-        return redirect()->route($firstStep, [$organization, $event, $draft->resume_token]);
+        // « Je ne pourrai pas venir » depuis la page : la réponse suit
+        // jusqu'au formulaire, où elle arrive déjà cochée.
+        $declining = $request->query('reponse') === 'non' ? ['reponse' => 'non'] : [];
+
+        return redirect()->route($firstStep, [$organization, $event, $draft->resume_token, ...$declining]);
     }
 
     /**
@@ -654,9 +659,19 @@ final class RegistrationController extends Controller
             return view('guest.registration.closed', ['event' => $eventModel, 'reason' => 'full']);
         }
 
+        // Invité reconnu par son lien personnel : son nom et son code
+        // d'entrée s'affichent sur la page (blocs « Votre entrée » et
+        // « Confirmez votre présence »).
+        $invitee = $request->attributes->get('guestInvitee');
+
         return view('guest.event-page', [
             'event' => $eventModel,
             'page' => app(GetEventPage::class)->handle($eventModel),
+            'invitee' => $invitee instanceof EventInvitee ? $invitee : null,
+            // « Je ne pourrai pas répondre présent » n'a de sens que si le
+            // formulaire accepte un refus : sans cela, le bouton mènerait à
+            // une inscription, tout le contraire de ce qu'il promet.
+            'declineEnabled' => (bool) FormSettings::resolve($form->settings)['rsvp']['decline_enabled'],
             'beginUrl' => route('guest.registration.begin', [$organization, $event, ...($form->is_default ? [] : ['formulaire' => $form->slug])]),
             'calendar' => [
                 'google' => app(EventCalendarLinks::class)->googleUrl($eventModel),

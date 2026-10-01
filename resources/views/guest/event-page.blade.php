@@ -68,7 +68,14 @@
 
         {{-- Page composée par l'organisateur (lot 2) : chaque bloc dans son ordre. --}}
         @foreach ($page->blocks as $block)
-            @include('guest.page._block', ['block' => $block, 'page' => $page, 'event' => $event])
+            @include('guest.page._block', [
+                'block' => $block,
+                'page' => $page,
+                'event' => $event,
+                'beginUrl' => $beginUrl,
+                'invitee' => $invitee ?? null,
+                'declineEnabled' => $declineEnabled ?? false,
+            ])
         @endforeach
 
         @isset($calendar)

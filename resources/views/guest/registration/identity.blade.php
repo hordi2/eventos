@@ -14,7 +14,10 @@
             // Invité de la liste : sa propre limite, et ses coordonnées connues.
             $maxCompanions = $invitation?->maxCompanions ?? (int) $settings['rsvp']['max_companions'];
             $known = $invitation?->contact;
-            $attendingChoice = (string) old('attending', ($draft->identity['attending'] ?? true) ? '1' : '0');
+            // ?reponse=non : l'invité a cliqué « Je ne pourrai pas » sur la
+            // page d'invitation, sa réponse arrive déjà cochée.
+            $declinedFromPage = request()->query('reponse') === 'non';
+            $attendingChoice = (string) old('attending', ($draft->identity['attending'] ?? ! $declinedFromPage) ? '1' : '0');
             $draftCompanions = $draft->identity['companions'] ?? [];
             // Les membres du groupe cochés vivent parmi les accompagnants du brouillon, reconnaissables à leur contact.
             $companionRows = array_values(old('_companions', array_filter($draftCompanions, fn ($row) => empty($row['contact_id']))));
