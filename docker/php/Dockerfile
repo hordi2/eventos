@@ -29,5 +29,9 @@ EXPOSE 8000
 # intégré dans un sous-processus avec un environnement restreint (seulement
 # PATH et APP_ENV), ce qui masque les variables injectées par Docker Compose
 # (DB_HOST, REDIS_HOST). `php -S` en direct hérite de tout l'environnement.
+#
+# Le script de routage est indispensable : sans lui, `php -S` répond 404 à
+# toute adresse qui ressemble à un fichier (agenda.ics, qr.png, theme.css,
+# faire-part.pdf) au lieu de la passer à Laravel.
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
+CMD ["php", "-S", "0.0.0.0:8000", "-t", "public", "docker/php/router.php"]
