@@ -43,10 +43,16 @@ h3 {
 }
 
 /* Bouton principal du parcours d'inscription : couleurs du thème du
-   formulaire (FormSettings::cssVariables), à défaut l'encre du site. */
+   formulaire (FormSettings::cssVariables), à défaut l'encre du site. La
+   typographie, elle, ne dépend pas du thème — c'est celle de la couverture
+   de l'invitation, pour que l'invité reste dans la même lettre. */
 .form-button {
     background: var(--form-button, var(--color-ink));
     color: var(--form-button-text, var(--color-bg));
+    font-family: var(--font-label);
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
 }
 
 :focus-visible {

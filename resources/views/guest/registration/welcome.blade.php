@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="mx-auto max-w-lg px-4 py-16 text-center sm:py-20">
-        <p class="mb-2 text-sm font-medium text-ink-soft">{{ $event->title }}</p>
+        @include('guest.registration._letterhead', ['event' => $event])
         <h1 class="mb-5 text-3xl">{{ $settings['welcome']['title'] !== '' ? $settings['welcome']['title'] : $event->title }}</h1>
 
         @if ($settings['welcome']['message'] !== '')

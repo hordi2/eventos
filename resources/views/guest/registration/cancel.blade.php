@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="mx-auto max-w-lg px-4 py-10 sm:py-16">
-        <p class="mb-1 text-sm font-medium text-ink-soft">{{ $event->title }}</p>
+        @include('guest.registration._letterhead', ['event' => $event])
         <h1 class="mb-8 text-2xl">{{ __('Annuler mon inscription') }}</h1>
 
         <p class="mb-8 text-ink-soft">

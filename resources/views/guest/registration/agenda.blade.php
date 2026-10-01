@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="mx-auto max-w-lg px-4 py-10 sm:py-16">
-        <p class="mb-1 text-sm font-medium text-ink-soft">{{ $event->title }}</p>
+        @include('guest.registration._letterhead', ['event' => $event])
         <h1 class="mb-2 text-2xl">{{ __('Mon agenda') }}</h1>
         <p class="mb-8 text-sm text-ink-soft">
             {{ __('Le programme de :name.', ['name' => trim($registration->first_name.' '.$registration->last_name) ?: $registration->email]) }}

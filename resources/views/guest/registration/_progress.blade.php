@@ -12,7 +12,7 @@
                         {{ $number <= $step ? 'bg-ink text-bg' : 'border border-line text-ink-soft' }}"
                     aria-current="{{ $number === $step ? 'step' : 'false' }}"
                 >{{ $number }}</span>
-                <span class="hidden text-sm sm:inline {{ $number === $step ? 'text-ink' : 'text-ink-soft' }}">{{ $label }}</span>
+                <span class="hidden font-label text-[0.62rem] tracking-[0.18em] uppercase sm:inline {{ $number === $step ? 'text-ink' : 'text-ink-soft' }}">{{ $label }}</span>
                 @if (! $loop->last)
                     <span class="h-px flex-1 {{ $number < $step ? 'bg-ink' : 'bg-line' }}" aria-hidden="true"></span>
                 @endif
