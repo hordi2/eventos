@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\Organization\Models\MembershipRole;
+use App\Support\MultiTenancy\CurrentOrganization;
 
 it('ouvre le kiosque avec un code à quatre chiffres', function (): void {
     ['event' => $event, 'doorStaff' => $staff] = makeCheckInEvent();
@@ -39,16 +40,24 @@ it('cherche un invité par son nom, sans jamais livrer la liste entière', funct
     ['organization' => $organization, 'event' => $event, 'doorStaff' => $staff] = makeCheckInEvent();
     $attendee = makeCheckedInAttendee($organization, $event);
 
+    // Un prénom accentué, posé explicitement : la factory en tire un au
+    // hasard, et la recherche doit marcher pour « Désiré » comme pour
+    // « Marie ».
+    app(CurrentOrganization::class)->set($organization);
+    $attendee->update(['first_name' => 'Désirée', 'last_name' => 'Mukendi']);
+    app(CurrentOrganization::class)->clear();
+
     $this->actingAs($staff)->post("/events/{$event->id}/kiosk", ['code' => '4071']);
 
-    // Moins de trois lettres : rien ne sort.
-    $this->actingAs($staff)->getJson("/events/{$event->id}/kiosk/search?q=".mb_substr($attendee->first_name, 0, 2))
+    // Moins de trois lettres : rien ne sort. Le terme passe par urlencode :
+    // un accent écrit tel quel dans l'adresse n'arrive pas entier au serveur.
+    $this->actingAs($staff)->getJson("/events/{$event->id}/kiosk/search?q=".urlencode('Dé'))
         ->assertOk()
         ->assertJsonPath('guests', []);
 
-    $this->actingAs($staff)->getJson("/events/{$event->id}/kiosk/search?q={$attendee->first_name}")
+    $this->actingAs($staff)->getJson("/events/{$event->id}/kiosk/search?q=".urlencode('Désirée'))
         ->assertOk()
-        ->assertJsonPath('guests.0.name', trim("{$attendee->first_name} {$attendee->last_name}"));
+        ->assertJsonPath('guests.0.name', 'Désirée Mukendi');
 });
 
 it('réserve le kiosque aux membres qui peuvent faire le check-in', function (): void {
