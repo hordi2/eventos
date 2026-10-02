@@ -358,9 +358,16 @@ php artisan queue:failed
       promo, pages invité en français et en anglais, page événement en blocs,
       kiosque d'accueil, agenda et mesure d'audience. WhatsApp, plan de table,
       séquences d'envois, Zapier/n8n, API et webhooks étaient déjà livrés.
-- [ ] Lot 3 — Montée en gamme
+- [ ] Lot 3 — Montée en gamme. L'invitation est traitée : la page web est le
+      modèle, le faire-part PDF et la version téléphone la suivent feuillet
+      par feuillet (mêmes polices, même ordre, mêmes ornements). Le code
+      d'entrée et la confirmation de présence ferment toujours l'invitation,
+      chacun sur sa page. Restent le suivi budgétaire et la rentabilité (D7).
 
 **Reste du lot 2, hors code** : publier l'application mobile de check-in sur
 les stores (compte développeur à ouvrir).
 
-**Dernière mise à jour** : 29 septembre 2026
+**Connu, à ticketer** : la CSP stricte des pages publiques annoncée au §7
+n'est écrite nulle part dans le code.
+
+**Dernière mise à jour** : 2 octobre 2026
