@@ -51,6 +51,7 @@ use App\Support\Page\GetEventPage;
 use App\Support\Registration\BuildGuestSubEventChoices;
 use App\Support\Registration\BuildGuestVisibilityContext;
 use App\Support\Registration\BuildSubEventContexts;
+use App\Support\Registration\DeclineAnswer;
 use App\Support\Registration\OpenRegistrationDonation;
 use App\Support\Registration\PersonalAgendaLink;
 use App\Support\Registration\PresentGuestPresentation;
@@ -671,7 +672,7 @@ final class RegistrationController extends Controller
             // « Je ne pourrai pas répondre présent » n'a de sens que si le
             // formulaire accepte un refus : sans cela, le bouton mènerait à
             // une inscription, tout le contraire de ce qu'il promet.
-            'declineEnabled' => (bool) FormSettings::resolve($form->settings)['rsvp']['decline_enabled'],
+            'declineEnabled' => DeclineAnswer::isOffered($eventModel, $form),
             'beginUrl' => route('guest.registration.begin', [$organization, $event, ...($form->is_default ? [] : ['formulaire' => $form->slug])]),
             'calendar' => [
                 'google' => app(EventCalendarLinks::class)->googleUrl($eventModel),

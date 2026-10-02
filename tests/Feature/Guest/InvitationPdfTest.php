@@ -78,9 +78,9 @@ it('porte le nom de l\'invité, le programme et son lien personnel', function ()
     expect($data->guestName)->toBe('Awa Diallo')
         ->and($data->eyebrow)->toBe('Vous êtes invité')
         ->and($data->rsvpUrl)->toContain($invitee->invitation_token)
-        // Le faire-part suit la page : un feuillet par bloc composé.
-        ->and($data->blocks)->toHaveCount(1)
-        ->and($data->blocks[0]['type'])->toBe('program')
+        // Le faire-part suit la page : un feuillet par bloc composé, puis
+        // le code d'entrée et la réponse, qui ferment toujours l'invitation.
+        ->and(array_column($data->blocks, 'type'))->toBe(['program', 'entry_qr', 'rsvp'])
         ->and($data->blocks[0]['items'][0]['title'])->toBe('Bénédiction nuptiale')
         // Aucun code d'entrée tant que l'invité n'est pas inscrit.
         ->and($data->entryQr)->toBeNull()
@@ -93,7 +93,7 @@ it('ajoute le code d\'entrée au faire-part d\'un inscrit', function (): void {
 
     $this->get("{$base}/commencer");
     $token = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->latest('id')->firstOrFail()->resume_token;
-    $this->post("{$base}/{$token}/identite", ['email' => 'awa@example.com', 'first_name' => 'Awa', 'last_name' => 'Diallo', 'phone' => '+243970000001']);
+    $this->post("{$base}/{$token}/identite", ['email' => 'awa@example.com', 'first_name' => 'Awa', 'last_name' => 'Diallo', 'phone' => '+243970000001', 'attending' => 1]);
     $this->post("{$base}/{$token}/reponses", []);
     $this->post("{$base}/{$token}/recap");
 
@@ -145,8 +145,9 @@ it('imprime un feuillet par bloc, avec son fond, et écarte ce qui n\'a pas de s
     $data = app(BuildInvitationPdf::class)->data($event->fresh(), $invitee);
     app(CurrentOrganization::class)->clear();
 
-    // Le décompte et le livre d'or ne s'impriment pas.
-    expect($data->blocks)->toHaveCount(1)
+    // Le décompte et le livre d'or ne s'impriment pas ; le code d'entrée et
+    // la réponse ferment le faire-part, comme la page web.
+    expect(array_column($data->blocks, 'type'))->toBe(['details', 'entry_qr', 'rsvp'])
         ->and($data->blocks[0]['type'])->toBe('details')
         ->and($data->blocks[0]['onDark'])->toBeTrue()
         ->and($data->blocks[0]['overlay'])->toBe(0.7)

@@ -28,6 +28,7 @@ final class InvitationPdfData
         public readonly string $shortMonth,
         public readonly string $year,
         public readonly string $fullDate,
+        public readonly string $weekday,
         public readonly string $time,
         public readonly ?string $place,
         public readonly ?string $address,
@@ -39,7 +40,15 @@ final class InvitationPdfData
         public readonly string $rsvpUrl,
         public readonly string $rsvpQr,
         public readonly string $rsvpLabel,
+        // « Je ne pourrai pas venir » ne s'imprime que si le formulaire
+        // accepte un refus : sinon la réponse n'existerait nulle part.
+        public readonly bool $declineEnabled,
         public readonly array $calendar,
         public readonly array $blocks,
+        // Les lettres de la page web, portées sur le papier.
+        public readonly string $fontFaces,
+        public readonly string $headingFamily,
+        public readonly string $bodyFamily,
+        public readonly string $scriptFamily,
     ) {}
 }

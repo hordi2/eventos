@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Organizer\Page;
 
 use App\Domain\Page\Models\PageBlockType;
+use App\Support\Guest\GuestFonts;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,6 +28,9 @@ final class UpdatePageRequest extends FormRequest
             'cover_monogram' => ['nullable', 'string', 'max:12'],
             'cover_overlay' => ['nullable', 'integer', 'min:0', 'max:90'],
             'cover_cta_label' => ['nullable', 'string', 'max:60'],
+            'heading_font' => ['nullable', 'string', Rule::in(array_keys(GuestFonts::HEADING))],
+            'body_font' => ['nullable', 'string', Rule::in(array_keys(GuestFonts::BODY))],
+            'script_font' => ['nullable', 'string', Rule::in(array_keys(GuestFonts::SCRIPT))],
             'blocks' => ['array', 'max:40'],
             'blocks.*.id' => ['nullable', 'string', 'max:64'],
             'blocks.*.type' => ['required', Rule::enum(PageBlockType::class)],
@@ -43,6 +47,11 @@ final class UpdatePageRequest extends FormRequest
             'blocks.*.url' => ['nullable', 'string', 'max:2048'],
             'blocks.*.items' => ['array', 'max:100'],
             'blocks.*.showIcons' => ['nullable', 'boolean'],
+            'blocks.*.yesLabel' => ['nullable', 'string', 'max:60'],
+            'blocks.*.noLabel' => ['nullable', 'string', 'max:60'],
+            'blocks.*.laterLabel' => ['nullable', 'string', 'max:60'],
+            'blocks.*.mediaToken' => ['nullable', 'uuid'],
+            'blocks.*.mediaName' => ['nullable', 'string', 'max:255'],
             'blocks.*.items.*.icon' => ['nullable', 'string', 'max:20'],
             'blocks.*.items.*.time' => ['nullable', 'string', 'max:50'],
             // Chemin d'une image de la bibliothèque (galerie), jamais une adresse libre.

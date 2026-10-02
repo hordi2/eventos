@@ -7,6 +7,7 @@ use App\Http\Controllers\Guest\GuestBookController;
 use App\Http\Controllers\Guest\GuestInvitationController;
 use App\Http\Controllers\Guest\InvitationPdfController;
 use App\Http\Controllers\Guest\InvitationQrController;
+use App\Http\Controllers\Guest\PageMediaController;
 use App\Http\Controllers\Guest\PersonalAgendaController;
 use App\Http\Controllers\Guest\ProposalController as GuestProposalController;
 use App\Http\Controllers\Guest\RegistrationController;
@@ -447,6 +448,8 @@ Route::middleware('auth')->group(function (): void {
         Route::patch('events/{event}/page', [PageController::class, 'update'])->name('events.page.update');
         Route::post('events/{event}/page/banner', [PageController::class, 'uploadBanner'])->name('events.page.banner');
         Route::post('events/{event}/page/images', [PageController::class, 'uploadImage'])->name('events.page.images');
+        // Mot d'accueil en audio ou en vidéo, déposé dans Itaza.
+        Route::post('events/{event}/page/media', [PageController::class, 'uploadMedia'])->middleware('throttle:10,1')->name('events.page.media');
 
         Route::get('events/{event}/exports', [ExportController::class, 'index'])->name('events.exports.index');
         Route::post('events/{event}/exports', [ExportController::class, 'store'])->name('events.exports.store');
@@ -510,6 +513,9 @@ Route::middleware(['resolve-guest-event', 'guest-locale'])
         // Code QR personnel, servi en image : c'est lui qu'une invitation
         // hébergée ailleurs pose dans une balise <img>.
         Route::get('invitation/{invitationToken}/qr.png', InvitationQrController::class)->middleware('throttle:60,1')->name('invitation.qr');
+        // Mot d'accueil déposé dans Itaza : servi par un jeton non
+        // devinable, et seulement une fois l'analyse antivirus passée.
+        Route::get('media/{mediaToken}', PageMediaController::class)->middleware('throttle:60,1')->name('media');
         Route::get('retrouver-mon-invitation', [GuestInvitationController::class, 'find'])->name('invitation.find');
         Route::post('retrouver-mon-invitation', [GuestInvitationController::class, 'lookup'])->middleware('throttle:10,1')->name('invitation.lookup');
 

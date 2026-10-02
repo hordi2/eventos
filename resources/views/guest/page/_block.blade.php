@@ -78,7 +78,19 @@
                             <div class="itaza-timeline-body">
                                 @if ($block['showIcons'] ?? false)
                                     <span class="itaza-timeline-icon text-ink">
-                                        @include('guest.page._programme-icon', ['icon' => $item['icon'] ?? null])
+                                        @if (! empty($item['path']))
+                                            <img
+                                                src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($item['path']) }}"
+                                                alt=""
+                                                width="34"
+                                                height="34"
+                                                loading="lazy"
+                                                decoding="async"
+                                                class="h-[34px] w-[34px] object-contain"
+                                            >
+                                        @else
+                                            @include('guest.page._programme-icon', ['icon' => $item['icon'] ?? null])
+                                        @endif
                                     </span>
                                 @endif
                                 @if (! empty($item['time']))
@@ -317,7 +329,7 @@
                                 <td class="py-1.5 text-sm">
                                     @if ($day >= 1 && $day <= $daysInMonth)
                                         @if ($day === (int) $start->day)
-                                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink text-bg">{{ str_pad((string) $day, 2, '0', STR_PAD_LEFT) }}</span>
+                                            <span class="inline-flex h-8 w-8 items-center justify-center bg-ink text-bg">{{ str_pad((string) $day, 2, '0', STR_PAD_LEFT) }}</span>
                                         @else
                                             <span class="text-ink-soft">{{ str_pad((string) $day, 2, '0', STR_PAD_LEFT) }}</span>
                                         @endif
@@ -329,7 +341,7 @@
                 </tbody>
             </table>
 
-            <p class="mt-8 font-serif text-4xl text-ink italic sm:text-5xl">{{ $blockTitle ?? __('Save the date') }}</p>
+            <p class="itaza-script mt-8 text-ink" style="font-size: clamp(2.5rem, 9vw, 3.75rem)">{{ $blockTitle ?? __('Save the date') }}</p>
 
             @if (! empty($block['body']))
                 <p class="mx-auto mt-6 max-w-[30rem] leading-relaxed whitespace-pre-line text-ink">{{ $block['body'] }}</p>
@@ -362,7 +374,7 @@
                     <h2 class="mb-8 text-center font-serif text-2xl italic">{{ $blockTitle }}</h2>
                 @endif
 
-                <ul class="mx-auto grid max-w-[34rem] gap-4 sm:grid-cols-2">
+                <ul class="mx-auto grid max-w-[34rem] grid-cols-2 gap-4">
                     @foreach ($block['items'] as $item)
                         <li class="rounded-card border border-line bg-bg px-5 py-6 text-center">
                             <p class="font-label text-[0.62rem] tracking-[0.25em] text-ink-soft uppercase">{{ $item['title'] ?? '' }}</p>
@@ -380,13 +392,16 @@
         @break
 
     @case('welcome_message')
-        {{-- Mot d'accueil : une vidéo YouTube ou Vimeo, ou un fichier audio
-             ou vidéo déposé ailleurs. Rien ne se charge avant le clic — la
-             page reste légère en 3G. --}}
+        {{-- Mot d'accueil : un fichier déposé dans Itaza, une vidéo YouTube
+             ou Vimeo, ou l'adresse d'un fichier hébergé ailleurs. Rien ne se
+             charge avant le clic — la page reste légère en 3G. --}}
         @php($url = trim((string) ($block['url'] ?? '')))
+        {{-- Un fichier déposé dans Itaza dit lui-même ce qu'il est ; pour une
+             adresse extérieure, son extension en tient lieu. --}}
+        @php($kind = $block['mediaKind'] ?? null)
         @php($extension = mb_strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION)))
-        @php($isAudio = in_array($extension, ['mp3', 'm4a', 'ogg', 'oga', 'wav'], true))
-        @php($isVideoFile = in_array($extension, ['mp4', 'webm', 'ogv'], true))
+        @php($isAudio = $kind !== null ? $kind === 'audio' : in_array($extension, ['mp3', 'm4a', 'ogg', 'oga', 'wav'], true))
+        @php($isVideoFile = $kind !== null ? $kind === 'video' : in_array($extension, ['mp4', 'webm', 'ogv'], true))
         @php($embed = $isAudio || $isVideoFile ? null : \App\Domain\Form\Support\VideoEmbed::from($url))
         @if ($url !== '' && ($isAudio || $isVideoFile || $embed !== null))
             <section class="itaza-section mb-16 text-center">
@@ -460,7 +475,9 @@
                     <h2 class="mb-8 text-center font-serif text-2xl italic">{{ $blockTitle }}</h2>
                 @endif
 
-                <ul class="mx-auto grid max-w-[46rem] grid-cols-2 gap-3 sm:grid-cols-3">
+                {{-- Deux photos par rangée, sur téléphone comme sur ordinateur : la même
+                     planche que le feuillet imprimé. --}}
+                <ul class="mx-auto grid max-w-[46rem] grid-cols-2 gap-3">
                     @foreach ($photos as $index => $photo)
                         <li>
                             <button
@@ -525,7 +542,7 @@
                     href="{{ $beginUrl }}"
                     class="inline-flex min-h-12 items-center justify-center rounded-pill bg-ink px-8 py-3 font-label text-xs tracking-[0.18em] text-bg uppercase transition-transform duration-300 hover:scale-[1.02]"
                 >
-                    {{ __('Je confirme ma présence') }}
+                    {{ $block['yesLabel'] ?: __('Je confirme ma présence') }}
                 </a>
 
                 @if ($declineEnabled ?? false)
@@ -533,7 +550,7 @@
                         href="{{ $beginUrl }}{{ str_contains($beginUrl, '?') ? '&' : '?' }}reponse=non"
                         class="inline-flex min-h-12 items-center justify-center rounded-pill border border-ink px-8 py-3 font-label text-xs tracking-[0.18em] text-ink uppercase transition-transform duration-300 hover:scale-[1.02]"
                     >
-                        {{ __('Je ne pourrai pas répondre présent') }}
+                        {{ $block['noLabel'] ?: __('Je ne pourrai pas répondre présent') }}
                     </a>
                 @endif
 
@@ -542,7 +559,7 @@
                     @click="later = true"
                     class="inline-flex min-h-12 items-center justify-center rounded-pill bg-bg-alt px-8 py-3 font-label text-xs tracking-[0.18em] text-ink-soft uppercase"
                 >
-                    {{ __('Je vais confirmer plus tard') }}
+                    {{ $block['laterLabel'] ?: __('Je vais confirmer plus tard') }}
                 </button>
 
                 <p x-show="later" x-cloak class="mt-2 text-sm text-ink-soft">
@@ -560,7 +577,9 @@
              paysage sur ordinateur. Le mot, s'il y en a un, se lit par
              dessus. --}}
         @if (! empty($block['path']))
-            <section class="itaza-section relative -mx-5 isolate flex min-h-[100svh] items-end overflow-hidden">
+            {{-- Le feuillet qui l'accueille n'a ni marge ni cadre : la photo
+                 va d'un bord à l'autre, et le mot se lit en bas. --}}
+            <section class="itaza-section absolute inset-0 flex items-end">
                 <img
                     src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($block['path']) }}"
                     alt="{{ $blockTitle ?? '' }}"

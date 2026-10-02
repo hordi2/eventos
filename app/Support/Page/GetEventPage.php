@@ -8,9 +8,11 @@ use App\Domain\Event\Models\Event;
 use App\Domain\Page\Data\EventPageData;
 use App\Domain\Page\Models\GuestBookMessage;
 use App\Domain\Page\Models\Page;
+use App\Domain\Page\Models\PageBlockType;
 use App\Domain\Page\Support\PageBlocks;
 use App\Support\Events\PresentEventSessions;
 use App\Support\Events\PresentEventSpeakers;
+use App\Support\Guest\GuestFonts;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -48,10 +50,35 @@ final class GetEventPage
             ->all();
     }
 
+    /**
+     * Les feuillets de la page : ceux de l'organisateur, moins ceux que
+     * l'événement laisserait vides — un bloc « Intervenants » sans
+     * intervenant occuperait un écran entier pour ne rien dire.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function sheets(?Page $page, Event $event, bool $hasSpeakers, bool $hasSessions): array
+    {
+        $hasVenue = ! $event->is_online && $event->venue !== null;
+
+        return array_values(array_filter(
+            PageBlocks::withClosingSheets(PageBlocks::resolve($page)),
+            fn (array $block): bool => match ($block['type']) {
+                PageBlockType::Speakers->value => $hasSpeakers,
+                PageBlockType::Sessions->value => $hasSessions,
+                PageBlockType::Venue->value => $hasVenue,
+                default => true,
+            },
+        ));
+    }
+
     public function handle(Event $event): EventPageData
     {
         $event->loadMissing(['venue', 'organization']);
         $page = Page::query()->where('event_id', $event->id)->first();
+        $fonts = GuestFonts::stacks($page?->heading_font, $page?->body_font, $page?->script_font);
+        $speakers = app(PresentEventSpeakers::class)->handle($event);
+        $sessions = app(PresentEventSessions::class)->handle($event);
 
         return new EventPageData(
             title: $event->title,
@@ -65,6 +92,10 @@ final class GetEventPage
             // texte aussi, quelle que soit l'image déposée.
             coverOverlay: $page === null ? 50 : $page->cover_overlay,
             coverCtaLabel: $page?->cover_cta_label,
+            headingFont: $fonts['heading'],
+            bodyFont: $fonts['body'],
+            scriptFont: $fonts['script'],
+            fontStylesheet: GuestFonts::stylesheet($page?->heading_font, $page?->body_font, $page?->script_font),
             metaDescription: $page !== null && $page->meta_description !== null
                 ? $page->meta_description
                 : Str::limit(strip_tags((string) $event->description), 155),
@@ -78,9 +109,12 @@ final class GetEventPage
             isOnline: $event->is_online,
             programItems: $page !== null ? $page->program_items : [],
             faqItems: $page !== null ? $page->faq_items : [],
-            blocks: PageBlocks::resolve($page),
-            speakers: app(PresentEventSpeakers::class)->handle($event),
-            sessions: app(PresentEventSessions::class)->handle($event),
+            blocks: app(ResolvePageMedia::class)->handle(
+                $this->sheets($page, $event, $speakers !== [], $sessions !== []),
+                $event,
+            ),
+            speakers: $speakers,
+            sessions: $sessions,
             guestBookMessages: $this->guestBook($event),
             organizationLogoUrl: $event->organization->logo_path !== null
                 ? Storage::disk('public')->url($event->organization->logo_path)

@@ -12,6 +12,7 @@ use App\Domain\Form\Support\EventForms;
 use App\Domain\Form\Support\FormSettings;
 use App\Support\GuestList\GuestInvitation;
 use App\Support\GuestList\ResolveGuestInvitation;
+use App\Support\Registration\DeclineAnswer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -158,6 +159,7 @@ final class SaveIdentityRequest extends FormRequest
             $draft = RegistrationDraft::query()->where('resume_token', (string) $this->route('token'))->first();
             $form = $draft === null ? null : app(EventForms::class)->forVersion($draft->form_version_id);
             $this->formSettings = FormSettings::resolve($form?->settings);
+            $this->formSettings['rsvp']['decline_enabled'] = DeclineAnswer::isOffered($this->guestEvent(), $form);
         }
 
         return $this->formSettings;

@@ -34,6 +34,13 @@ interface Block {
     textTone?: 'light' | 'dark';
     // Programme : les illustrations s'affichent, ou pas.
     showIcons?: boolean;
+    // Mot d'accueil déposé dans Itaza : son jeton et son nom de fichier.
+    mediaToken?: string | null;
+    mediaName?: string | null;
+    // Réponse à l'invitation : le texte des trois boutons.
+    yesLabel?: string | null;
+    noLabel?: string | null;
+    laterLabel?: string | null;
     body?: string | null;
     path?: string | null;
     url?: string | null;
@@ -47,6 +54,11 @@ interface BlockTypeOption {
     hint: string;
 }
 
+interface FontOption {
+    value: string;
+    label: string;
+}
+
 interface Props {
     event: { id: number; title: string; slug: string };
     publicUrl: string;
@@ -58,9 +70,14 @@ interface Props {
         cover_monogram: string | null;
         cover_overlay: number;
         cover_cta_label: string | null;
+        heading_font: string;
+        body_font: string;
+        script_font: string;
         blocks: Block[];
     };
     blockTypes: BlockTypeOption[];
+    fonts: { heading: FontOption[]; body: FontOption[]; script: FontOption[] };
+    invitationPdfUrl: string;
 }
 
 function emptyBlock(type: string): Block {
@@ -104,7 +121,7 @@ const SMALL_BUTTON = 'inline-flex min-h-9 items-center rounded-pill border borde
  * l'organisateur ajoute, déplace et retire. Le haut de page (bannière,
  * titre, date, bouton « S'inscrire ») reste toujours en place.
  */
-export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
+export default function Edit({ event, publicUrl, page, blockTypes, fonts, invitationPdfUrl }: Props) {
     const [bannerUrl, setBannerUrl] = useState(page.banner_url);
     const [metaDescription, setMetaDescription] = useState(page.meta_description ?? '');
     const [cover, setCover] = useState({
@@ -114,10 +131,17 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
         overlay: page.cover_overlay,
         ctaLabel: page.cover_cta_label ?? '',
     });
+    const [typography, setTypography] = useState({
+        heading: page.heading_font,
+        body: page.body_font,
+        script: page.script_font,
+    });
     const [blocks, setBlocks] = useState<Block[]>(page.blocks);
     const [newType, setNewType] = useState(blockTypes[0]?.value ?? 'text');
     const [uploading, setUploading] = useState(false);
     const [saving, setSaving] = useState(false);
+    // Verdict de l'analyse antivirus d'un mot d'accueil, par bloc.
+    const [mediaStatus, setMediaStatus] = useState<Record<string, string>>({});
     const [saved, setSaved] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -181,6 +205,27 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
         }
     }
 
+    /**
+     * Mot d'accueil en audio ou en vidéo, déposé dans Itaza : le fichier
+     * passe d'abord par l'analyse antivirus, et ne se joue qu'ensuite.
+     */
+    async function uploadMedia(index: number, blockId: string, file: File) {
+        const formData = new FormData();
+        formData.append('media', file);
+        setUploading(true);
+
+        try {
+            const response = await window.axios.post<{ token: string; name: string; statusLabel: string }>(
+                `/events/${event.id}/page/media`,
+                formData,
+            );
+            update(index, { mediaToken: response.data.token, mediaName: response.data.name, url: null });
+            setMediaStatus((current) => ({ ...current, [blockId]: response.data.statusLabel }));
+        } finally {
+            setUploading(false);
+        }
+    }
+
     /** Photo d'une galerie : même bibliothèque que les blocs image. */
     async function uploadItemImage(blockIndex: number, itemIndex: number, file: File) {
         const formData = new FormData();
@@ -219,6 +264,9 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
                 cover_monogram: cover.monogram || null,
                 cover_overlay: cover.overlay,
                 cover_cta_label: cover.ctaLabel || null,
+                heading_font: typography.heading,
+                body_font: typography.body,
+                script_font: typography.script,
                 blocks,
             });
             setSaved(true);
@@ -232,7 +280,11 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
         <EventLayout title="Site web de l'événement" eyebrow={event.title}>
             <Head title="Site web de l'événement" />
 
-            <div className="mb-8 flex items-center justify-end">
+            <div className="mb-8 flex flex-wrap items-center justify-end gap-5">
+                {/* Le faire-part tel que le recevra un invité, sans quitter l'éditeur. */}
+                <a href={invitationPdfUrl} className="text-sm text-accent underline underline-offset-2">
+                    Télécharger le faire-part en PDF
+                </a>
                 <a href={publicUrl} target="_blank" rel="noreferrer" className="text-sm text-accent underline underline-offset-2">
                     Voir la page publique
                 </a>
@@ -316,6 +368,61 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
                 </div>
             </div>
 
+            {/* Les trois polices de l'invitation. « Police de l'appareil »
+                ne charge rien : c'est le choix le plus rapide en 3G. */}
+            <div className="mb-8 rounded-card bg-bg p-6 ring-1 ring-line">
+                <h2 className="mb-1 font-serif text-lg italic">Polices</h2>
+                <p className="mb-5 text-sm text-ink-soft">
+                    Elles s'appliquent à la page publique comme au faire-part en PDF.
+                </p>
+
+                <div className="grid gap-5 sm:grid-cols-3">
+                    <div>
+                        <InputLabel htmlFor="heading_font">Titres</InputLabel>
+                        <Select
+                            id="heading_font"
+                            value={typography.heading}
+                            onChange={(changeEvent) => setTypography({ ...typography, heading: changeEvent.target.value })}
+                        >
+                            {fonts.heading.map((font) => (
+                                <option key={font.value} value={font.value}>
+                                    {font.label}
+                                </option>
+                            ))}
+                        </Select>
+                    </div>
+                    <div>
+                        <InputLabel htmlFor="body_font">Texte</InputLabel>
+                        <Select
+                            id="body_font"
+                            value={typography.body}
+                            onChange={(changeEvent) => setTypography({ ...typography, body: changeEvent.target.value })}
+                        >
+                            {fonts.body.map((font) => (
+                                <option key={font.value} value={font.value}>
+                                    {font.label}
+                                </option>
+                            ))}
+                        </Select>
+                    </div>
+                    <div>
+                        <InputLabel htmlFor="script_font">Écriture manuscrite</InputLabel>
+                        <Select
+                            id="script_font"
+                            value={typography.script}
+                            onChange={(changeEvent) => setTypography({ ...typography, script: changeEvent.target.value })}
+                        >
+                            {fonts.script.map((font) => (
+                                <option key={font.value} value={font.value}>
+                                    {font.label}
+                                </option>
+                            ))}
+                        </Select>
+                        <p className="mt-1.5 text-xs text-ink-soft">Pour le mot manuscrit de la couverture et le « Save the date ».</p>
+                    </div>
+                </div>
+            </div>
+
             <div className="mb-8 rounded-card bg-bg p-6 ring-1 ring-line">
                 <h2 className="mb-4 font-serif text-lg italic">Référencement</h2>
                 <InputLabel htmlFor="meta_description">Description pour les moteurs de recherche</InputLabel>
@@ -391,6 +498,13 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
                                     </button>
                                 </div>
                             </div>
+
+                            {(block.type === 'entry_qr' || block.type === 'rsvp') && (
+                                <p className="mb-4 rounded-control border border-line bg-bg-alt px-4 py-2 text-xs text-ink-soft">
+                                    Ce bloc ferme toujours l'invitation, sur la page comme sur le faire-part : le code
+                                    d'entrée, puis la confirmation en dernier. Ajoutez-le seulement pour en changer les mots.
+                                </p>
+                            )}
 
                             <div className="mb-4">
                                 <InputLabel htmlFor={`title_${block.id}`}>Titre du bloc (optionnel)</InputLabel>
@@ -561,6 +675,45 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
                                 />
                             )}
 
+                            {block.type === 'rsvp' && (
+                                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                                    <div>
+                                        <InputLabel htmlFor={`yes_${block.id}`}>Bouton « oui »</InputLabel>
+                                        <TextInput
+                                            id={`yes_${block.id}`}
+                                            value={block.yesLabel ?? ''}
+                                            onChange={(changeEvent) => update(index, { yesLabel: changeEvent.target.value })}
+                                            maxLength={60}
+                                            placeholder="Je confirme ma présence"
+                                        />
+                                    </div>
+                                    <div>
+                                        <InputLabel htmlFor={`later_${block.id}`}>Bouton « plus tard »</InputLabel>
+                                        <TextInput
+                                            id={`later_${block.id}`}
+                                            value={block.laterLabel ?? ''}
+                                            onChange={(changeEvent) => update(index, { laterLabel: changeEvent.target.value })}
+                                            maxLength={60}
+                                            placeholder="Je vais confirmer plus tard"
+                                        />
+                                    </div>
+                                    <div>
+                                        <InputLabel htmlFor={`no_${block.id}`}>Bouton « non »</InputLabel>
+                                        <TextInput
+                                            id={`no_${block.id}`}
+                                            value={block.noLabel ?? ''}
+                                            onChange={(changeEvent) => update(index, { noLabel: changeEvent.target.value })}
+                                            maxLength={60}
+                                            placeholder="Je ne pourrai pas être présent"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-ink-soft sm:col-span-3">
+                                        Vides, les trois textes d'origine s'affichent. Le bouton « non » n'apparaît que si le
+                                        formulaire d'inscription accepte les réponses négatives.
+                                    </p>
+                                </div>
+                            )}
+
                             {block.type === 'save_the_date' && (
                                 <Textarea
                                     value={block.body ?? ''}
@@ -572,11 +725,43 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
 
                             {block.type === 'welcome_message' && (
                                 <div className="space-y-3">
-                                    <TextInput
-                                        value={block.url ?? ''}
-                                        onChange={(e) => update(index, { url: e.target.value })}
-                                        placeholder="https://youtu.be/… ou https://…/mot-accueil.mp3"
-                                    />
+                                    {block.mediaToken ? (
+                                        <div className="rounded-control border border-line px-4 py-3">
+                                            <p className="text-sm text-ink">{block.mediaName ?? 'Fichier déposé'}</p>
+                                            <p className="text-xs text-ink-soft">
+                                                {mediaStatus[block.id] ??
+                                                    "Déposé dans Itaza. Il se joue dès que l'analyse antivirus est passée."}
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => update(index, { mediaToken: null, mediaName: null })}
+                                                className="mt-2 text-sm text-danger underline hover:no-underline"
+                                            >
+                                                Retirer ce fichier
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <input
+                                                type="file"
+                                                accept="audio/*,video/mp4,video/webm"
+                                                aria-label="Déposer le mot d'accueil"
+                                                onChange={(changeEvent) => {
+                                                    const file = changeEvent.target.files?.[0];
+
+                                                    if (file) {
+                                                        void uploadMedia(index, block.id, file);
+                                                    }
+                                                }}
+                                                className="block w-full text-sm text-ink-soft file:mr-3 file:min-h-9 file:cursor-pointer file:rounded-pill file:border file:border-line file:bg-bg file:px-4 file:py-1.5 file:text-sm file:text-ink"
+                                            />
+                                            <TextInput
+                                                value={block.url ?? ''}
+                                                onChange={(e) => update(index, { url: e.target.value })}
+                                                placeholder="https://youtu.be/… ou https://…/mot-accueil.mp3"
+                                            />
+                                        </>
+                                    )}
                                     <Textarea
                                         value={block.body ?? ''}
                                         onChange={(e) => update(index, { body: e.target.value })}
@@ -584,7 +769,8 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
                                         placeholder="Quelques mots avant le bouton (optionnel)"
                                     />
                                     <p className="text-xs text-ink-soft">
-                                        YouTube, Vimeo, ou l'adresse d'un fichier audio (.mp3, .m4a) ou vidéo (.mp4). Rien ne se
+                                        Enregistrez votre mot et déposez-le ici (MP3, M4A, WAV, MP4, WebM — 40 Mo au plus), ou
+                                        collez une adresse YouTube, Vimeo, ou celle d'un fichier hébergé ailleurs. Rien ne se
                                         charge avant que l'invité ne clique.
                                     </p>
                                 </div>
@@ -676,17 +862,46 @@ export default function Edit({ event, publicUrl, page, blockTypes }: Props) {
                                                             aria-label="Heure"
                                                         />
                                                         {block.showIcons && (
-                                                            <Select
-                                                                value={item.icon ?? 'etoile'}
-                                                                onChange={(changeEvent) => updateItem(index, itemIndex, { icon: changeEvent.target.value })}
-                                                                aria-label="Illustration"
-                                                            >
-                                                                {PROGRAMME_ICONS.map((icon) => (
-                                                                    <option key={icon.value} value={icon.value}>
-                                                                        {icon.label}
-                                                                    </option>
-                                                                ))}
-                                                            </Select>
+                                                            item.path ? (
+                                                                // L'illustration déposée remplace le dessin au trait.
+                                                                <div className="space-y-1">
+                                                                    <img src={item.url} alt="" className="h-10 w-10 object-contain" />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => updateItem(index, itemIndex, { path: undefined, url: undefined })}
+                                                                        className="text-xs text-danger underline hover:no-underline"
+                                                                    >
+                                                                        Retirer
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="space-y-2">
+                                                                    <Select
+                                                                        value={item.icon ?? 'etoile'}
+                                                                        onChange={(changeEvent) => updateItem(index, itemIndex, { icon: changeEvent.target.value })}
+                                                                        aria-label="Illustration"
+                                                                    >
+                                                                        {PROGRAMME_ICONS.map((icon) => (
+                                                                            <option key={icon.value} value={icon.value}>
+                                                                                {icon.label}
+                                                                            </option>
+                                                                        ))}
+                                                                    </Select>
+                                                                    <input
+                                                                        type="file"
+                                                                        accept="image/png,image/jpeg,image/webp"
+                                                                        aria-label="Illustration personnelle"
+                                                                        onChange={(changeEvent) => {
+                                                                            const file = changeEvent.target.files?.[0];
+
+                                                                            if (file) {
+                                                                                void uploadItemImage(index, itemIndex, file);
+                                                                            }
+                                                                        }}
+                                                                        className="block w-full text-xs text-ink-soft file:mr-2 file:min-h-8 file:cursor-pointer file:rounded-pill file:border file:border-line file:bg-bg file:px-2 file:py-1 file:text-xs file:text-ink"
+                                                                    />
+                                                                </div>
+                                                            )
                                                         )}
                                                     </div>
                                                     <div className="space-y-2">

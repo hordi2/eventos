@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domain\Contact\Models\Tag;
 use App\Domain\Event\Models\Event;
+use App\Domain\Event\Models\EventType;
 use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormVersionStatus;
 use App\Domain\Form\Models\RegistrationDraft;
@@ -260,7 +261,11 @@ it('interdit de changer le thème à un membre en lecture seule', function (): v
 });
 
 it('montre les textes par défaut quand un titre ou un message est laissé vide', function (): void {
-    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent();
+    // Type fixé : sur un événement personnel, l'étape identité réclame un
+    // numéro de téléphone, que ce parcours ne donne pas — le prénom ne
+    // serait alors jamais enregistré, et le test échouerait au hasard du
+    // type tiré par la factory.
+    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent([], ['type' => EventType::Conference]);
 
     // Un champ vidé dans le constructeur arrive vide (null) : c'est ce qu'enregistre la sauvegarde.
     app(CurrentOrganization::class)->set($organization);

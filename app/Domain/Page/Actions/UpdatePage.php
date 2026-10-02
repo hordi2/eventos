@@ -19,9 +19,9 @@ final class UpdatePage
      * des blocs correspondants : ils servent encore aux pages jamais
      * recomposées et aux exports.
      *
-     * $cover : les réglages de la couverture (phrase d'ouverture, mot
-     * manuscrit, monogramme, voile, libellé du bouton). Absent, rien n'y
-     * est touché.
+     * $cover : les réglages d'ensemble de l'invitation — la couverture
+     * (phrase d'ouverture, mot manuscrit, monogramme, voile, libellé du
+     * bouton) et les trois polices. Absent, rien n'y est touché.
      *
      * @param  list<array<string, mixed>>  $blocks
      * @param  array<string, mixed>  $cover
@@ -59,7 +59,7 @@ final class UpdatePage
     {
         $attributes = [];
 
-        foreach (['cover_eyebrow', 'cover_script', 'cover_monogram', 'cover_cta_label'] as $key) {
+        foreach (['cover_eyebrow', 'cover_script', 'cover_monogram', 'cover_cta_label', 'heading_font', 'body_font', 'script_font'] as $key) {
             if (array_key_exists($key, $cover)) {
                 $value = is_string($cover[$key]) ? trim($cover[$key]) : null;
                 $attributes[$key] = $value === '' ? null : $value;

@@ -17,6 +17,9 @@ it('exige le téléphone à l\'identité pour un événement personnel', functio
 
     $withPhone = $this->post("/r/{$organization->slug}/{$event->slug}/{$token}/identite", [
         'email' => 'invite@example.com',
+        // Une invitation personnelle attend une réponse : « je serai là »
+        // est coché d'avance sur l'écran, le test le dit explicitement.
+        'attending' => 1,
         'phone' => '+243812345678',
     ]);
     $withPhone->assertRedirect("/r/{$organization->slug}/{$event->slug}/{$token}/reponses");
@@ -37,7 +40,7 @@ it('exige aussi le téléphone lors de la modification d\'une inscription à un 
 
     $this->get("/r/{$organization->slug}/{$event->slug}/commencer");
     $token = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->firstOrFail()->resume_token;
-    $this->post("/r/{$organization->slug}/{$event->slug}/{$token}/identite", ['email' => 'invite@example.com', 'phone' => '+243812345678']);
+    $this->post("/r/{$organization->slug}/{$event->slug}/{$token}/identite", ['email' => 'invite@example.com', 'phone' => '+243812345678', 'attending' => 1]);
     $this->post("/r/{$organization->slug}/{$event->slug}/{$token}/reponses", []);
     $this->post("/r/{$organization->slug}/{$event->slug}/{$token}/recap");
 

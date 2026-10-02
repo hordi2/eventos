@@ -68,7 +68,7 @@ it('met l\'adresse de l\'invitation dans le QR, puis son code d\'entrée une foi
     // L'invité répond : son code devient son billet d'entrée.
     $this->get("{$base}/commencer");
     $token = RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->latest('id')->firstOrFail()->resume_token;
-    $this->post("{$base}/{$token}/identite", ['email' => 'awa@example.com', 'first_name' => 'Awa', 'last_name' => 'Diallo', 'phone' => '+243970000001']);
+    $this->post("{$base}/{$token}/identite", ['email' => 'awa@example.com', 'first_name' => 'Awa', 'last_name' => 'Diallo', 'phone' => '+243970000001', 'attending' => 1]);
     $this->post("{$base}/{$token}/reponses", []);
     $this->post("{$base}/{$token}/recap");
 

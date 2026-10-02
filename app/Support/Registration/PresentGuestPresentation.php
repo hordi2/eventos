@@ -23,6 +23,9 @@ final class PresentGuestPresentation
     public function handle(Event $event, ?Form $form): array
     {
         $settings = FormSettings::resolve($form?->settings);
+        // Les trois réponses d'une invitation personnelle, sauf réglage
+        // contraire de l'organisateur (DeclineAnswer).
+        $settings['rsvp']['decline_enabled'] = DeclineAnswer::isOffered($event, $form);
         $theme = $settings['theme'];
         $customCss = CustomCss::forDelivery($theme['custom_css']);
 

@@ -7,6 +7,23 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     @yield('meta')
     @vite(['resources/css/guest.css', 'resources/js/guest.ts'])
+    {{-- Polices de l'invitation : seules les familles choisies sont
+         chargées, et seulement dans les graisses employées. Sans ce lien,
+         la page retombait sur le Times du système. --}}
+    @isset($page)
+        @if ($page->fontStylesheet)
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="{{ $page->fontStylesheet }}" rel="stylesheet">
+        @endif
+        <style>
+            :root {
+                --font-serif: {!! $page->headingFont !!};
+                --font-sans: {!! $page->bodyFont !!};
+                --font-script: {!! $page->scriptFont !!};
+            }
+        </style>
+    @endisset
     @isset($formTheme)
         {{-- Thème du formulaire : couleurs revérifiées, polices d'une liste
              fermée (FormSettings::cssVariables) et URL d'image générée par
@@ -38,7 +55,7 @@
 {{-- itaza-page, itaza-header, itaza-field et itaza-progress sont les repères offerts au
      CSS personnalisé : ce sont des noms stables, contrairement aux classes
      utilitaires qui changent à chaque construction des styles. --}}
-<body class="itaza-page min-h-screen bg-bg-alt antialiased">
+<body class="itaza-page min-h-screen bg-bg-alt antialiased @yield('bodyClass')">
     @if (isset($draft) && $draft instanceof \App\Domain\Form\Models\RegistrationDraft && $draft->is_test)
         {{-- Simulation lancée par « Prévisualiser » dans le constructeur. --}}
         <div role="status" class="sticky top-0 z-20 bg-ink px-4 py-2 text-center text-xs text-bg">

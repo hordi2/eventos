@@ -17,7 +17,7 @@
     $ctaLabel = $page->coverCtaLabel ?: ($isPersonal ? __("Répondre à l'invitation") : __("S'inscrire"));
 @endphp
 
-<header class="itaza-cover relative isolate flex min-h-[100svh] flex-col justify-center overflow-hidden bg-ink px-5 py-16 text-center">
+<header id="feuillet-1" class="itaza-cover itaza-snap relative isolate flex min-h-[100svh] flex-col justify-center overflow-hidden bg-ink px-5 py-16 text-center">
     @if ($page->bannerUrl !== null)
         {{-- fetchpriority : c'est la première chose que voit l'invité, et la
              seule image de cet écran (budget 3G du CLAUDE.md §2). Le très
@@ -53,7 +53,7 @@
         </p>
 
         @if ($page->coverScript)
-            <p class="itaza-reveal mb-3 font-serif text-white italic" style="font-size: clamp(1.75rem, 6vw, 2.5rem); --itaza-delay: 140ms">
+            <p class="itaza-reveal itaza-script mb-3 text-white" style="font-size: clamp(2rem, 7vw, 3rem); --itaza-delay: 140ms">
                 {{ $page->coverScript }}
             </p>
         @endif

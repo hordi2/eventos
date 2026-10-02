@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Organizer;
 use App\Domain\Event\Models\Event;
 use App\Domain\Organization\Actions\StoreOrganizationImage;
 use App\Domain\Page\Actions\SavePageBanner;
+use App\Domain\Page\Actions\StorePageMedia;
 use App\Domain\Page\Actions\UpdatePage;
 use App\Domain\Page\Models\Page;
 use App\Domain\Page\Models\PageBlockType;
@@ -15,7 +16,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\Page\UpdatePageRequest;
 use App\Http\Requests\Organizer\Page\UploadPageBannerRequest;
 use App\Http\Requests\Organizer\Page\UploadPageImageRequest;
+use App\Http\Requests\Organizer\Page\UploadPageMediaRequest;
 use App\Models\User;
+use App\Support\Guest\GuestFonts;
 use App\Support\Invitation\BuildInvitationPdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
@@ -45,9 +48,19 @@ final class PageController extends Controller
                 'cover_monogram' => $page?->cover_monogram,
                 'cover_overlay' => $page === null ? 50 : $page->cover_overlay,
                 'cover_cta_label' => $page?->cover_cta_label,
+                'heading_font' => ($page === null ? null : $page->heading_font) ?? 'bodoni',
+                'body_font' => ($page === null ? null : $page->body_font) ?? 'jakarta',
+                'script_font' => ($page === null ? null : $page->script_font) ?? 'aucune',
                 'blocks' => $this->presentBlocks($page),
             ],
             'blockTypes' => PageBlockType::options(),
+            'fonts' => [
+                'heading' => GuestFonts::options('heading'),
+                'body' => GuestFonts::options('body'),
+                'script' => GuestFonts::options('script'),
+            ],
+            // Aperçu du faire-part, sans quitter l'éditeur.
+            'invitationPdfUrl' => route('events.page.invitation-pdf', $eventModel->id),
         ]);
     }
 
@@ -77,7 +90,10 @@ final class PageController extends Controller
             metaDescription: $request->string('meta_description')->toString() ?: null,
             blocks: $request->input('blocks', []),
             user: $request->user(),
-            cover: $request->only(['cover_eyebrow', 'cover_script', 'cover_monogram', 'cover_overlay', 'cover_cta_label']),
+            cover: $request->only([
+                'cover_eyebrow', 'cover_script', 'cover_monogram', 'cover_overlay', 'cover_cta_label',
+                'heading_font', 'body_font', 'script_font',
+            ]),
         );
 
         return response()->json(['status' => 'ok']);
@@ -105,6 +121,26 @@ final class PageController extends Controller
         $image = $action->handle($eventModel->organization, $user, $request->file('image'));
 
         return response()->json(['path' => $image->path, 'url' => Storage::disk('public')->url($image->path)]);
+    }
+
+    /**
+     * Mot d'accueil déposé dans Itaza : le fichier part en quarantaine et
+     * ne se jouera qu'une fois l'analyse antivirus passée. L'éditeur en est
+     * averti par le statut renvoyé.
+     */
+    public function uploadMedia(int $event, UploadPageMediaRequest $request, StorePageMedia $action): JsonResponse
+    {
+        $eventModel = $this->findEvent($event);
+        /** @var User $user */
+        $user = $request->user();
+        $media = $action->handle($eventModel->organization, $eventModel->id, $user, $request->file('media'));
+
+        return response()->json([
+            'token' => $media->token,
+            'name' => $media->original_name,
+            'status' => $media->scan_status->value,
+            'statusLabel' => $media->scan_status->label(),
+        ]);
     }
 
     /**
