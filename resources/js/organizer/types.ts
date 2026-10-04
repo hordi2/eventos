@@ -75,6 +75,7 @@ export interface SharedProps {
         whiteLabel: boolean;
         referral: boolean;
         eventSharing: boolean;
+        clients: boolean;
     };
     organizations: OrganizationChoice[];
     eventNav: EventNav | null;

@@ -17,6 +17,7 @@ use App\Http\Controllers\Guest\StatusController;
 use App\Http\Controllers\Guest\TicketOrderController;
 use App\Http\Controllers\Guest\TicketOrderPaymentController;
 use App\Http\Controllers\Guest\UnsubscribeController;
+use App\Http\Controllers\Organizer\AgencyController;
 use App\Http\Controllers\Organizer\AttendeeController;
 use App\Http\Controllers\Organizer\AuditLogController;
 use App\Http\Controllers\Organizer\Auth\AuthenticatedSessionController;
@@ -238,6 +239,13 @@ Route::middleware('auth')->group(function (): void {
         Route::get('organization/branding', [OrganizationBrandingController::class, 'edit'])->name('organization.branding.edit');
         Route::patch('organization/branding', [OrganizationBrandingController::class, 'update'])->name('organization.branding.update');
         Route::post('organization/branding/logo', [OrganizationBrandingController::class, 'uploadLogo'])->name('organization.branding.logo');
+    });
+
+    // Portail agence (D10) : les comptes clients du portefeuille.
+    Route::middleware(['verified', 'resolve-organization', 'can-organization:manageClients'])->group(function (): void {
+        Route::get('clients', [AgencyController::class, 'index'])->name('agency.index');
+        Route::post('clients', [AgencyController::class, 'store'])->middleware('throttle:20,1')->name('agency.store');
+        Route::delete('clients/{client}', [AgencyController::class, 'destroy'])->whereNumber('client')->name('agency.destroy');
     });
 
     Route::middleware(['verified', 'resolve-organization', 'can-organization:manageBilling'])->group(function (): void {

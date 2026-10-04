@@ -11,13 +11,15 @@ use Illuminate\Support\Facades\Gate;
 
 final class UpdateOrganizationBranding
 {
-    public function handle(Organization $organization, ?string $primaryColor, ThemeMode $themeMode, User $user): Organization
+    public function handle(Organization $organization, ?string $primaryColor, ThemeMode $themeMode, User $user, ?bool $isAgency = null): Organization
     {
         Gate::forUser($user)->authorize('manageBranding', $organization);
 
         $organization->update([
             'primary_color' => $primaryColor,
             'theme_mode' => $themeMode,
+            // Absent : le réglage ne change pas.
+            ...($isAgency === null ? [] : ['is_agency' => $isAgency]),
         ]);
 
         return $organization;

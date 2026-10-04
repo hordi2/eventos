@@ -9,6 +9,7 @@ interface Props {
         logo_url: string | null;
         primary_color: string | null;
         theme_mode: 'light' | 'dark';
+        is_agency: boolean;
     };
 }
 
@@ -23,6 +24,7 @@ export default function Branding({ branding }: Props) {
     const [logoUrl, setLogoUrl] = useState(branding.logo_url);
     const [primaryColor, setPrimaryColor] = useState(branding.primary_color ?? DEFAULT_COLOR);
     const [themeMode, setThemeMode] = useState<'light' | 'dark'>(branding.theme_mode);
+    const [isAgency, setIsAgency] = useState(branding.is_agency);
     const [saving, setSaving] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,7 +53,19 @@ export default function Branding({ branding }: Props) {
         const themeModeChanged = themeMode !== branding.theme_mode;
 
         try {
-            await window.axios.patch('/organization/branding', { primary_color: primaryColor, theme_mode: themeMode });
+            await window.axios.patch('/organization/branding', {
+                primary_color: primaryColor,
+                theme_mode: themeMode,
+                is_agency: isAgency,
+            });
+
+            // Le portefeuille apparaît ou disparaît du menu : la navigation
+            // vient des propriétés partagées, posées au rendu de la page.
+            if (isAgency !== branding.is_agency) {
+                window.location.reload();
+
+                return;
+            }
 
             // data-theme est posé côté serveur (resources/views/app.blade.php),
             // au premier rendu de la page seulement — une navigation Inertia
@@ -131,6 +145,26 @@ export default function Branding({ branding }: Props) {
                         </label>
                     ))}
                 </div>
+            </div>
+
+            {/* Agence événementielle (D10) : ouvre le portefeuille de comptes clients. */}
+            <div className="mb-8">
+                <h2 className="mb-1 text-lg">Agence</h2>
+                <label className="flex cursor-pointer items-start gap-3 rounded-card bg-bg p-5 ring-1 ring-line">
+                    <input
+                        type="checkbox"
+                        checked={isAgency}
+                        onChange={(event) => setIsAgency(event.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-line text-ink"
+                    />
+                    <span>
+                        <span className="block font-medium text-ink">Je gère des événements pour des clients</span>
+                        <span className="mt-1 block text-sm text-ink-soft">
+                            Ouvre « Mes clients » : un compte par client, le total de votre portefeuille, et la possibilité
+                            de rendre un compte à son client quand il vous quitte.
+                        </span>
+                    </span>
+                </label>
             </div>
 
             <Button className="w-auto" onClick={() => void handleSave()} disabled={saving}>

@@ -23,6 +23,8 @@ final class UpdateBrandingRequest extends FormRequest
         return [
             'primary_color' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'theme_mode' => ['required', new Enum(ThemeMode::class)],
+            // Agence événementielle (D10) : ouvre le portefeuille de comptes clients.
+            'is_agency' => ['sometimes', 'boolean'],
         ];
     }
 }

@@ -9,6 +9,7 @@ use App\Models\User;
 use Database\Factories\OrganizationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -48,6 +49,9 @@ final class Organization extends Model
         'n8n_connected_at',
         'sender_agreement_accepted_at',
         'sender_agreement_accepted_by',
+        'is_agency',
+        'managed_by_organization_id',
+        'managed_since',
     ];
 
     /**
@@ -72,12 +76,36 @@ final class Organization extends Model
             'n8n_api_key' => 'encrypted',
             'n8n_connected_at' => 'immutable_datetime',
             'sender_agreement_accepted_at' => 'immutable_datetime',
+            'is_agency' => 'boolean',
+            'managed_since' => 'immutable_datetime',
         ];
     }
 
     protected static function newFactory(): OrganizationFactory
     {
         return OrganizationFactory::new();
+    }
+
+    /**
+     * Les comptes clients qu'une agence gère (D10). Chacun reste une
+     * organisation à part entière : la rendre à son client ne fait que
+     * couper ce lien.
+     *
+     * @return HasMany<self, $this>
+     */
+    public function clientAccounts(): HasMany
+    {
+        return $this->hasMany(self::class, 'managed_by_organization_id');
+    }
+
+    /**
+     * L'agence qui gère ce compte, s'il est confié à une agence.
+     *
+     * @return BelongsTo<self, $this>
+     */
+    public function agency(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'managed_by_organization_id');
     }
 
     /**

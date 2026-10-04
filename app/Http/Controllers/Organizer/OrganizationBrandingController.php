@@ -28,6 +28,7 @@ final class OrganizationBrandingController extends Controller
                 'logo_url' => $organization->logo_path !== null ? Storage::disk('public')->url($organization->logo_path) : null,
                 'primary_color' => $organization->primary_color,
                 'theme_mode' => $organization->theme_mode->value,
+                'is_agency' => (bool) $organization->is_agency,
             ],
         ]);
     }
@@ -39,11 +40,13 @@ final class OrganizationBrandingController extends Controller
             primaryColor: $request->string('primary_color')->toString() ?: null,
             themeMode: ThemeMode::from($request->string('theme_mode')->toString()),
             user: $request->user(),
+            isAgency: $request->has('is_agency') ? $request->boolean('is_agency') : null,
         );
 
         return response()->json([
             'primary_color' => $organization->primary_color,
             'theme_mode' => $organization->theme_mode->value,
+            'is_agency' => (bool) $organization->is_agency,
         ]);
     }
 

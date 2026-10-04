@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Contact\Models\EventInvitee;
 use App\Domain\Event\Models\Event;
+use App\Domain\Event\Models\EventType;
 use App\Domain\Form\Models\Form;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Page\Models\Page;
@@ -22,7 +23,12 @@ beforeEach(function (): void {
  */
 function eventWithInvitationBlocks(): array
 {
-    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent();
+    // Type fixé : une invitation personnelle propose les trois réponses
+    // d'office (DeclineAnswer), ce que ces tests veulent justement pouvoir
+    // distinguer — sans cela ils dépendraient du type tiré au sort.
+    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent(
+        eventOverrides: ['type' => EventType::Conference],
+    );
 
     app(CurrentOrganization::class)->set($organization);
     Page::factory()->create([
@@ -55,8 +61,8 @@ it('montre les trois réponses possibles, et la galerie', function (): void {
         ->assertSee('Confirmez votre présence')
         ->assertSee('Je confirme ma présence')
         ->assertSee('Je vais confirmer plus tard')
-        // Le formulaire n'accepte pas de refus : le bouton ne se montre pas,
-        // il mènerait à une inscription.
+        // Inscription professionnelle dont le formulaire n'accepte pas de
+        // refus : le bouton ne se montre pas, il mènerait à une inscription.
         ->assertDontSee('Je ne pourrai pas répondre présent')
         ->assertSee('En images')
         ->assertSee('organization-images/1/photo.jpg', false);

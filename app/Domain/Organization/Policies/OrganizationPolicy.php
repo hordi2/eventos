@@ -32,6 +32,9 @@ final class OrganizationPolicy
         'manageBilling' => [MembershipRole::Owner],
         'manageSecurity' => [MembershipRole::Owner],
         'manageBranding' => [MembershipRole::Owner, MembershipRole::Admin],
+        // Portefeuille d'une agence (D10) : ouvrir un compte client, le
+        // suivre, le lui rendre.
+        'manageClients' => [MembershipRole::Owner, MembershipRole::Admin],
         'manageIntegrations' => [MembershipRole::Owner, MembershipRole::Admin],
         'inviteMembers' => [MembershipRole::Owner, MembershipRole::Admin],
         'createEvents' => [MembershipRole::Owner, MembershipRole::Admin],
@@ -72,6 +75,11 @@ final class OrganizationPolicy
     }
 
     public function manageBranding(User $user, Organization $organization): bool
+    {
+        return $this->check($user, $organization, __FUNCTION__);
+    }
+
+    public function manageClients(User $user, Organization $organization): bool
     {
         return $this->check($user, $organization, __FUNCTION__);
     }
