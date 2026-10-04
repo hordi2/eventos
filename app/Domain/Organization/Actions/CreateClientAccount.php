@@ -45,6 +45,12 @@ final class CreateClientAccount
                 'plan' => $agency->plan ?? PlanTier::Free,
             ]);
 
+            // Ouvrir un compte client fait de vous une agence : le
+            // portefeuille apparaît alors dans vos paramètres.
+            if (! $agency->is_agency) {
+                $agency->update(['is_agency' => true]);
+            }
+
             $agency->loadMissing('memberships');
 
             foreach ($agency->memberships as $membership) {

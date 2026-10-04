@@ -15,6 +15,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\EmailTemplate\PreviewEmailTemplateRequest;
 use App\Http\Requests\Organizer\EmailTemplate\SaveEmailTemplateRequest;
 use App\Http\Requests\Organizer\EmailTemplate\SendTestEmailRequest;
+use App\Models\User;
+use App\Support\Agency\AgencyEmailTemplates;
 use App\Support\Messaging\RenderEmailTemplate;
 use App\Support\Messaging\SendTestEmail;
 use App\Support\MultiTenancy\CurrentOrganization;
@@ -42,7 +44,11 @@ final class EmailTemplateController extends Controller
                 'updated_at' => $template->updated_at->toIso8601String(),
             ]);
 
-        return Inertia::render('EmailTemplates/Index', ['templates' => $templates]);
+        return Inertia::render('EmailTemplates/Index', [
+            'templates' => $templates,
+            // Modèles que l'agence partage avec ce compte (D10).
+            'agencyTemplates' => app(AgencyEmailTemplates::class)->shared($this->currentOrganization()),
+        ]);
     }
 
     public function create(): Response
@@ -71,9 +77,17 @@ final class EmailTemplateController extends Controller
         Gate::authorize('update', $template);
 
         return Inertia::render('EmailTemplates/Editor', [
-            'template' => ['id' => $template->id, 'name' => $template->name, 'subject' => $template->subject, 'blocks' => $template->blocks],
+            'template' => [
+                'id' => $template->id,
+                'name' => $template->name,
+                'subject' => $template->subject,
+                'blocks' => $template->blocks,
+                'is_shared_with_clients' => (bool) $template->is_shared_with_clients,
+            ],
             'contacts' => $this->contactOptions(),
             'events' => $this->eventOptions(),
+            // Le partage ne se propose qu'à une agence.
+            'isAgency' => (bool) $this->currentOrganization()->is_agency,
         ]);
     }
 
@@ -85,9 +99,25 @@ final class EmailTemplateController extends Controller
             $request->validated('name'),
             $request->validated('subject'),
             $request->validated('blocks'),
+            $request->has('is_shared_with_clients') ? $request->boolean('is_shared_with_clients') : null,
         );
 
         return redirect()->route('email-templates.edit', $template);
+    }
+
+    /**
+     * Le client reprend chez lui un modèle partagé par son agence (D10) :
+     * la copie lui appartient, il l'adapte sans toucher à l'original.
+     */
+    public function importFromAgency(Request $request, int $emailTemplate, AgencyEmailTemplates $agencyEmailTemplates): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $template = $agencyEmailTemplates->import($this->currentOrganization(), $user, $emailTemplate);
+
+        return redirect()
+            ->route('email-templates.edit', $template)
+            ->with('success', "Le modèle « {$template->name} » est maintenant le vôtre.");
     }
 
     public function destroy(Request $request, int $emailTemplate, DeleteEmailTemplate $action): RedirectResponse

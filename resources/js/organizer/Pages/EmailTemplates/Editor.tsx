@@ -24,6 +24,7 @@ interface TemplateDraft {
     name: string;
     subject: string;
     blocks: Block[];
+    is_shared_with_clients: boolean;
 }
 
 interface Option {
@@ -108,15 +109,23 @@ export default function Editor({
     template,
     contacts,
     events,
+    isAgency = false,
 }: {
     template: TemplateDraft | null;
     contacts: Option[];
     events: Option[];
+    isAgency?: boolean;
 }) {
-    const { data, setData, post, patch, processing, errors } = useForm<{ name: string; subject: string; blocks: Block[] }>({
+    const { data, setData, post, patch, processing, errors } = useForm<{
+        name: string;
+        subject: string;
+        blocks: Block[];
+        is_shared_with_clients: boolean;
+    }>({
         name: template?.name ?? '',
         subject: template?.subject ?? '',
         blocks: template?.blocks ?? [],
+        is_shared_with_clients: template?.is_shared_with_clients ?? false,
     });
 
     const [previewContactId, setPreviewContactId] = useState<number | ''>(contacts[0]?.id ?? '');
@@ -220,6 +229,24 @@ export default function Editor({
                         <TextInput id="subject" value={data.subject} onChange={(e) => setData('subject', e.target.value)} />
                         <InputError message={errors.subject} />
                     </div>
+
+                    {/* Partage avec les comptes clients d'une agence (D10). */}
+                    {isAgency && (
+                        <label className="mb-8 flex cursor-pointer items-start gap-3 rounded-card bg-bg-alt p-4">
+                            <input
+                                type="checkbox"
+                                checked={data.is_shared_with_clients}
+                                onChange={(e) => setData('is_shared_with_clients', e.target.checked)}
+                                className="mt-1 h-4 w-4 rounded border-line text-ink"
+                            />
+                            <span>
+                                <span className="block text-sm text-ink">Partager avec mes comptes clients</span>
+                                <span className="block text-xs text-ink-soft">
+                                    Chacun pourra le reprendre chez lui et l'adapter, sans toucher à votre modèle.
+                                </span>
+                            </span>
+                        </label>
+                    )}
 
                     <h2 className="mb-3 font-label text-xs tracking-[0.14em] text-ink-soft uppercase">Ajouter un bloc</h2>
                     <div className="mb-8 flex flex-wrap gap-2">

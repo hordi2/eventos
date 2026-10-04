@@ -23,6 +23,8 @@ final class SaveEmailTemplateRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'subject' => ['required', 'string', 'max:255'],
             'blocks' => ['present', 'array'],
+            // Partage avec les comptes clients d'une agence (D10).
+            'is_shared_with_clients' => ['sometimes', 'boolean'],
             'blocks.*.type' => ['required', 'string', Rule::in(['heading', 'text', 'image', 'button', 'divider', 'spacer'])],
             'blocks.*.text' => ['nullable', 'string', 'max:5000'],
             'blocks.*.html' => ['nullable', 'string', 'max:20000'],

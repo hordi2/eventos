@@ -148,3 +148,12 @@ it('ouvre le portail aux seules agences, et à qui peut les administrer', functi
         ->get('/clients')
         ->assertForbidden();
 });
+
+it('fait de l\'organisation une agence dès son premier compte client', function (): void {
+    [$agency, $admin] = agencyWithRole(MembershipRole::Admin);
+    $agency->update(['is_agency' => false]);
+
+    app(CreateClientAccount::class)->handle($agency, $admin, 'Fondation Lumière');
+
+    expect($agency->refresh()->is_agency)->toBeTrue();
+});

@@ -465,6 +465,10 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/exports/{export}/download', [ExportController::class, 'download'])->name('events.exports.download');
 
         Route::get('email-templates', [EmailTemplateController::class, 'index'])->name('email-templates.index');
+        // Reprendre chez soi un modèle partagé par son agence (D10).
+        Route::post('email-templates/{emailTemplate}/importer', [EmailTemplateController::class, 'importFromAgency'])
+            ->whereNumber('emailTemplate')
+            ->name('email-templates.import');
         Route::get('email-templates/create', [EmailTemplateController::class, 'create'])->name('email-templates.create');
         Route::post('email-templates', [EmailTemplateController::class, 'store'])->name('email-templates.store');
         Route::get('email-templates/{emailTemplate}/edit', [EmailTemplateController::class, 'edit'])->name('email-templates.edit');

@@ -30,12 +30,14 @@ final class EmailTemplate extends Model
         'name',
         'subject',
         'blocks',
+        'is_shared_with_clients',
     ];
 
     protected function casts(): array
     {
         return [
             'blocks' => 'array',
+            'is_shared_with_clients' => 'boolean',
         ];
     }
 
