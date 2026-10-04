@@ -10,6 +10,7 @@ interface Props {
         primary_color: string | null;
         theme_mode: 'light' | 'dark';
         is_agency: boolean;
+        brands_client_portals: boolean;
     };
 }
 
@@ -25,6 +26,7 @@ export default function Branding({ branding }: Props) {
     const [primaryColor, setPrimaryColor] = useState(branding.primary_color ?? DEFAULT_COLOR);
     const [themeMode, setThemeMode] = useState<'light' | 'dark'>(branding.theme_mode);
     const [isAgency, setIsAgency] = useState(branding.is_agency);
+    const [brandsClientPortals, setBrandsClientPortals] = useState(branding.brands_client_portals);
     const [saving, setSaving] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -57,6 +59,7 @@ export default function Branding({ branding }: Props) {
                 primary_color: primaryColor,
                 theme_mode: themeMode,
                 is_agency: isAgency,
+                brands_client_portals: brandsClientPortals,
             });
 
             // Le portefeuille apparaît ou disparaît du menu : la navigation
@@ -165,6 +168,24 @@ export default function Branding({ branding }: Props) {
                         </span>
                     </span>
                 </label>
+
+                {isAgency && (
+                    <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-card bg-bg p-5 ring-1 ring-line">
+                        <input
+                            type="checkbox"
+                            checked={brandsClientPortals}
+                            onChange={(event) => setBrandsClientPortals(event.target.checked)}
+                            className="mt-1 h-4 w-4 rounded border-line text-ink"
+                        />
+                        <span>
+                            <span className="block font-medium text-ink">Mettre ma marque sur les portails de mes clients</span>
+                            <span className="mt-1 block text-sm text-ink-soft">
+                                Vos comptes clients verront votre logo à la place de celui d'Itaza, en haut de leur
+                                espace. {logoUrl ? '' : 'Déposez d’abord votre logo ci-dessus : sans lui, rien ne change.'}
+                            </span>
+                        </span>
+                    </label>
+                )}
             </div>
 
             <Button className="w-auto" onClick={() => void handleSave()} disabled={saving}>

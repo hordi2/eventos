@@ -25,6 +25,8 @@ final class UpdateBrandingRequest extends FormRequest
             'theme_mode' => ['required', new Enum(ThemeMode::class)],
             // Agence événementielle (D10) : ouvre le portefeuille de comptes clients.
             'is_agency' => ['sometimes', 'boolean'],
+            // Marque de l'agence sur les portails de ses clients (D10).
+            'brands_client_portals' => ['sometimes', 'boolean'],
         ];
     }
 }

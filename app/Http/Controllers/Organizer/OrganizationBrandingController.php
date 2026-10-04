@@ -29,6 +29,7 @@ final class OrganizationBrandingController extends Controller
                 'primary_color' => $organization->primary_color,
                 'theme_mode' => $organization->theme_mode->value,
                 'is_agency' => (bool) $organization->is_agency,
+                'brands_client_portals' => (bool) $organization->brands_client_portals,
             ],
         ]);
     }
@@ -41,12 +42,14 @@ final class OrganizationBrandingController extends Controller
             themeMode: ThemeMode::from($request->string('theme_mode')->toString()),
             user: $request->user(),
             isAgency: $request->has('is_agency') ? $request->boolean('is_agency') : null,
+            brandsClientPortals: $request->has('brands_client_portals') ? $request->boolean('brands_client_portals') : null,
         );
 
         return response()->json([
             'primary_color' => $organization->primary_color,
             'theme_mode' => $organization->theme_mode->value,
             'is_agency' => (bool) $organization->is_agency,
+            'brands_client_portals' => (bool) $organization->brands_client_portals,
         ]);
     }
 

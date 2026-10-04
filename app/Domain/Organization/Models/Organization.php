@@ -50,6 +50,7 @@ final class Organization extends Model
         'sender_agreement_accepted_at',
         'sender_agreement_accepted_by',
         'is_agency',
+        'brands_client_portals',
         'managed_by_organization_id',
         'managed_since',
     ];
@@ -77,6 +78,7 @@ final class Organization extends Model
             'n8n_connected_at' => 'immutable_datetime',
             'sender_agreement_accepted_at' => 'immutable_datetime',
             'is_agency' => 'boolean',
+            'brands_client_portals' => 'boolean',
             'managed_since' => 'immutable_datetime',
         ];
     }

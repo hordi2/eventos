@@ -9,6 +9,7 @@ use App\Domain\Organization\Models\Membership;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Organization\Services\CollaboratorAccess;
 use App\Models\User;
+use App\Support\Agency\ResolvePortalBrand;
 use App\Support\Events\BuildEventNavigation;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Http\Request;
@@ -55,6 +56,8 @@ class HandleInertiaRequests extends Middleware
             // après HandleInertiaRequests dans le pipeline), jamais ici —
             // sans quoi CurrentOrganization ne serait pas encore positionné.
             'nav' => fn (): ?array => $this->buildNav($request),
+            // Marque de l'agence sur le portail d'un compte client (D10).
+            'portalBrand' => fn (): ?array => app(ResolvePortalBrand::class)->handle($this->organization()),
             'settingsAccess' => fn (): array => $this->buildSettingsAccess($request),
             'organizations' => fn (): array => $this->buildOrganizations($request),
             'eventNav' => fn (): ?array => app(BuildEventNavigation::class)->handle($request),
@@ -67,20 +70,24 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
+     * L'organisation posée par resolve-organization, s'il y en a une.
+     */
+    private function organization(): ?Organization
+    {
+        $organizationId = app(CurrentOrganization::class)->id();
+
+        return $organizationId === null ? null : Organization::query()->find($organizationId);
+    }
+
+    /**
      * @return list<array{label: string, items: list<array{label: string, href: string}>}>|null
      */
     private function buildNav(Request $request): ?array
     {
         $user = $request->user();
-        $organizationId = app(CurrentOrganization::class)->id();
+        $organization = $this->organization();
 
-        if (! $user instanceof User || $organizationId === null) {
-            return null;
-        }
-
-        $organization = Organization::query()->find($organizationId);
-
-        if ($organization === null) {
+        if (! $user instanceof User || $organization === null) {
             return null;
         }
 

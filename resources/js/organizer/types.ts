@@ -66,6 +66,8 @@ export interface SharedProps {
         user: User | null;
     };
     nav: NavItem[] | null;
+    // Marque de l'agence sur le portail d'un compte client (D10).
+    portalBrand: { name: string; logoUrl: string; primaryColor: string | null } | null;
     settingsAccess: {
         branding: boolean;
         billing: boolean;
