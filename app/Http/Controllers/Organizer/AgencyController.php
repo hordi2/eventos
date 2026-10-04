@@ -13,11 +13,16 @@ use App\Models\User;
 use App\Support\Agency\ClientAccountData;
 use App\Support\Agency\GetAgencyPortfolio;
 use App\Support\MultiTenancy\CurrentOrganization;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Portail agence (D10) : les comptes clients d'une agence événementielle,
@@ -26,15 +31,17 @@ use Inertia\Response;
  */
 final class AgencyController extends Controller
 {
-    public function index(GetAgencyPortfolio $getAgencyPortfolio): Response
+    public function index(Request $request, GetAgencyPortfolio $getAgencyPortfolio): Response
     {
         $agency = $this->agency();
         Gate::authorize('manageClients', $agency);
 
-        $portfolio = $getAgencyPortfolio->handle($agency);
+        [$from, $to] = $this->period($request);
+        $portfolio = $getAgencyPortfolio->handle($agency, from: $from, to: $to);
 
         return Inertia::render('Agency/Index', [
             'agency' => ['name' => $agency->name],
+            'period' => ['from' => $from?->toDateString(), 'to' => $to?->toDateString()],
             'portfolio' => [
                 'eventCount' => $portfolio->eventCount,
                 'registrationCount' => $portfolio->registrationCount,
@@ -77,6 +84,95 @@ final class AgencyController extends Controller
         return redirect()
             ->route('agency.index')
             ->with('success', "Le compte « {$clientAccount->name} » a été rendu à son client.");
+    }
+
+    /**
+     * Relevé d'activité d'un compte client, à joindre à la facture que
+     * l'agence lui adresse (D10).
+     */
+    public function statement(Request $request, int $client, GetAgencyPortfolio $getAgencyPortfolio): HttpResponse
+    {
+        $agency = $this->agency();
+        Gate::authorize('manageClients', $agency);
+
+        [$from, $to] = $this->period($request);
+        $portfolio = $getAgencyPortfolio->handle($agency, from: $from, to: $to);
+        $row = null;
+
+        foreach ($portfolio->clients as $candidate) {
+            if ($candidate->id === $client) {
+                $row = $candidate;
+            }
+        }
+
+        abort_if($row === null, 404);
+
+        $pdf = Pdf::loadView('organizer.agency-statement', [
+            'agency' => $agency,
+            'client' => $row,
+            'from' => $from,
+            'to' => $to,
+        ])->setPaper('a4', 'portrait')->output();
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="releve-'.Str::slug($row->name).'.pdf"',
+        ]);
+    }
+
+    /**
+     * Le portefeuille en tableur : une ligne par compte client, pour la
+     * comptabilité de l'agence.
+     */
+    public function export(Request $request, GetAgencyPortfolio $getAgencyPortfolio): StreamedResponse
+    {
+        $agency = $this->agency();
+        Gate::authorize('manageClients', $agency);
+
+        [$from, $to] = $this->period($request);
+        $portfolio = $getAgencyPortfolio->handle($agency, from: $from, to: $to);
+
+        return response()->streamDownload(function () use ($portfolio): void {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Compte client', 'Confié depuis', 'Événements', 'Inscrits', 'Recettes']);
+
+            foreach ($portfolio->clients as $client) {
+                fputcsv($handle, [
+                    $client->name,
+                    $client->managedSince,
+                    $client->eventCount,
+                    $client->registrationCount,
+                    $client->revenue->format(),
+                ]);
+            }
+
+            fputcsv($handle, [
+                'Total',
+                null,
+                $portfolio->eventCount,
+                $portfolio->registrationCount,
+                $portfolio->revenue->format(),
+            ]);
+
+            fclose($handle);
+        }, 'portefeuille-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    /**
+     * La période refacturée. Sans bornes données, tout l'historique.
+     *
+     * @return array{0: ?CarbonImmutable, 1: ?CarbonImmutable}
+     */
+    private function period(Request $request): array
+    {
+        $from = $request->string('du')->toString();
+        $to = $request->string('au')->toString();
+
+        return [
+            $from === '' ? null : CarbonImmutable::parse($from)->startOfDay(),
+            // Fin de journée : un relevé « au 31 » comprend le 31 entier.
+            $to === '' ? null : CarbonImmutable::parse($to)->endOfDay(),
+        ];
     }
 
     private function agency(): Organization

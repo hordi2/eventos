@@ -12,6 +12,7 @@ use App\Domain\Organization\Models\PlanTier;
 use App\Models\User;
 use App\Support\Agency\GetAgencyPortfolio;
 use App\Support\MultiTenancy\CurrentOrganization;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -156,4 +157,43 @@ it('fait de l\'organisation une agence dès son premier compte client', function
     app(CreateClientAccount::class)->handle($agency, $admin, 'Fondation Lumière');
 
     expect($agency->refresh()->is_agency)->toBeTrue();
+});
+
+it('borne le portefeuille sur la période que l\'agence refacture', function (): void {
+    [$agency, $admin] = agencyWithRole(MembershipRole::Admin);
+    $client = app(CreateClientAccount::class)->handle($agency, $admin, 'Fondation Lumière');
+
+    app(CurrentOrganization::class)->set($client);
+    Event::factory()->for($client)->published()->create(['start_at' => CarbonImmutable::parse('2026-05-10')]);
+    Event::factory()->for($client)->published()->create(['start_at' => CarbonImmutable::parse('2026-07-20')]);
+    app(CurrentOrganization::class)->clear();
+
+    $june = app(GetAgencyPortfolio::class)->handle(
+        $agency,
+        from: CarbonImmutable::parse('2026-05-01'),
+        to: CarbonImmutable::parse('2026-05-31')->endOfDay(),
+    );
+
+    expect($june->eventCount)->toBe(1)
+        // Sans bornes, tout l'historique.
+        ->and(app(GetAgencyPortfolio::class)->handle($agency)->eventCount)->toBe(2);
+});
+
+it('édite le relevé d\'un compte client, et le portefeuille en tableur', function (): void {
+    [$agency, $admin] = agencyWithRole(MembershipRole::Admin);
+    $client = app(CreateClientAccount::class)->handle($agency, $admin, 'Fondation Lumière');
+
+    $session = ['current_organization_id' => $agency->id];
+
+    $pdf = $this->actingAs($admin)->withSession($session)->get("/clients/{$client->id}/releve.pdf")->assertOk();
+    expect($pdf->headers->get('Content-Type'))->toBe('application/pdf')
+        ->and($pdf->headers->get('Content-Disposition'))->toContain('releve-fondation-lumiere.pdf');
+
+    $csv = $this->actingAs($admin)->withSession($session)->get('/clients/export')->assertOk();
+    expect($csv->streamedContent())->toContain('Fondation Lumière')
+        ->and($csv->streamedContent())->toContain('Total');
+
+    // Le relevé d'un compte qui n'est pas au portefeuille n'existe pas.
+    $stranger = Organization::factory()->create();
+    $this->actingAs($admin)->withSession($session)->get("/clients/{$stranger->id}/releve.pdf")->assertNotFound();
 });

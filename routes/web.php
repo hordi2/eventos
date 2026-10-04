@@ -245,6 +245,8 @@ Route::middleware('auth')->group(function (): void {
     Route::middleware(['verified', 'resolve-organization', 'can-organization:manageClients'])->group(function (): void {
         Route::get('clients', [AgencyController::class, 'index'])->name('agency.index');
         Route::post('clients', [AgencyController::class, 'store'])->middleware('throttle:20,1')->name('agency.store');
+        Route::get('clients/export', [AgencyController::class, 'export'])->name('agency.export');
+        Route::get('clients/{client}/releve.pdf', [AgencyController::class, 'statement'])->whereNumber('client')->name('agency.statement');
         Route::delete('clients/{client}', [AgencyController::class, 'destroy'])->whereNumber('client')->name('agency.destroy');
     });
 

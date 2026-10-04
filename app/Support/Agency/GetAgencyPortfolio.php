@@ -10,6 +10,7 @@ use App\Domain\Organization\Models\Organization;
 use App\Domain\Ticketing\Models\OrderStatus;
 use App\Support\Money;
 use App\Support\MultiTenancy\CurrentOrganization;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -30,8 +31,16 @@ final class GetAgencyPortfolio
         private readonly CurrentOrganization $currentOrganization,
     ) {}
 
-    public function handle(Organization $agency, string $currency = 'EUR'): AgencyPortfolioData
-    {
+    /**
+     * $from et $to bornent la période retenue — celle que l'agence
+     * refacture. Sans bornes, tout l'historique du portefeuille.
+     */
+    public function handle(
+        Organization $agency,
+        string $currency = 'EUR',
+        ?CarbonImmutable $from = null,
+        ?CarbonImmutable $to = null,
+    ): AgencyPortfolioData {
         $clients = Organization::query()
             ->where('managed_by_organization_id', $agency->id)
             ->orderBy('name')
@@ -43,7 +52,7 @@ final class GetAgencyPortfolio
         try {
             foreach ($clients as $client) {
                 $this->currentOrganization->set($client);
-                $rows[] = $this->client($client, $currency);
+                $rows[] = $this->client($client, $currency, $from, $to);
             }
         } finally {
             $previous === null ? $this->currentOrganization->clear() : $this->currentOrganization->set($previous);
@@ -63,7 +72,7 @@ final class GetAgencyPortfolio
         );
     }
 
-    private function client(Organization $client, string $currency): ClientAccountData
+    private function client(Organization $client, string $currency, ?CarbonImmutable $from, ?CarbonImmutable $to): ClientAccountData
     {
         $next = Event::query()
             ->where('organization_id', $client->id)
@@ -75,17 +84,26 @@ final class GetAgencyPortfolio
             id: $client->id,
             name: $client->name,
             slug: $client->slug,
-            eventCount: Event::query()->where('organization_id', $client->id)->count(),
+            eventCount: $this->within(
+                Event::query()->where('organization_id', $client->id),
+                'start_at',
+                $from,
+                $to,
+            )->count(),
             nextEventTitle: $next?->title,
             nextEventDate: $next === null
                 ? null
                 : $next->start_at->setTimezone($next->timezone)->translatedFormat('j F Y'),
-            registrationCount: (int) DB::table('registrations')
-                ->where('organization_id', $client->id)
-                ->where('status', RegistrationStatus::Confirmed->value)
-                ->whereNull('deleted_at')
-                ->count(),
-            revenue: Money::fromMinorUnits($this->revenue($client, $currency), $currency),
+            registrationCount: (int) $this->within(
+                DB::table('registrations')
+                    ->where('organization_id', $client->id)
+                    ->where('status', RegistrationStatus::Confirmed->value)
+                    ->whereNull('deleted_at'),
+                'created_at',
+                $from,
+                $to,
+            )->count(),
+            revenue: Money::fromMinorUnits($this->revenue($client, $currency, $from, $to), $currency),
             managedSince: $client->managed_since?->translatedFormat('j F Y'),
         );
     }
@@ -95,14 +113,40 @@ final class GetAgencyPortfolio
      * non remboursées, dans la devise du portefeuille — une commande dans
      * une autre devise ne s'additionne pas (règle 4.2).
      */
-    private function revenue(Organization $client, string $currency): int
+    private function revenue(Organization $client, string $currency, ?CarbonImmutable $from, ?CarbonImmutable $to): int
     {
-        return (int) DB::table('orders')
-            ->where('organization_id', $client->id)
-            ->where('status', OrderStatus::Paid->value)
-            ->whereNull('refunded_at')
-            ->whereNull('deleted_at')
-            ->where('total_currency', $currency)
-            ->sum('total_amount_minor');
+        return (int) $this->within(
+            DB::table('orders')
+                ->where('organization_id', $client->id)
+                ->where('status', OrderStatus::Paid->value)
+                ->whereNull('refunded_at')
+                ->whereNull('deleted_at')
+                ->where('total_currency', $currency),
+            'paid_at',
+            $from,
+            $to,
+        )->sum('total_amount_minor');
+    }
+
+    /**
+     * Borne une requête sur une période. Les dates sont comparées en UTC,
+     * comme elles sont stockées (règle 4.3).
+     *
+     * @template TQuery of \Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<covariant \Illuminate\Database\Eloquent\Model>
+     *
+     * @param  TQuery  $query
+     * @return TQuery
+     */
+    private function within(mixed $query, string $column, ?CarbonImmutable $from, ?CarbonImmutable $to): mixed
+    {
+        if ($from !== null) {
+            $query->where($column, '>=', $from);
+        }
+
+        if ($to !== null) {
+            $query->where($column, '<=', $to);
+        }
+
+        return $query;
     }
 }

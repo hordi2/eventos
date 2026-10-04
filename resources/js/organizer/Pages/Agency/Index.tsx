@@ -20,6 +20,7 @@ interface ClientRow {
 
 interface Props {
     agency: { name: string };
+    period: { from: string | null; to: string | null };
     portfolio: {
         eventCount: number;
         registrationCount: number;
@@ -32,7 +33,16 @@ interface Props {
  * Portail agence (D10) : les comptes clients du portefeuille, leur activité,
  * et le total consolidé. Un compte rendu à son client lui reste entier.
  */
-export default function Index({ agency, portfolio }: Props) {
+export default function Index({ agency, period, portfolio }: Props) {
+    const [from, setFrom] = useState(period.from ?? '');
+    const [to, setTo] = useState(period.to ?? '');
+    const query = from || to ? `?du=${from}&au=${to}` : '';
+
+    function applyPeriod(event: FormEvent) {
+        event.preventDefault();
+        router.get('/clients', { du: from || undefined, au: to || undefined }, { preserveState: true });
+    }
+
     const form = useForm({ name: '' });
     const [releasing, setReleasing] = useState<number | null>(null);
 
@@ -54,6 +64,27 @@ export default function Index({ agency, portfolio }: Props) {
                 Les comptes que {agency.name} gère pour ses clients. Chacun est un compte à part entière : vous pouvez le
                 rendre à son client à tout moment, il gardera ses événements, ses contacts et son historique.
             </p>
+
+            {/* La période refacturée : c'est elle que l'agence joint à sa facture. */}
+            <form onSubmit={applyPeriod} className="mb-6 flex flex-wrap items-end gap-3">
+                <div>
+                    <InputLabel htmlFor="du">Du</InputLabel>
+                    <TextInput id="du" type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
+                </div>
+                <div>
+                    <InputLabel htmlFor="au">Au</InputLabel>
+                    <TextInput id="au" type="date" value={to} onChange={(event) => setTo(event.target.value)} />
+                </div>
+                <Button type="submit" variant="secondary" className="w-auto px-5 py-2">
+                    Afficher
+                </Button>
+                <a
+                    href={`/clients/export${query}`}
+                    className="inline-flex min-h-10 items-center rounded-pill border border-line px-4 py-2 text-sm text-ink hover:border-ink"
+                >
+                    Exporter le portefeuille
+                </a>
+            </form>
 
             <div className="mb-8 grid gap-4 sm:grid-cols-3">
                 {[
@@ -110,6 +141,12 @@ export default function Index({ agency, portfolio }: Props) {
                                     <span className="tabular-nums">{client.eventCount} événements</span>
                                     <span className="tabular-nums">{client.registrationCount} inscrits</span>
                                     <span className="tabular-nums text-ink">{client.revenue}</span>
+                                    <a
+                                        href={`/clients/${client.id}/releve.pdf${query}`}
+                                        className="text-sm text-ink underline underline-offset-2 hover:no-underline"
+                                    >
+                                        Relevé
+                                    </a>
                                     <button
                                         type="button"
                                         onClick={() => release(client)}
