@@ -17,6 +17,8 @@ use App\Http\Requests\Organizer\EmailTemplate\SaveEmailTemplateRequest;
 use App\Http\Requests\Organizer\EmailTemplate\SendTestEmailRequest;
 use App\Models\User;
 use App\Support\Agency\AgencyEmailTemplates;
+use App\Support\Assistant\AnthropicAssistant;
+use App\Support\Assistant\WriteMessageCopy;
 use App\Support\Messaging\RenderEmailTemplate;
 use App\Support\Messaging\SendTestEmail;
 use App\Support\MultiTenancy\CurrentOrganization;
@@ -55,7 +57,13 @@ final class EmailTemplateController extends Controller
     {
         Gate::authorize('create', [EmailTemplate::class, $this->currentOrganization()]);
 
-        return Inertia::render('EmailTemplates/Editor', ['template' => null, 'contacts' => $this->contactOptions(), 'events' => $this->eventOptions()]);
+        return Inertia::render('EmailTemplates/Editor', [
+            'template' => null,
+            'contacts' => $this->contactOptions(),
+            'events' => $this->eventOptions(),
+            'isAgency' => (bool) $this->currentOrganization()->is_agency,
+            ...$this->assistantProps(),
+        ]);
     }
 
     public function store(SaveEmailTemplateRequest $request, CreateEmailTemplate $action): RedirectResponse
@@ -88,6 +96,7 @@ final class EmailTemplateController extends Controller
             'events' => $this->eventOptions(),
             // Le partage ne se propose qu'à une agence.
             'isAgency' => (bool) $this->currentOrganization()->is_agency,
+            ...$this->assistantProps(),
         ]);
     }
 
@@ -173,6 +182,20 @@ final class EmailTemplateController extends Controller
     private function currentOrganization(): Organization
     {
         return Organization::query()->findOrFail(app(CurrentOrganization::class)->requireId());
+    }
+
+    /**
+     * Rédaction assistée (D4) : proposée seulement si l'assistant est
+     * configuré sur l'installation.
+     *
+     * @return array<string, mixed>
+     */
+    private function assistantProps(): array
+    {
+        return [
+            'assistantAvailable' => app(AnthropicAssistant::class)->isConfigured(),
+            'tones' => WriteMessageCopy::toneOptions(),
+        ];
     }
 
     /**

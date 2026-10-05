@@ -106,4 +106,16 @@ return [
         'key' => env('PEXELS_API_KEY'),
     ],
 
+    // Assistant de rédaction et de création (D4). Sans clé, les boutons
+    // d'assistance disent qu'il n'est pas configuré au lieu d'échouer.
+    //
+    // Seul part chez Anthropic ce que l'organisateur écrit lui-même : sa
+    // phrase de création, son brief de rédaction, le titre de son événement.
+    // Jamais ses invités, jamais leurs réponses — c'est une règle du projet,
+    // pas un réglage.
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-sonnet-5-5'),
+    ],
+
 ];

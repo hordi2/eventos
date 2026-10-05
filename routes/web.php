@@ -22,6 +22,7 @@ use App\Http\Controllers\Guest\TicketOrderPaymentController;
 use App\Http\Controllers\Guest\TravelDeclarationController;
 use App\Http\Controllers\Guest\UnsubscribeController;
 use App\Http\Controllers\Organizer\AgencyController;
+use App\Http\Controllers\Organizer\AssistantController;
 use App\Http\Controllers\Organizer\AttendeeController;
 use App\Http\Controllers\Organizer\AttendeeModerationController;
 use App\Http\Controllers\Organizer\AuditLogController;
@@ -323,6 +324,11 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/empreinte', [CarbonFootprintController::class, 'index'])->name('events.carbon.index');
         Route::patch('events/{event}/empreinte', [CarbonFootprintController::class, 'update'])->name('events.carbon.update');
         Route::get('events/{event}/empreinte.pdf', [CarbonFootprintController::class, 'report'])->name('events.carbon.report');
+
+        // Assistant de création et de rédaction (D4). Débit limité : chaque
+        // appel coûte, et rien n'y part d'autre que le texte de l'organisateur.
+        Route::post('assistant/evenement', [AssistantController::class, 'draftEvent'])->middleware('throttle:10,1')->name('assistant.event');
+        Route::post('assistant/redaction', [AssistantController::class, 'writeCopy'])->middleware('throttle:20,1')->name('assistant.copy');
 
         // Bibliothèque de modèles communautaire (D11).
         Route::get('modeles', [EventTemplateController::class, 'index'])->name('templates.index');

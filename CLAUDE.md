@@ -376,11 +376,16 @@ php artisan queue:failed
       qui laisse l'organisateur brancher l'assistant IA de son choix sur son
       compte, en lecture.
 
-      Restent : D9 (application participant en marque blanche), et les trois
-      usages du D4 qui demandent un modèle de langage — création d'événement
-      en langage naturel, analyse, rédaction. Ceux-là attendent une décision :
-      quel fournisseur, quelle clé, et l'accord d'envoyer des données chez un
-      tiers.
+      Le D4 est traité sauf un usage : l'assistant (Anthropic) monte un
+      brouillon d'événement à partir d'une phrase et rédige les e-mails et
+      messages WhatsApp au ton demandé. **Règle posée par le propriétaire du
+      produit, et tenue dans le code : seul part ce que l'organisateur écrit
+      lui-même — sa phrase, son brief, le titre de son événement. Jamais ses
+      invités, jamais leurs réponses.** C'est pourquoi l'analyse en langage
+      naturel « sur ses données » (usage 2 du D4) n'est pas faite : elle
+      suppose d'envoyer ces données chez un tiers, ce qui a été refusé.
+
+      Reste : D9 (application participant en marque blanche).
       Le moteur revendeur du D10 — tarifs, marges, reversements — reste
       ouvert : il demande des décisions commerciales.
 
@@ -390,4 +395,4 @@ les stores (compte développeur à ouvrir).
 **Connu, à ticketer** : la CSP stricte des pages publiques annoncée au §7
 n'est écrite nulle part dans le code.
 
-**Dernière mise à jour** : 5 octobre 2026
+**Dernière mise à jour** : 5 octobre 2026 (D8, D10, D11, D12 et D4 livrés)

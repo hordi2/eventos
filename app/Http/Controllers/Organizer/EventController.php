@@ -19,6 +19,7 @@ use App\Http\Requests\Organizer\Event\CreateEventRequest;
 use App\Http\Requests\Organizer\Event\DuplicateEventRequest;
 use App\Http\Requests\Organizer\Event\UpdateEventRequest;
 use App\Models\User;
+use App\Support\Assistant\AnthropicAssistant;
 use App\Support\Guest\GuestLocales;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Carbon\CarbonImmutable;
@@ -35,6 +36,8 @@ final class EventController extends Controller
         return Inertia::render('Events/Create', [
             'event' => null,
             'eventTypes' => $this->eventTypeOptions(),
+            // Assistant de création (D4) : proposé seulement s'il est configuré.
+            'assistantAvailable' => app(AnthropicAssistant::class)->isConfigured(),
             'eventAudiences' => $this->eventAudienceOptions(),
             'timezones' => $this->timezoneOptions(),
             'venues' => $this->venueOptions(),

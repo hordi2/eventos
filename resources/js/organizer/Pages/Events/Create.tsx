@@ -55,6 +55,7 @@ interface EventDraft {
 interface CreateEventPageProps {
     event: EventDraft | null;
     eventTypes: EventTypeOption[];
+    assistantAvailable?: boolean;
     eventAudiences: EventAudienceOption[];
     timezones: Record<string, string>;
     venues: VenueOption[];
@@ -105,11 +106,17 @@ function addHoursToLocalValue(value: string, hours: number): string {
     return `${shifted.getFullYear()}-${pad(shifted.getMonth() + 1)}-${pad(shifted.getDate())}T${pad(shifted.getHours())}:${pad(shifted.getMinutes())}`;
 }
 
-export default function CreateEvent({ event, eventTypes, eventAudiences, timezones, venues, canDuplicate = false, duplicationParts = [], locales = [] }: CreateEventPageProps) {
+export default function CreateEvent({ event, eventTypes, eventAudiences, timezones, venues, canDuplicate = false, duplicationParts = [], locales = [], assistantAvailable = false }: CreateEventPageProps) {
     const [step, setStep] = useState<1 | 2 | 3>(event ? 3 : 1);
     const [endTouched, setEndTouched] = useState(Boolean(event));
     const [venueMode, setVenueMode] = useState<'none' | 'existing' | 'new'>(event?.venueId ? 'existing' : 'none');
     const [showDuplicate, setShowDuplicate] = useState(false);
+
+    // Assistant de création (D4) : la phrase de l'organisateur, et rien d'autre.
+    const [sentence, setSentence] = useState('');
+    const [asking, setAsking] = useState(false);
+    const [assistantError, setAssistantError] = useState<string | null>(null);
+    const [suggestions, setSuggestions] = useState<string[]>([]);
 
     // Un événement existant a déjà son menu latéral ; la création n'en a pas encore.
     const PageLayout = event ? EventLayout : OrganizerLayout;
@@ -119,6 +126,43 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
         new_start_at: '',
         parts: duplicationParts.map((part) => part.value),
     });
+
+    /**
+     * Remplit le formulaire avec ce que l'assistant propose. Rien n'est
+     * enregistré : l'organisateur relit, corrige, puis valide lui-même.
+     */
+    async function askAssistant() {
+        setAsking(true);
+        setAssistantError(null);
+
+        try {
+            const response = await window.axios.post<{
+                title: string;
+                type: string;
+                start_at: string;
+                capacity: number | null;
+                description: string | null;
+                fields: { key: string; type: string; label: string; is_required: boolean }[];
+                ticket_suggestions: string[];
+            }>('/assistant/evenement', { sentence, timezone: data.timezone });
+
+            setData({
+                ...data,
+                title: response.data.title,
+                type: response.data.type,
+                description: response.data.description ?? '',
+                start_at: response.data.start_at.replace(' ', 'T'),
+                capacity: response.data.capacity === null ? '' : String(response.data.capacity),
+            });
+            setSuggestions(response.data.ticket_suggestions);
+            setStep(2);
+        } catch (error) {
+            const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message;
+            setAssistantError(message ?? "L'assistant n'a pas répondu.");
+        } finally {
+            setAsking(false);
+        }
+    }
 
     function toggleDuplicationPart(value: string) {
         const parts = duplicateForm.data.parts;
@@ -188,6 +232,51 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
     return (
         <PageLayout title={event ? "Paramètres de l'événement" : 'Créer un événement'} eyebrow="Nouvel événement">
             <Head title="Créer un événement" />
+
+            {/* Assistant de création (D4) : une phrase, et le brouillon est
+                posé. Seule la phrase part chez l'assistant — jamais vos
+                invités. */}
+            {!event && assistantAvailable && (
+                <div className="mb-8 rounded-card bg-bg p-5 ring-1 ring-line">
+                    <h2 className="mb-1 font-serif text-lg italic">Décrivez votre événement</h2>
+                    <p className="mb-4 text-sm text-ink-soft">
+                        « Une conférence des partenaires, 300 personnes, le 15 mars à Kinshasa, avec un formulaire
+                        demandant l'entreprise et la fonction. » Seule cette phrase est envoyée à l'assistant.
+                    </p>
+
+                    <Textarea
+                        value={sentence}
+                        onChange={(changeEvent) => setSentence(changeEvent.target.value)}
+                        rows={3}
+                        maxLength={2000}
+                        placeholder="Votre événement, en une phrase"
+                    />
+
+                    {assistantError && <p className="mt-2 text-sm text-danger">{assistantError}</p>}
+                    {suggestions.length > 0 && (
+                        <div className="mt-3 rounded-control border border-line px-4 py-3">
+                            <p className="text-xs text-ink-soft">
+                                L'assistant ne fixe pas les prix. Paliers à créer vous-même dans la billetterie :
+                            </p>
+                            <ul className="mt-1 list-disc pl-5 text-sm text-ink-soft">
+                                {suggestions.map((suggestion) => (
+                                    <li key={suggestion}>{suggestion}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => void askAssistant()}
+                        disabled={asking || sentence.trim().length < 10}
+                        className="mt-4 w-auto px-6 py-2"
+                    >
+                        {asking ? 'L’assistant réfléchit…' : 'Remplir le formulaire'}
+                    </Button>
+                </div>
+            )}
 
             {/* Bibliothèque de modèles (D11) : partir du travail d'un autre
                 plutôt que d'une page blanche. */}

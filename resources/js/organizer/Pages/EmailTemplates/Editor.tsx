@@ -110,11 +110,15 @@ export default function Editor({
     contacts,
     events,
     isAgency = false,
+    assistantAvailable = false,
+    tones = [],
 }: {
     template: TemplateDraft | null;
     contacts: Option[];
     events: Option[];
     isAgency?: boolean;
+    assistantAvailable?: boolean;
+    tones?: { value: string; label: string }[];
 }) {
     const { data, setData, post, patch, processing, errors } = useForm<{
         name: string;
@@ -135,6 +139,40 @@ export default function Editor({
     const [testEmail, setTestEmail] = useState('');
     const [sendingTest, setSendingTest] = useState(false);
     const [testSent, setTestSent] = useState(false);
+
+    // Rédaction assistée (D4) : seuls le brief et le ton partent.
+    const [brief, setBrief] = useState('');
+    const [tone, setTone] = useState(tones[0]?.value ?? 'chaleureux');
+    const [writing, setWriting] = useState(false);
+    const [writeError, setWriteError] = useState<string | null>(null);
+
+    async function writeWithAssistant() {
+        setWriting(true);
+        setWriteError(null);
+
+        try {
+            const response = await window.axios.post<{ subject: string; body: string }>('/assistant/redaction', {
+                brief,
+                tone,
+                channel: 'email',
+            });
+
+            setData('subject', response.data.subject);
+            // Le texte arrive en paragraphes : un bloc par paragraphe.
+            setData(
+                'blocks',
+                response.data.body
+                    .split(/\n\s*\n/)
+                    .filter((paragraph) => paragraph.trim() !== '')
+                    .map((paragraph) => ({ ...defaultBlock('text'), text: paragraph.trim() })),
+            );
+        } catch (error) {
+            const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message;
+            setWriteError(message ?? "L'assistant n'a pas répondu.");
+        } finally {
+            setWriting(false);
+        }
+    }
 
     function handleSubmit(e: FormEvent) {
         e.preventDefault();
@@ -246,6 +284,45 @@ export default function Editor({
                                 </span>
                             </span>
                         </label>
+                    )}
+
+                    {/* Rédaction assistée (D4). Seuls votre brief et le ton
+                        choisi partent : jamais vos contacts. */}
+                    {assistantAvailable && (
+                        <details className="mb-8 rounded-card bg-bg-alt p-4">
+                            <summary className="cursor-pointer text-sm text-ink">Faire rédiger par l'assistant</summary>
+
+                            <p className="mt-3 mb-3 text-xs text-ink-soft">
+                                Dites ce que vous voulez dire ; l'assistant écrit l'objet et le corps. Seul ce texte est
+                                envoyé — jamais votre liste de contacts. Vous relisez avant d'envoyer quoi que ce soit.
+                            </p>
+
+                            <Textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={3} maxLength={2000} />
+
+                            <div className="mt-3 flex flex-wrap items-end gap-3">
+                                <div className="w-52">
+                                    <InputLabel htmlFor="tone">Ton</InputLabel>
+                                    <Select id="tone" value={tone} onChange={(e) => setTone(e.target.value)}>
+                                        {tones.map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => void writeWithAssistant()}
+                                    disabled={writing || brief.trim().length < 5}
+                                    className="w-auto px-6 py-2"
+                                >
+                                    {writing ? 'L’assistant écrit…' : 'Rédiger'}
+                                </Button>
+                            </div>
+
+                            {writeError && <p className="mt-2 text-sm text-danger">{writeError}</p>}
+                        </details>
                     )}
 
                     <h2 className="mb-3 font-label text-xs tracking-[0.14em] text-ink-soft uppercase">Ajouter un bloc</h2>
