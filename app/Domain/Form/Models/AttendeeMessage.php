@@ -29,12 +29,15 @@ final class AttendeeMessage extends Model
         'to_registration_id',
         'body',
         'read_at',
+        'removed_at',
+        'removed_by',
     ];
 
     protected function casts(): array
     {
         return [
             'read_at' => 'immutable_datetime',
+            'removed_at' => 'immutable_datetime',
         ];
     }
 

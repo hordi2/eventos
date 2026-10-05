@@ -35,6 +35,9 @@ final class OrganizationPolicy
         // Portefeuille d'une agence (D10) : ouvrir un compte client, le
         // suivre, le lui rendre.
         'manageClients' => [MembershipRole::Owner, MembershipRole::Admin],
+        // Modération de la messagerie entre participants (D8) : on y lit des
+        // messages privés signalés, cela ne se confie pas largement.
+        'moderateMessages' => [MembershipRole::Owner, MembershipRole::Admin],
         'manageIntegrations' => [MembershipRole::Owner, MembershipRole::Admin],
         'inviteMembers' => [MembershipRole::Owner, MembershipRole::Admin],
         'createEvents' => [MembershipRole::Owner, MembershipRole::Admin],
@@ -80,6 +83,11 @@ final class OrganizationPolicy
     }
 
     public function manageClients(User $user, Organization $organization): bool
+    {
+        return $this->check($user, $organization, __FUNCTION__);
+    }
+
+    public function moderateMessages(User $user, Organization $organization): bool
     {
         return $this->check($user, $organization, __FUNCTION__);
     }

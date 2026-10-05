@@ -7,6 +7,20 @@
         <h1 class="mb-2 text-2xl">{{ __('Annuaire des participants') }}</h1>
         <p class="mb-8 text-sm text-ink-soft">{{ $event->title }}</p>
 
+        @if (session('status') === 'blocked')
+            <p role="status" class="mb-6 rounded-card bg-bg px-4 py-3 text-sm text-ink ring-1 ring-line">
+                {{ __('Cette personne ne peut plus vous écrire, ni vous proposer de rendez-vous.') }}
+            </p>
+        @elseif (session('status') === 'unblocked')
+            <p role="status" class="mb-6 rounded-card bg-bg px-4 py-3 text-sm text-ink-soft ring-1 ring-line">
+                {{ __('Cette personne peut de nouveau vous écrire.') }}
+            </p>
+        @elseif (session('status') === 'reported')
+            <p role="status" class="mb-6 rounded-card bg-bg px-4 py-3 text-sm text-success ring-1 ring-line">
+                {{ __('Votre signalement est parti à l’organisateur. Seul ce message lui est montré.') }}
+            </p>
+        @endif
+
         @if (session('status') === 'meeting-proposed')
             <p role="status" class="mb-6 rounded-card bg-bg px-4 py-3 text-sm text-success ring-1 ring-line">
                 {{ __('Votre proposition de rendez-vous est partie.') }}
@@ -140,6 +154,12 @@
                     </li>
                 @endforeach
             </ul>
+        @endif
+
+        @if ($registration->messaging_suspended_at !== null)
+            <p class="mb-8 rounded-card bg-bg px-4 py-3 text-sm text-danger ring-1 ring-line">
+                {{ __('L’organisateur a suspendu votre envoi de messages. Vous gardez l’annuaire et vos rendez-vous.') }}
+            </p>
         @endif
 
         @include('guest.registration.partials.directory-suggestions')

@@ -22,6 +22,7 @@ use App\Http\Controllers\Guest\TicketOrderPaymentController;
 use App\Http\Controllers\Guest\UnsubscribeController;
 use App\Http\Controllers\Organizer\AgencyController;
 use App\Http\Controllers\Organizer\AttendeeController;
+use App\Http\Controllers\Organizer\AttendeeModerationController;
 use App\Http\Controllers\Organizer\AuditLogController;
 use App\Http\Controllers\Organizer\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Organizer\Auth\CollaboratorInvitationController;
@@ -311,6 +312,10 @@ Route::middleware('auth')->group(function (): void {
         Route::patch('events/{event}/livre-d-or/{message}', [OrganizerGuestBookController::class, 'toggle'])->whereNumber('message')->name('events.guest-book.toggle');
         Route::delete('events/{event}/livre-d-or/{message}', [OrganizerGuestBookController::class, 'destroy'])->whereNumber('message')->name('events.guest-book.destroy');
 
+        // Modération de la messagerie entre participants (D8).
+        Route::get('events/{event}/moderation', [AttendeeModerationController::class, 'index'])->name('events.moderation.index');
+        Route::patch('events/{event}/moderation/{report}', [AttendeeModerationController::class, 'update'])->whereNumber('report')->name('events.moderation.update');
+
         Route::get('events/{event}/budget', [BudgetController::class, 'index'])->name('events.budget.index');
         Route::post('events/{event}/budget', [BudgetController::class, 'store'])->name('events.budget.store');
         Route::patch('events/{event}/budget/{line}', [BudgetController::class, 'update'])->whereNumber('line')->name('events.budget.update');
@@ -591,6 +596,8 @@ Route::middleware(['resolve-guest-event', 'guest-locale'])
             Route::post('inscriptions/{registration}/rendez-vous', [AttendeeMeetingController::class, 'store'])->whereNumber('registration')->middleware('throttle:20,1')->name('meetings.store');
             Route::post('inscriptions/{registration}/rendez-vous/{meeting}', [AttendeeMeetingController::class, 'answer'])->whereNumber('registration')->whereNumber('meeting')->middleware('throttle:30,1')->name('meetings.answer');
             Route::post('inscriptions/{registration}/messages', [AttendeeMessageController::class, 'store'])->whereNumber('registration')->middleware('throttle:20,1')->name('messages.store');
+            Route::post('inscriptions/{registration}/blocages', [AttendeeMessageController::class, 'block'])->whereNumber('registration')->middleware('throttle:30,1')->name('messages.block');
+            Route::post('inscriptions/{registration}/signalements', [AttendeeMessageController::class, 'report'])->whereNumber('registration')->middleware('throttle:20,1')->name('messages.report');
             Route::get('inscriptions/{registration}/mon-agenda', [PersonalAgendaController::class, 'show'])->whereNumber('registration')->name('agenda');
             Route::get('inscriptions/{registration}/mon-agenda.ics', [PersonalAgendaController::class, 'calendar'])->whereNumber('registration')->name('agenda.ics');
             Route::get('inscriptions/{registration}/faire-part.pdf', [InvitationPdfController::class, 'forRegistration'])->whereNumber('registration')->middleware('throttle:20,1')->name('invitation-pdf');

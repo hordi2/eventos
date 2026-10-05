@@ -51,6 +51,7 @@ final class Registration extends Model
         'networking_token',
         'shares_contact',
         'directory_interests',
+        'messaging_suspended_at',
         'utm',
         'referrer',
         'ip_address',
@@ -70,6 +71,7 @@ final class Registration extends Model
             'directory_consent_at' => 'immutable_datetime',
             'shares_contact' => 'boolean',
             'directory_interests' => 'array',
+            'messaging_suspended_at' => 'immutable_datetime',
             'cancelled_at' => 'immutable_datetime',
         ];
     }

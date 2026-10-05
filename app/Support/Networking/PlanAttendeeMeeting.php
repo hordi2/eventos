@@ -22,6 +22,10 @@ use Carbon\CarbonImmutable;
  */
 final class PlanAttendeeMeeting
 {
+    public function __construct(
+        private readonly ModerateAttendeeMessages $moderateAttendeeMessages,
+    ) {}
+
     /**
      * Propose un rendez-vous. Null quand l'autre ne peut pas être invité :
      * absent de l'annuaire, pas confirmé, ou c'est soi-même.
@@ -38,6 +42,10 @@ final class PlanAttendeeMeeting
         $guest = $this->attendee($event, $guestRegistrationId);
 
         if ($guest === null || $guest->id === $requester->id || $requester->directory_consent_at === null) {
+            return null;
+        }
+
+        if ($this->moderateAttendeeMessages->isBlockedBetween($requester->id, $guest->id)) {
             return null;
         }
 

@@ -37,6 +37,7 @@ use App\Support\MultiTenancy\CurrentOrganization;
 use App\Support\Registration\BuildSubEventContexts;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 pest()->extend(TestCase::class)
@@ -535,4 +536,19 @@ function guestEventWithSessions(): array
 function sessionDraftToken(Event $event): string
 {
     return RegistrationDraft::withoutGlobalScopes()->where('event_id', $event->id)->latest('id')->firstOrFail()->resume_token;
+}
+
+/**
+ * Lien signé d'une action de networking entre participants (D8) : elles le
+ * sont toutes, comme la page qui y mène.
+ */
+function networkingUrl(string $name, object $organization, object $event, object $registration, ?int $meeting = null): string
+{
+    $parameters = [$organization->slug, $event->slug, $registration->id];
+
+    if ($meeting !== null) {
+        $parameters[] = $meeting;
+    }
+
+    return URL::temporarySignedRoute("guest.registration.{$name}", now()->addDay(), $parameters);
 }

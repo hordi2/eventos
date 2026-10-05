@@ -12,6 +12,7 @@ use App\Http\Requests\Guest\JoinAttendeeDirectoryRequest;
 use App\Support\Networking\AttendeeConversations;
 use App\Support\Networking\ExchangeBadgeContact;
 use App\Support\Networking\GetAttendeeDirectory;
+use App\Support\Networking\ModerateAttendeeMessages;
 use App\Support\Networking\PlanAttendeeMeeting;
 use App\Support\Networking\SuggestConnections;
 use Carbon\CarbonImmutable;
@@ -38,6 +39,7 @@ final class AttendeeDirectoryController extends Controller
         private readonly SuggestConnections $suggestConnections,
         private readonly PlanAttendeeMeeting $planAttendeeMeeting,
         private readonly AttendeeConversations $attendeeConversations,
+        private readonly ModerateAttendeeMessages $moderateAttendeeMessages,
     ) {}
 
     public function show(Request $request, string $organization, string $event, int $registration, GetAttendeeDirectory $getAttendeeDirectory): View
@@ -75,7 +77,10 @@ final class AttendeeDirectoryController extends Controller
             'actionUrls' => [
                 'meeting' => $this->signed('guest.registration.meetings.store', [$organization, $event, $registrationModel->id]),
                 'message' => $this->signed('guest.registration.messages.store', [$organization, $event, $registrationModel->id]),
+                'block' => $this->signed('guest.registration.messages.block', [$organization, $event, $registrationModel->id]),
+                'report' => $this->signed('guest.registration.messages.report', [$organization, $event, $registrationModel->id]),
             ],
+            'blocked' => $this->moderateAttendeeMessages->blockedBy($registrationModel),
         ]);
     }
 

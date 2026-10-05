@@ -22,6 +22,10 @@ use Carbon\CarbonImmutable;
  */
 final class AttendeeConversations
 {
+    public function __construct(
+        private readonly ModerateAttendeeMessages $moderateAttendeeMessages,
+    ) {}
+
     /**
      * Envoie un message. Null quand le destinataire ne peut pas être
      * joint — messagerie fermée, absent de l'annuaire, ou soi-même.
@@ -32,6 +36,11 @@ final class AttendeeConversations
             return null;
         }
 
+        // Parole suspendue par l'organisateur : plus rien ne part.
+        if ($sender->messaging_suspended_at !== null) {
+            return null;
+        }
+
         $recipient = Registration::query()
             ->where('event_id', $event->id)
             ->where('status', RegistrationStatus::Confirmed)
@@ -39,6 +48,11 @@ final class AttendeeConversations
             ->find($recipientId);
 
         if ($recipient === null || $recipient->id === $sender->id) {
+            return null;
+        }
+
+        // Un blocage, dans un sens ou dans l'autre, ferme la conversation.
+        if ($this->moderateAttendeeMessages->isBlockedBetween($sender->id, $recipient->id)) {
             return null;
         }
 
@@ -58,7 +72,7 @@ final class AttendeeConversations
      * Lire ses messages les marque comme lus : le fil est affiché, ils ont
      * été vus.
      *
-     * @return list<array{id: int, name: string, unread: int, messages: list<array{body: string, mine: bool, sentAt: string}>}>
+     * @return list<array{id: int, name: string, unread: int, messages: list<array{id: int, body: ?string, mine: bool, sentAt: string}>}>
      */
     public function forAttendee(Event $event, Registration $registration): array
     {
@@ -93,7 +107,10 @@ final class AttendeeConversations
             }
 
             $threads[$other->id]['messages'][] = [
-                'body' => $message->body,
+                'id' => $message->id,
+                // Message retiré par l'organisateur : la place reste, le
+                // texte non.
+                'body' => $message->removed_at === null ? $message->body : null,
                 'mine' => $mine,
                 'sentAt' => $message->created_at?->setTimezone($event->timezone)->translatedFormat('j F, H\\hi') ?? '',
             ];

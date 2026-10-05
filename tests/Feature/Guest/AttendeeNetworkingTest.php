@@ -17,20 +17,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\URL;
 
 /**
- * Les actions de networking sont signées comme le lien qui y mène.
- */
-function networkingUrl(string $name, object $organization, Event $event, Registration $registration, ?int $meeting = null): string
-{
-    $parameters = [$organization->slug, $event->slug, $registration->id];
-
-    if ($meeting !== null) {
-        $parameters[] = $meeting;
-    }
-
-    return URL::temporarySignedRoute("guest.registration.{$name}", now()->addDay(), $parameters);
-}
-
-/**
  * Le reste du networking entre participants (D8) : suggestions par centres
  * d'intérêt, rendez-vous, messagerie.
  *

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support\Networking;
 
 use App\Domain\Event\Models\Event;
+use App\Domain\Form\Models\AttendeeBlock;
 use App\Domain\Form\Models\AttendeeConnection;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationStatus;
@@ -73,12 +74,25 @@ final class SuggestConnections
             ->unique()
             ->all();
 
+        $blocked = AttendeeBlock::query()
+            ->where('event_id', $event->id)
+            ->where(fn ($query) => $query
+                ->where('blocker_registration_id', $registration->id)
+                ->orWhere('blocked_registration_id', $registration->id))
+            ->get()
+            ->flatMap(fn (AttendeeBlock $block): array => [
+                $block->blocker_registration_id,
+                $block->blocked_registration_id,
+            ])
+            ->unique()
+            ->all();
+
         $others = Registration::query()
             ->where('event_id', $event->id)
             ->where('status', RegistrationStatus::Confirmed)
             ->whereNotNull('directory_consent_at')
             ->whereKeyNot($registration->id)
-            ->whereNotIn('id', $met)
+            ->whereNotIn('id', [...$met, ...$blocked])
             ->get(['id', 'first_name', 'last_name', 'directory_headline', 'directory_interests']);
 
         $rows = [];
