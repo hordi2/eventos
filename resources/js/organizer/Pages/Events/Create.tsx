@@ -44,6 +44,7 @@ interface EventDraft {
     allowWaitlist: boolean;
     hasAttendeeDirectory: boolean;
     hasAttendeeMessaging: boolean;
+    hasCarbonReport: boolean;
     timezone: string;
     venueId: number | null;
     venueName: string | null;
@@ -145,6 +146,7 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
         allow_waitlist: event?.allowWaitlist ?? false,
         has_attendee_directory: event?.hasAttendeeDirectory ?? false,
         has_attendee_messaging: event?.hasAttendeeMessaging ?? false,
+        has_carbon_report: event?.hasCarbonReport ?? false,
         timezone: event?.timezone ?? 'Africa/Kinshasa',
         venue_id: event?.venueId ? String(event.venueId) : '',
         venue_name: '',
@@ -383,6 +385,22 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                                     Chaque inscrit décide d'y figurer ou non, et n'y publie que son nom et une ligne de
                                     présentation — jamais son e-mail ni son téléphone. Il y trouve son badge, ses
                                     rencontres et des suggestions par centres d'intérêt.
+                                </span>
+                            </span>
+                        </label>
+
+                        {/* Empreinte carbone (D12) : les participants déclarent leur déplacement. */}
+                        <label className="mt-3 flex cursor-pointer items-start gap-3">
+                            <Checkbox
+                                checked={data.has_carbon_report}
+                                onChange={(e) => setData('has_carbon_report', e.target.checked)}
+                                className="mt-1"
+                            />
+                            <span>
+                                <span className="block text-sm text-ink">Empreinte carbone</span>
+                                <span className="block text-xs text-ink-soft">
+                                    Chaque inscrit peut dire comment il vient ; vous obtenez un bilan et un rapport à
+                                    joindre à un appel d'offres, et le covoiturage s'organise entre participants.
                                 </span>
                             </span>
                         </label>

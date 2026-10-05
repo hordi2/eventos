@@ -56,6 +56,9 @@ final class Event extends Model
         'allow_guest_edit',
         'has_attendee_directory',
         'has_attendee_messaging',
+        'has_carbon_report',
+        'meals_served',
+        'printed_pages',
         'edit_deadline',
         'currency',
     ];
@@ -85,6 +88,9 @@ final class Event extends Model
             'allow_guest_edit' => 'boolean',
             'has_attendee_directory' => 'boolean',
             'has_attendee_messaging' => 'boolean',
+            'has_carbon_report' => 'boolean',
+            'meals_served' => 'integer',
+            'printed_pages' => 'integer',
             'capacity' => 'integer',
         ];
     }

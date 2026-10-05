@@ -52,6 +52,11 @@ final class Registration extends Model
         'shares_contact',
         'directory_interests',
         'messaging_suspended_at',
+        'travel_mode',
+        'travel_distance_km',
+        'travel_city',
+        'carpool_role',
+        'travel_declared_at',
         'utm',
         'referrer',
         'ip_address',
@@ -72,6 +77,9 @@ final class Registration extends Model
             'shares_contact' => 'boolean',
             'directory_interests' => 'array',
             'messaging_suspended_at' => 'immutable_datetime',
+            'travel_mode' => TravelMode::class,
+            'travel_distance_km' => 'integer',
+            'travel_declared_at' => 'immutable_datetime',
             'cancelled_at' => 'immutable_datetime',
         ];
     }

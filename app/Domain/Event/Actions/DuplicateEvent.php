@@ -94,6 +94,7 @@ final class DuplicateEvent
             'allow_guest_edit' => $original->allow_guest_edit,
             'has_attendee_directory' => $original->has_attendee_directory,
             'has_attendee_messaging' => $original->has_attendee_messaging,
+            'has_carbon_report' => $original->has_carbon_report,
             'edit_deadline' => $original->edit_deadline?->addSeconds($offsetSeconds),
             'currency' => $original->currency,
         ];

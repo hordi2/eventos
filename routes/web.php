@@ -19,6 +19,7 @@ use App\Http\Controllers\Guest\StaticPageController;
 use App\Http\Controllers\Guest\StatusController;
 use App\Http\Controllers\Guest\TicketOrderController;
 use App\Http\Controllers\Guest\TicketOrderPaymentController;
+use App\Http\Controllers\Guest\TravelDeclarationController;
 use App\Http\Controllers\Guest\UnsubscribeController;
 use App\Http\Controllers\Organizer\AgencyController;
 use App\Http\Controllers\Organizer\AttendeeController;
@@ -37,6 +38,7 @@ use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
 use App\Http\Controllers\Organizer\BadgeController;
 use App\Http\Controllers\Organizer\BillingController;
 use App\Http\Controllers\Organizer\BudgetController;
+use App\Http\Controllers\Organizer\CarbonFootprintController;
 use App\Http\Controllers\Organizer\CheckInController;
 use App\Http\Controllers\Organizer\CommunityController;
 use App\Http\Controllers\Organizer\ComplianceController;
@@ -316,6 +318,11 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/moderation', [AttendeeModerationController::class, 'index'])->name('events.moderation.index');
         Route::patch('events/{event}/moderation/{report}', [AttendeeModerationController::class, 'update'])->whereNumber('report')->name('events.moderation.update');
 
+        // Empreinte carbone et rapport RSE (D12).
+        Route::get('events/{event}/empreinte', [CarbonFootprintController::class, 'index'])->name('events.carbon.index');
+        Route::patch('events/{event}/empreinte', [CarbonFootprintController::class, 'update'])->name('events.carbon.update');
+        Route::get('events/{event}/empreinte.pdf', [CarbonFootprintController::class, 'report'])->name('events.carbon.report');
+
         Route::get('events/{event}/budget', [BudgetController::class, 'index'])->name('events.budget.index');
         Route::post('events/{event}/budget', [BudgetController::class, 'store'])->name('events.budget.store');
         Route::patch('events/{event}/budget/{line}', [BudgetController::class, 'update'])->whereNumber('line')->name('events.budget.update');
@@ -589,6 +596,10 @@ Route::middleware(['resolve-guest-event', 'guest-locale'])
             // celui des sessions qu'il a choisies.
             // Annuaire des participants (D8) : on n'y entre que par son
             // propre lien signé, et seulement si l'organisateur l'a ouvert.
+            // Déclaration de déplacement et covoiturage (D12).
+            Route::get('inscriptions/{registration}/deplacement', [TravelDeclarationController::class, 'show'])->whereNumber('registration')->name('travel');
+            Route::post('inscriptions/{registration}/deplacement', [TravelDeclarationController::class, 'update'])->whereNumber('registration')->middleware('throttle:20,1')->name('travel.update');
+
             Route::get('inscriptions/{registration}/annuaire', [AttendeeDirectoryController::class, 'show'])->whereNumber('registration')->name('directory');
             Route::post('inscriptions/{registration}/annuaire', [AttendeeDirectoryController::class, 'update'])->whereNumber('registration')->name('directory.update');
             // Rendez-vous et messagerie entre participants (D8). Débit

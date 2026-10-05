@@ -115,6 +115,15 @@
             </div>
         @endif
 
+        {{-- Mon déplacement (D12) : la seule source honnête de l'empreinte. --}}
+        @if ($travelUrl ?? null)
+            <div class="mb-8 flex justify-center">
+                <a href="{{ $travelUrl }}" class="inline-flex min-h-11 items-center rounded-pill border border-line px-5 py-2.5 text-sm font-medium text-ink">
+                    {{ __('Déclarer mon déplacement') }}
+                </a>
+            </div>
+        @endif
+
         {{-- Annuaire des participants (D8) : proposé, jamais imposé. --}}
         @if ($directoryUrl ?? null)
             <div class="mb-8 flex justify-center">
