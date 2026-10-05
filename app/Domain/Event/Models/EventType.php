@@ -47,6 +47,40 @@ enum EventType: string
      * "personnel" que d'"entreprise" dans ce contexte) — tout le reste
      * (entreprise, associatif, éducation, agence/autre) reste "corporate".
      */
+    public function label(): string
+    {
+        return match ($this) {
+            self::Conference => 'Conférence',
+            self::ProductLaunch => 'Lancement de produit',
+            self::Seminar => 'Séminaire',
+            self::GeneralAssembly => 'Assemblée générale',
+            self::Kickoff => 'Kick-off',
+            self::Gala => 'Gala',
+            self::Fundraiser => 'Collecte de fonds',
+            self::Graduation => 'Remise de diplômes',
+            self::OpenHouse => 'Journée portes ouvertes',
+            self::ParentsMeeting => 'Réunion de parents',
+            self::Religious => 'Événement religieux',
+            self::Wedding => 'Mariage',
+            self::Birthday => 'Anniversaire',
+            self::Baptism => 'Baptême',
+            self::Memorial => 'Deuil ou commémoration',
+            self::Agency => "Événement d'agence",
+            self::Other => 'Autre',
+        };
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    public static function options(): array
+    {
+        return array_map(
+            fn (self $type): array => ['value' => $type->value, 'label' => $type->label()],
+            self::cases(),
+        );
+    }
+
     public function category(): EventCategory
     {
         return match ($this) {

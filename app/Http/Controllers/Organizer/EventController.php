@@ -104,30 +104,7 @@ final class EventController extends Controller
      */
     private function eventTypeOptions(): array
     {
-        $labels = [
-            'conference' => 'Conférence',
-            'product_launch' => 'Lancement de produit',
-            'seminar' => 'Séminaire',
-            'general_assembly' => 'Assemblée générale',
-            'kickoff' => 'Kick-off',
-            'gala' => 'Gala',
-            'fundraiser' => 'Collecte de fonds',
-            'graduation' => 'Remise de diplômes',
-            'open_house' => 'Journée portes ouvertes',
-            'parents_meeting' => 'Réunion de parents',
-            'religious' => 'Événement religieux',
-            'wedding' => 'Mariage',
-            'birthday' => 'Anniversaire',
-            'baptism' => 'Baptême',
-            'memorial' => 'Deuil ou commémoration',
-            'agency' => "Événement d'agence",
-            'other' => 'Autre',
-        ];
-
-        return array_map(
-            fn (EventType $type): array => ['value' => $type->value, 'label' => $labels[$type->value]],
-            EventType::cases(),
-        );
+        return EventType::options();
     }
 
     /**

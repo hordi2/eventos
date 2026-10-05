@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domain\Event\Models\EventTemplate;
 use App\Domain\Organization\Models\AuditLog;
 use App\Domain\Organization\Models\Membership;
 use App\Support\MultiTenancy\BelongsToOrganization;
@@ -21,6 +22,11 @@ it('tout modèle du domaine possédant organization_id déclare le trait Belongs
         // immutabilité est garantie par un déclencheur PostgreSQL, pas par
         // le cloisonnement multi-tenant.
         AuditLog::class,
+        // Bibliothèque de modèles communautaire (D11) : elle n'a de sens que
+        // si chacun voit les modèles publiés par les autres. organization_id
+        // y dit qui a publié ; il ne cloisonne pas la lecture, et la table
+        // n'a volontairement pas de row-level security.
+        EventTemplate::class,
     ];
 
     $domainPath = app_path('Domain');

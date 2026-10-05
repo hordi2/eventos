@@ -58,6 +58,7 @@ use App\Http\Controllers\Organizer\EventInvitationSendController;
 use App\Http\Controllers\Organizer\EventPublicationController;
 use App\Http\Controllers\Organizer\EventReportController;
 use App\Http\Controllers\Organizer\EventSegmentController;
+use App\Http\Controllers\Organizer\EventTemplateController;
 use App\Http\Controllers\Organizer\ExportController;
 use App\Http\Controllers\Organizer\FormBlockImageController;
 use App\Http\Controllers\Organizer\FormController;
@@ -322,6 +323,12 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/empreinte', [CarbonFootprintController::class, 'index'])->name('events.carbon.index');
         Route::patch('events/{event}/empreinte', [CarbonFootprintController::class, 'update'])->name('events.carbon.update');
         Route::get('events/{event}/empreinte.pdf', [CarbonFootprintController::class, 'report'])->name('events.carbon.report');
+
+        // Bibliothèque de modèles communautaire (D11).
+        Route::get('modeles', [EventTemplateController::class, 'index'])->name('templates.index');
+        Route::post('events/{event}/modele', [EventTemplateController::class, 'store'])->whereNumber('event')->middleware('throttle:10,1')->name('templates.store');
+        Route::patch('modeles/{template}', [EventTemplateController::class, 'update'])->whereNumber('template')->name('templates.update');
+        Route::post('modeles/{template}/utiliser', [EventTemplateController::class, 'use'])->whereNumber('template')->middleware('throttle:20,1')->name('templates.use');
 
         Route::get('events/{event}/budget', [BudgetController::class, 'index'])->name('events.budget.index');
         Route::post('events/{event}/budget', [BudgetController::class, 'store'])->name('events.budget.store');

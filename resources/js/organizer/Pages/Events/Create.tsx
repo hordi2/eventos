@@ -189,6 +189,18 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
         <PageLayout title={event ? "Paramètres de l'événement" : 'Créer un événement'} eyebrow="Nouvel événement">
             <Head title="Créer un événement" />
 
+            {/* Bibliothèque de modèles (D11) : partir du travail d'un autre
+                plutôt que d'une page blanche. */}
+            {!event && (
+                <p className="mb-8 rounded-card bg-bg px-5 py-4 text-sm text-ink-soft ring-1 ring-line">
+                    Vous pouvez aussi{' '}
+                    <Link href="/modeles" className="text-accent underline underline-offset-2">
+                        partir d'un modèle publié par la communauté
+                    </Link>{' '}
+                    : formulaire, page et réglages sont déjà en place.
+                </p>
+            )}
+
             <div className="mb-10 flex items-center gap-3">
                 <Badge variant={step === 1 ? 'success' : 'neutral'}>1. Type</Badge>
                 <Badge variant={step === 2 ? 'success' : 'neutral'}>2. Informations</Badge>
