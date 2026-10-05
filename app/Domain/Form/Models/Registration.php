@@ -48,6 +48,8 @@ final class Registration extends Model
         'source',
         'directory_consent_at',
         'directory_headline',
+        'networking_token',
+        'shares_contact',
         'utm',
         'referrer',
         'ip_address',
@@ -65,6 +67,7 @@ final class Registration extends Model
             'utm' => 'array',
             'registered_at' => 'immutable_datetime',
             'directory_consent_at' => 'immutable_datetime',
+            'shares_contact' => 'boolean',
             'cancelled_at' => 'immutable_datetime',
         ];
     }

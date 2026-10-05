@@ -7,6 +7,16 @@
         <h1 class="mb-2 text-2xl">{{ __('Annuaire des participants') }}</h1>
         <p class="mb-8 text-sm text-ink-soft">{{ $event->title }}</p>
 
+        @if (session('status') === 'badge-met')
+            <p role="status" class="mb-6 rounded-card bg-bg px-4 py-3 text-sm text-success ring-1 ring-line">
+                {{ __('Rencontre enregistrée : :name.', ['name' => session('metName')]) }}
+            </p>
+        @elseif (session('status') === 'badge-unknown')
+            <p role="status" class="mb-6 rounded-card bg-bg px-4 py-3 text-sm text-ink-soft ring-1 ring-line">
+                {{ __('Ce badge ne correspond à personne de cet événement.') }}
+            </p>
+        @endif
+
         @if (session('status') === 'directory-joined')
             <p role="status" class="mb-6 rounded-card bg-bg px-4 py-3 text-sm text-success ring-1 ring-line">
                 {{ __('Vous figurez dans l’annuaire. Vous pouvez en sortir quand vous voulez.') }}
@@ -43,6 +53,13 @@
                     <p class="mb-3 text-sm text-danger">{{ $message }}</p>
                 @enderror
 
+                <label class="mb-4 flex cursor-pointer items-start gap-3">
+                    <input type="checkbox" name="shares_contact" value="1" class="mt-1 h-4 w-4 rounded border-line">
+                    <span class="text-sm text-ink-soft">
+                        {{ __('Partager mon adresse e-mail avec les participants que je rencontre, quand ils scannent mon badge.') }}
+                    </span>
+                </label>
+
                 <input type="hidden" name="join" value="1">
                 <button type="submit" class="form-button inline-flex min-h-11 items-center rounded-pill px-6 py-2.5">
                     {{ __('Je rejoins l’annuaire') }}
@@ -59,6 +76,39 @@
                 </button>
             @endif
         </form>
+
+        @if ($badgeImageUrl)
+            {{-- Le badge : c'est lui qu'on présente à quelqu'un pour qu'il le
+                 scanne. Il ne porte pas le code d'entrée, qui sert à l'accueil. --}}
+            <div class="mb-10 rounded-card bg-bg p-5 text-center ring-1 ring-line">
+                <p class="mb-1 font-medium text-ink">{{ __('Mon badge') }}</p>
+                <p class="mb-4 text-sm text-ink-soft">
+                    {{ __('Faites-le scanner par la personne que vous rencontrez : vous vous retrouverez tous les deux dans vos rencontres.') }}
+                </p>
+                <img src="{{ $badgeImageUrl }}" alt="{{ __('Mon badge') }}" width="200" height="200" class="mx-auto h-48 w-48 rounded-card bg-bg p-2 ring-1 ring-line">
+            </div>
+        @endif
+
+        @if ($connections !== [])
+            <h2 class="mb-3 font-serif text-xl italic">{{ __('Mes rencontres') }}</h2>
+            <ul class="mb-10 space-y-3">
+                @foreach ($connections as $connection)
+                    <li class="rounded-card bg-bg px-5 py-4 ring-1 ring-line">
+                        <p class="text-ink">{{ $connection['name'] }}</p>
+                        @if ($connection['headline'])
+                            <p class="mt-1 text-sm text-ink-soft">{{ $connection['headline'] }}</p>
+                        @endif
+                        @if ($connection['email'])
+                            <p class="mt-1 text-sm"><a href="mailto:{{ $connection['email'] }}" class="text-accent underline">{{ $connection['email'] }}</a></p>
+                        @else
+                            <p class="mt-1 text-xs text-ink-soft">{{ __('Cette personne n’a pas partagé son adresse.') }}</p>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+
+        <h2 class="mb-3 font-serif text-xl italic">{{ __('Participants') }}</h2>
 
         @if ($attendees === [])
             <p class="rounded-card border border-dashed border-line px-5 py-10 text-center text-sm text-ink-soft">

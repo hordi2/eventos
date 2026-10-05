@@ -548,6 +548,12 @@ Route::middleware(['resolve-guest-event', 'guest-locale'])
         // style pour être mis en cache d'un écran à l'autre du parcours.
         Route::get('theme.css', [FormThemeStyleController::class, 'show'])->name('theme-style');
 
+        // Badge de networking (D8) : scanné par l'appareil photo d'un autre
+        // participant, il ne peut pas porter de signature — c'est la visite
+        // du scanneur à son propre lien signé qui l'a identifié.
+        Route::get('badge/{badgeToken}', [AttendeeDirectoryController::class, 'scan'])->middleware('throttle:60,1')->name('badge');
+        Route::get('badge/{badgeToken}/qr.png', [AttendeeDirectoryController::class, 'badgeQr'])->middleware('throttle:60,1')->name('badge-qr');
+
         // Livre d'or : un mot laissé depuis la page publique, sans compte.
         Route::post('livre-d-or', [GuestBookController::class, 'store'])->middleware('throttle:10,1')->name('guest-book');
 

@@ -8,8 +8,10 @@ use App\Domain\Form\Models\FormVersion;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Support\MultiTenancy\CurrentOrganization;
+use App\Support\Networking\ExchangeBadgeContact;
 use App\Support\Networking\GetAttendeeDirectory;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 
 /**
  * Annuaire des participants (D8) : chacun y figure s'il le demande, et rien
@@ -118,4 +120,104 @@ it('tient l\'annuaire aux seuls inscrits confirmés', function (): void {
     app(CurrentOrganization::class)->clear();
 
     $this->get($url)->assertNotFound();
+});
+
+/**
+ * Un second participant du même événement, confirmé et inscrit à l'annuaire.
+ */
+function secondAttendee(object $organization, Event $event, bool $sharesContact): Registration
+{
+    app(CurrentOrganization::class)->set($organization);
+    $version = FormVersion::query()->where('organization_id', $organization->id)->sole();
+    $registration = Registration::factory()->create([
+        'organization_id' => $organization->id,
+        'event_id' => $event->id,
+        'form_version_id' => $version->id,
+        'status' => RegistrationStatus::Confirmed,
+        'first_name' => 'Jean',
+        'last_name' => 'Mbuyi',
+        'email' => 'jean@example.com',
+        'directory_consent_at' => now(),
+        'directory_headline' => 'Architecte',
+        'shares_contact' => $sharesContact,
+        'networking_token' => (string) Str::uuid(),
+    ]);
+    app(CurrentOrganization::class)->clear();
+
+    return $registration;
+}
+
+it('enregistre la rencontre quand un participant scanne le badge d\'un autre', function (): void {
+    ['organization' => $organization, 'event' => $event, 'registration' => $me, 'url' => $url] = directoryEvent();
+    $other = secondAttendee($organization, $event, sharesContact: true);
+
+    // J'ouvre mon lien : c'est lui qui dit qui scanne.
+    $this->post($url, ['join' => 1]);
+    $this->get($url)->assertOk();
+
+    $this->get("/r/{$organization->slug}/{$event->slug}/badge/{$other->networking_token}")
+        ->assertRedirect()
+        ->assertSessionHas('status', 'badge-met');
+
+    app(CurrentOrganization::class)->set($organization);
+    $connections = app(ExchangeBadgeContact::class)->connectionsOf($me->refresh());
+
+    expect($connections)->toHaveCount(1)
+        ->and($connections[0]['name'])->toBe('Jean Mbuyi')
+        ->and($connections[0]['email'])->toBe('jean@example.com')
+        ->and($connections[0]['scannedByMe'])->toBeTrue();
+
+    // La rencontre vaut dans les deux sens.
+    $theirs = app(ExchangeBadgeContact::class)->connectionsOf($other->refresh());
+    expect($theirs)->toHaveCount(1)
+        ->and($theirs[0]['scannedByMe'])->toBeFalse();
+    app(CurrentOrganization::class)->clear();
+});
+
+it('ne compte qu\'une rencontre, même scannée dix fois', function (): void {
+    ['organization' => $organization, 'event' => $event, 'registration' => $me, 'url' => $url] = directoryEvent();
+    $other = secondAttendee($organization, $event, sharesContact: false);
+
+    $this->post($url, ['join' => 1]);
+    $this->get($url);
+
+    foreach (range(1, 3) as $ignored) {
+        $this->get("/r/{$organization->slug}/{$event->slug}/badge/{$other->networking_token}");
+    }
+
+    app(CurrentOrganization::class)->set($organization);
+    $connections = app(ExchangeBadgeContact::class)->connectionsOf($me->refresh());
+
+    expect($connections)->toHaveCount(1)
+        // Sans son accord, l'adresse de l'autre ne sort pas.
+        ->and($connections[0]['email'])->toBeNull();
+    app(CurrentOrganization::class)->clear();
+});
+
+it('ne sait pas qui scanne tant que le participant n\'a pas ouvert son lien', function (): void {
+    ['organization' => $organization, 'event' => $event] = directoryEvent();
+    $other = secondAttendee($organization, $event, sharesContact: true);
+
+    $this->get("/r/{$organization->slug}/{$event->slug}/badge/{$other->networking_token}")
+        ->assertOk()
+        ->assertSee('On ne sait pas encore qui vous êtes', false);
+});
+
+it('rend le badge inutilisable quand on sort de l\'annuaire', function (): void {
+    ['organization' => $organization, 'event' => $event, 'registration' => $me, 'url' => $url] = directoryEvent();
+
+    $this->post($url, ['join' => 1]);
+    $this->get($url)->assertOk();
+
+    app(CurrentOrganization::class)->set($organization);
+    $token = $me->refresh()->networking_token;
+    expect($token)->not->toBeNull();
+    app(CurrentOrganization::class)->clear();
+
+    $this->post($url, ['join' => 0]);
+
+    app(CurrentOrganization::class)->set($organization);
+    expect($me->refresh()->networking_token)->toBeNull()
+        ->and($me->shares_contact)->toBeFalse();
+    app(CurrentOrganization::class)->clear();
 });
