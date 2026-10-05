@@ -44,6 +44,7 @@ export type EventNavLinkKey =
     | 'exports'
     | 'budget'
     | 'guestBook'
+    | 'moderation'
     | 'referral';
 
 /**

@@ -358,11 +358,23 @@ php artisan queue:failed
       promo, pages invité en français et en anglais, page événement en blocs,
       kiosque d'accueil, agenda et mesure d'audience. WhatsApp, plan de table,
       séquences d'envois, Zapier/n8n, API et webhooks étaient déjà livrés.
-- [ ] Lot 3 — Montée en gamme. L'invitation est traitée : la page web est le
+- [ ] Lot 3 — Montée en gamme. Traités : l'invitation (la page web est le
       modèle, le faire-part PDF et la version téléphone la suivent feuillet
-      par feuillet (mêmes polices, même ordre, mêmes ornements). Le code
-      d'entrée et la confirmation de présence ferment toujours l'invitation,
-      chacun sur sa page. Restent le suivi budgétaire et la rentabilité (D7).
+      par feuillet — mêmes polices, même ordre, mêmes ornements ; le code
+      d'entrée et la confirmation de présence la ferment, chacun sur sa
+      page), le portail agence (D10 : portefeuille de comptes clients,
+      modèles d'e-mail partagés, marque de l'agence sur les portails, relevé
+      d'activité par client) et le networking entre participants (D8 :
+      annuaire sur consentement, suggestions par centres d'intérêt,
+      rendez-vous, échange de coordonnées par scan de badge, messagerie
+      interne avec blocage, signalement et modération). Le suivi budgétaire
+      (D7) existait déjà.
+
+      Restent, par priorité du cahier des charges : D9 (application
+      participant en marque blanche), D11 (bibliothèque de modèles
+      communautaire), D12 (empreinte carbone) et D4 (IA opérationnelle).
+      Le moteur revendeur du D10 — tarifs, marges, reversements — reste
+      ouvert : il demande des décisions commerciales.
 
 **Reste du lot 2, hors code** : publier l'application mobile de check-in sur
 les stores (compte développeur à ouvrir).
@@ -370,4 +382,4 @@ les stores (compte développeur à ouvrir).
 **Connu, à ticketer** : la CSP stricte des pages publiques annoncée au §7
 n'est écrite nulle part dans le code.
 
-**Dernière mise à jour** : 2 octobre 2026
+**Dernière mise à jour** : 5 octobre 2026

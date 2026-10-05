@@ -193,3 +193,29 @@ it('réserve la modération à qui peut l\'exercer', function (): void {
         ->get("/events/{$event->id}/moderation")
         ->assertForbidden();
 });
+
+it('n\'ouvre « Modération » au menu que lorsqu\'un signalement attend', function (): void {
+    ['organization' => $organization, 'event' => $event, 'me' => $me, 'other' => $other] = moderationEvent();
+
+    app(CurrentOrganization::class)->set($organization);
+    $admin = User::factory()->create();
+    $admin->memberships()->create(['organization_id' => $organization->id, 'role' => MembershipRole::Admin]);
+    app(CurrentOrganization::class)->clear();
+
+    $session = ['current_organization_id' => $organization->id];
+
+    // Rien à modérer : pas de lien.
+    $this->actingAs($admin)->withSession($session)->get("/events/{$event->id}")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('eventNav.links.moderation', null));
+
+    app(CurrentOrganization::class)->set($organization);
+    $message = app(AttendeeConversations::class)->send($event, $other, $me->id, 'Propos déplacés.');
+    app(CurrentOrganization::class)->clear();
+
+    $this->post(networkingUrl('messages.report', $organization, $event, $me), ['message_id' => $message->id]);
+
+    $this->actingAs($admin)->withSession($session)->get("/events/{$event->id}")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('eventNav.links.moderation', route('events.moderation.index', $event->id)));
+});

@@ -7,6 +7,7 @@ namespace App\Support\Events;
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventStatus;
+use App\Domain\Form\Models\AttendeeMessageReport;
 use App\Domain\Form\Models\FieldType;
 use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\FormField;
@@ -113,6 +114,12 @@ final class BuildEventNavigation
             'budget' => $link($gate->allows('viewFinancials', $organization) && ! $event->isSubEvent(), route('events.budget.index', $event->id)),
             // Proposé dès qu'un invité a laissé un mot : avant, il n'y a rien à modérer.
             'guestBook' => $link($canUpdate && $this->hasGuestBookMessages($event->id), route('events.guest-book.index', $event->id)),
+            // Même règle pour la messagerie entre participants (D8) : le lien
+            // paraît quand un signalement attend, pas avant.
+            'moderation' => $link(
+                $gate->allows('moderateMessages', $organization) && $this->hasAttendeeReports($event->id),
+                route('events.moderation.index', $event->id),
+            ),
             'referral' => $link(! $isCollaborator && $gate->allows('manageBilling', $organization), route('settings.referral.edit')),
         ];
     }
@@ -125,6 +132,11 @@ final class BuildEventNavigation
     private function hasGuestBookMessages(int $eventId): bool
     {
         return GuestBookMessage::query()->where('event_id', $eventId)->exists();
+    }
+
+    private function hasAttendeeReports(int $eventId): bool
+    {
+        return AttendeeMessageReport::query()->where('event_id', $eventId)->exists();
     }
 
     private function needsApproval(Event $event): bool
