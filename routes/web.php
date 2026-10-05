@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Guest\AttendeeDirectoryController;
+use App\Http\Controllers\Guest\AttendeeMeetingController;
+use App\Http\Controllers\Guest\AttendeeMessageController;
 use App\Http\Controllers\Guest\FormThemeStyleController;
 use App\Http\Controllers\Guest\GuestBookController;
 use App\Http\Controllers\Guest\GuestInvitationController;
@@ -584,6 +586,11 @@ Route::middleware(['resolve-guest-event', 'guest-locale'])
             // propre lien signé, et seulement si l'organisateur l'a ouvert.
             Route::get('inscriptions/{registration}/annuaire', [AttendeeDirectoryController::class, 'show'])->whereNumber('registration')->name('directory');
             Route::post('inscriptions/{registration}/annuaire', [AttendeeDirectoryController::class, 'update'])->whereNumber('registration')->name('directory.update');
+            // Rendez-vous et messagerie entre participants (D8). Débit
+            // limité : ce sont des écritures ouvertes à un invité (§7).
+            Route::post('inscriptions/{registration}/rendez-vous', [AttendeeMeetingController::class, 'store'])->whereNumber('registration')->middleware('throttle:20,1')->name('meetings.store');
+            Route::post('inscriptions/{registration}/rendez-vous/{meeting}', [AttendeeMeetingController::class, 'answer'])->whereNumber('registration')->whereNumber('meeting')->middleware('throttle:30,1')->name('meetings.answer');
+            Route::post('inscriptions/{registration}/messages', [AttendeeMessageController::class, 'store'])->whereNumber('registration')->middleware('throttle:20,1')->name('messages.store');
             Route::get('inscriptions/{registration}/mon-agenda', [PersonalAgendaController::class, 'show'])->whereNumber('registration')->name('agenda');
             Route::get('inscriptions/{registration}/mon-agenda.ics', [PersonalAgendaController::class, 'calendar'])->whereNumber('registration')->name('agenda.ics');
             Route::get('inscriptions/{registration}/faire-part.pdf', [InvitationPdfController::class, 'forRegistration'])->whereNumber('registration')->middleware('throttle:20,1')->name('invitation-pdf');

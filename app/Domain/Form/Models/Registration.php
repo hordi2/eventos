@@ -50,6 +50,7 @@ final class Registration extends Model
         'directory_headline',
         'networking_token',
         'shares_contact',
+        'directory_interests',
         'utm',
         'referrer',
         'ip_address',
@@ -68,6 +69,7 @@ final class Registration extends Model
             'registered_at' => 'immutable_datetime',
             'directory_consent_at' => 'immutable_datetime',
             'shares_contact' => 'boolean',
+            'directory_interests' => 'array',
             'cancelled_at' => 'immutable_datetime',
         ];
     }

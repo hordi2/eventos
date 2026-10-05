@@ -41,6 +41,7 @@ final class CreateEventRequest extends FormRequest
             'allow_waitlist' => ['boolean'],
             // Annuaire des participants (D8).
             'has_attendee_directory' => ['boolean'],
+            'has_attendee_messaging' => ['boolean'],
             'timezone' => ['required', 'string', Rule::in(DateTimeZone::listIdentifiers())],
             // La RLS PostgreSQL (T-002) rend déjà invisible tout lieu d'une autre
             // organisation à cette requête : Rule::exists suffit, pas besoin de

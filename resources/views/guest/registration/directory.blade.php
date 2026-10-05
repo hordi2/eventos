@@ -7,6 +7,28 @@
         <h1 class="mb-2 text-2xl">{{ __('Annuaire des participants') }}</h1>
         <p class="mb-8 text-sm text-ink-soft">{{ $event->title }}</p>
 
+        @if (session('status') === 'meeting-proposed')
+            <p role="status" class="mb-6 rounded-card bg-bg px-4 py-3 text-sm text-success ring-1 ring-line">
+                {{ __('Votre proposition de rendez-vous est partie.') }}
+            </p>
+        @elseif (session('status') === 'meeting-answered')
+            <p role="status" class="mb-6 rounded-card bg-bg px-4 py-3 text-sm text-success ring-1 ring-line">
+                {{ __('Votre réponse est enregistrée.') }}
+            </p>
+        @elseif (session('status') === 'meeting-refused')
+            <p role="status" class="mb-6 rounded-card bg-bg px-4 py-3 text-sm text-danger ring-1 ring-line">
+                {{ __('Ce rendez-vous n’a pas pu être enregistré : vérifiez l’heure, elle doit tomber pendant l’événement.') }}
+            </p>
+        @elseif (session('status') === 'message-sent')
+            <p role="status" class="mb-6 rounded-card bg-bg px-4 py-3 text-sm text-success ring-1 ring-line">
+                {{ __('Votre message est envoyé.') }}
+            </p>
+        @elseif (session('status') === 'message-refused')
+            <p role="status" class="mb-6 rounded-card bg-bg px-4 py-3 text-sm text-danger ring-1 ring-line">
+                {{ __('Ce participant n’est pas joignable.') }}
+            </p>
+        @endif
+
         @if (session('status') === 'badge-met')
             <p role="status" class="mb-6 rounded-card bg-bg px-4 py-3 text-sm text-success ring-1 ring-line">
                 {{ __('Rencontre enregistrée : :name.', ['name' => session('metName')]) }}
@@ -52,6 +74,18 @@
                 @error('headline')
                     <p class="mb-3 text-sm text-danger">{{ $message }}</p>
                 @enderror
+
+                <label for="interests" class="mb-1 block text-sm text-ink">{{ __('Vos centres d’intérêt (optionnel)') }}</label>
+                <input
+                    type="text"
+                    id="interests"
+                    name="interests"
+                    maxlength="200"
+                    value="{{ old('interests') }}"
+                    placeholder="{{ __('santé, formation, logistique') }}"
+                    class="mb-1 w-full rounded-control border border-line bg-bg px-4 py-2.5 text-ink"
+                >
+                <p class="mb-4 text-xs text-ink-soft">{{ __('Séparés par des virgules, cinq au plus. Ils servent à vous suggérer des participants qui vous ressemblent.') }}</p>
 
                 <label class="mb-4 flex cursor-pointer items-start gap-3">
                     <input type="checkbox" name="shares_contact" value="1" class="mt-1 h-4 w-4 rounded border-line">
@@ -107,6 +141,10 @@
                 @endforeach
             </ul>
         @endif
+
+        @include('guest.registration.partials.directory-suggestions')
+        @include('guest.registration.partials.directory-meetings')
+        @include('guest.registration.partials.directory-messages')
 
         <h2 class="mb-3 font-serif text-xl italic">{{ __('Participants') }}</h2>
 

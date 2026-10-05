@@ -43,6 +43,7 @@ interface EventDraft {
     capacity: number | null;
     allowWaitlist: boolean;
     hasAttendeeDirectory: boolean;
+    hasAttendeeMessaging: boolean;
     timezone: string;
     venueId: number | null;
     venueName: string | null;
@@ -143,6 +144,7 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
         capacity: event?.capacity != null ? String(event.capacity) : '',
         allow_waitlist: event?.allowWaitlist ?? false,
         has_attendee_directory: event?.hasAttendeeDirectory ?? false,
+        has_attendee_messaging: event?.hasAttendeeMessaging ?? false,
         timezone: event?.timezone ?? 'Africa/Kinshasa',
         venue_id: event?.venueId ? String(event.venueId) : '',
         venue_name: '',
@@ -379,10 +381,28 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                                 <span className="block text-sm text-ink">Annuaire des participants</span>
                                 <span className="block text-xs text-ink-soft">
                                     Chaque inscrit décide d'y figurer ou non, et n'y publie que son nom et une ligne de
-                                    présentation — jamais son e-mail ni son téléphone.
+                                    présentation — jamais son e-mail ni son téléphone. Il y trouve son badge, ses
+                                    rencontres et des suggestions par centres d'intérêt.
                                 </span>
                             </span>
                         </label>
+
+                        {data.has_attendee_directory && (
+                            <label className="mt-3 flex cursor-pointer items-start gap-3">
+                                <Checkbox
+                                    checked={data.has_attendee_messaging}
+                                    onChange={(e) => setData('has_attendee_messaging', e.target.checked)}
+                                    className="mt-1"
+                                />
+                                <span>
+                                    <span className="block text-sm text-ink">Messagerie entre participants</span>
+                                    <span className="block text-xs text-ink-soft">
+                                        Ils peuvent s'écrire depuis l'annuaire. Les messages se lisent sur la page de
+                                        l'événement : rien ne part par e-mail.
+                                    </span>
+                                </span>
+                            </label>
+                        )}
 
                         {locales.length > 1 && (
                             <div className="mt-6 sm:max-w-xs">

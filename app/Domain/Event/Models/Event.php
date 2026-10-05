@@ -55,6 +55,7 @@ final class Event extends Model
         'allow_waitlist',
         'allow_guest_edit',
         'has_attendee_directory',
+        'has_attendee_messaging',
         'edit_deadline',
         'currency',
     ];
@@ -83,6 +84,7 @@ final class Event extends Model
             'allow_waitlist' => 'boolean',
             'allow_guest_edit' => 'boolean',
             'has_attendee_directory' => 'boolean',
+            'has_attendee_messaging' => 'boolean',
             'capacity' => 'integer',
         ];
     }

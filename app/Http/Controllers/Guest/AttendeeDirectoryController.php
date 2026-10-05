@@ -9,8 +9,11 @@ use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Guest\JoinAttendeeDirectoryRequest;
+use App\Support\Networking\AttendeeConversations;
 use App\Support\Networking\ExchangeBadgeContact;
 use App\Support\Networking\GetAttendeeDirectory;
+use App\Support\Networking\PlanAttendeeMeeting;
+use App\Support\Networking\SuggestConnections;
 use Carbon\CarbonImmutable;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
@@ -32,6 +35,9 @@ final class AttendeeDirectoryController extends Controller
 {
     public function __construct(
         private readonly ExchangeBadgeContact $exchangeBadgeContact,
+        private readonly SuggestConnections $suggestConnections,
+        private readonly PlanAttendeeMeeting $planAttendeeMeeting,
+        private readonly AttendeeConversations $attendeeConversations,
     ) {}
 
     public function show(Request $request, string $organization, string $event, int $registration, GetAttendeeDirectory $getAttendeeDirectory): View
@@ -58,6 +64,18 @@ final class AttendeeDirectoryController extends Controller
                 ? null
                 : route('guest.registration.badge-qr', [$organization, $event, $this->exchangeBadgeContact->tokenFor($registrationModel)]),
             'connections' => $this->exchangeBadgeContact->connectionsOf($registrationModel),
+            'suggestions' => $this->suggestConnections->handle($eventModel, $registrationModel),
+            'meetings' => $this->meetingsWithAnswerUrls($eventModel, $registrationModel, $organization, $event),
+            'conversations' => $eventModel->has_attendee_messaging
+                ? $this->attendeeConversations->forAttendee($eventModel, $registrationModel)
+                : [],
+            'interests' => implode(', ', $registrationModel->directory_interests ?? []),
+            // Signées comme le lien qui mène ici : une action de networking
+            // ne s'improvise pas depuis une adresse devinée.
+            'actionUrls' => [
+                'meeting' => $this->signed('guest.registration.meetings.store', [$organization, $event, $registrationModel->id]),
+                'message' => $this->signed('guest.registration.messages.store', [$organization, $event, $registrationModel->id]),
+            ],
         ]);
     }
 
@@ -119,6 +137,9 @@ final class AttendeeDirectoryController extends Controller
             // Retrait : le consentement est effacé, et la ligne avec lui.
             'directory_consent_at' => $joining ? CarbonImmutable::now() : null,
             'directory_headline' => $joining ? ($request->string('headline')->toString() ?: null) : null,
+            // Centres d'intérêt : ils nourrissent les suggestions, et
+            // partent avec le consentement.
+            'directory_interests' => $joining ? SuggestConnections::normalize($request->string('interests')->toString()) : null,
             // Partager son adresse est un second consentement : on peut
             // figurer à l'annuaire sans la donner.
             'shares_contact' => $joining && $request->boolean('shares_contact'),
@@ -127,6 +148,31 @@ final class AttendeeDirectoryController extends Controller
         ]);
 
         return back()->with('status', $joining ? 'directory-joined' : 'directory-left');
+    }
+
+    /**
+     * Chaque rendez-vous porte son propre lien de réponse, signé : la
+     * signature couvre l'identifiant, il ne peut donc pas être remplacé.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function meetingsWithAnswerUrls(Event $eventModel, Registration $registration, string $organization, string $event): array
+    {
+        return array_map(
+            fn (array $meeting): array => [
+                ...$meeting,
+                'answerUrl' => $this->signed('guest.registration.meetings.answer', [$organization, $event, $registration->id, $meeting['id']]),
+            ],
+            $this->planAttendeeMeeting->forAttendee($eventModel, $registration),
+        );
+    }
+
+    /**
+     * @param  list<mixed>  $parameters
+     */
+    private function signed(string $name, array $parameters): string
+    {
+        return URL::temporarySignedRoute($name, CarbonImmutable::now()->addDay(), $parameters);
     }
 
     private function event(Request $request): Event

@@ -66,6 +66,7 @@ final class CreateEvent
             'allow_waitlist' => $data['allow_waitlist'] ?? false,
             'allow_guest_edit' => $data['allow_guest_edit'] ?? false,
             'has_attendee_directory' => $data['has_attendee_directory'] ?? false,
+            'has_attendee_messaging' => $data['has_attendee_messaging'] ?? false,
             'edit_deadline' => $data['edit_deadline'] ?? null,
             'currency' => $data['currency'] ?? null,
         ]);

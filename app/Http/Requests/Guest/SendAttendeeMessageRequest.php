@@ -6,7 +6,7 @@ namespace App\Http\Requests\Guest;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-final class JoinAttendeeDirectoryRequest extends FormRequest
+final class SendAttendeeMessageRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -19,11 +19,8 @@ final class JoinAttendeeDirectoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'join' => ['required', 'boolean'],
-            // Une ligne, pas une biographie : c'est un annuaire.
-            'headline' => ['nullable', 'string', 'max:120'],
-            // Quelques mots séparés par des virgules.
-            'interests' => ['nullable', 'string', 'max:200'],
+            'recipient_registration_id' => ['required', 'integer'],
+            'body' => ['required', 'string', 'max:2000'],
         ];
     }
 
@@ -33,7 +30,8 @@ final class JoinAttendeeDirectoryRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'headline.max' => 'Votre présentation tient en 120 caractères.',
+            'body.required' => 'Écrivez votre message.',
+            'body.max' => 'Votre message tient en 2000 caractères.',
         ];
     }
 }
