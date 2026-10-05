@@ -92,6 +92,7 @@ final class DuplicateEvent
             'requires_approval' => $original->requires_approval,
             'allow_waitlist' => $original->allow_waitlist,
             'allow_guest_edit' => $original->allow_guest_edit,
+            'has_attendee_directory' => $original->has_attendee_directory,
             'edit_deadline' => $original->edit_deadline?->addSeconds($offsetSeconds),
             'currency' => $original->currency,
         ];

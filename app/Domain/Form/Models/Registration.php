@@ -46,6 +46,8 @@ final class Registration extends Model
         'last_name',
         'phone_e164',
         'source',
+        'directory_consent_at',
+        'directory_headline',
         'utm',
         'referrer',
         'ip_address',
@@ -62,6 +64,7 @@ final class Registration extends Model
             'status' => RegistrationStatus::class,
             'utm' => 'array',
             'registered_at' => 'immutable_datetime',
+            'directory_consent_at' => 'immutable_datetime',
             'cancelled_at' => 'immutable_datetime',
         ];
     }

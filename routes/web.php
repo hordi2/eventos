@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Guest\AttendeeDirectoryController;
 use App\Http\Controllers\Guest\FormThemeStyleController;
 use App\Http\Controllers\Guest\GuestBookController;
 use App\Http\Controllers\Guest\GuestInvitationController;
@@ -573,6 +574,10 @@ Route::middleware(['resolve-guest-event', 'guest-locale'])
             Route::match(['GET', 'POST'], 'inscriptions/{registration}/annuler', [RegistrationController::class, 'cancel'])->name('cancel');
             // « Mon agenda » (D6) : le programme personnel du participant,
             // celui des sessions qu'il a choisies.
+            // Annuaire des participants (D8) : on n'y entre que par son
+            // propre lien signé, et seulement si l'organisateur l'a ouvert.
+            Route::get('inscriptions/{registration}/annuaire', [AttendeeDirectoryController::class, 'show'])->whereNumber('registration')->name('directory');
+            Route::post('inscriptions/{registration}/annuaire', [AttendeeDirectoryController::class, 'update'])->whereNumber('registration')->name('directory.update');
             Route::get('inscriptions/{registration}/mon-agenda', [PersonalAgendaController::class, 'show'])->whereNumber('registration')->name('agenda');
             Route::get('inscriptions/{registration}/mon-agenda.ics', [PersonalAgendaController::class, 'calendar'])->whereNumber('registration')->name('agenda.ics');
             Route::get('inscriptions/{registration}/faire-part.pdf', [InvitationPdfController::class, 'forRegistration'])->whereNumber('registration')->middleware('throttle:20,1')->name('invitation-pdf');

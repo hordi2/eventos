@@ -115,6 +115,15 @@
             </div>
         @endif
 
+        {{-- Annuaire des participants (D8) : proposé, jamais imposé. --}}
+        @if ($directoryUrl ?? null)
+            <div class="mb-8 flex justify-center">
+                <a href="{{ $directoryUrl }}" class="inline-flex min-h-11 items-center rounded-pill border border-line px-5 py-2.5 text-sm font-medium text-ink">
+                    {{ __('Annuaire des participants') }}
+                </a>
+            </div>
+        @endif
+
         @if ($editUrl || $cancelUrl)
             <div class="flex items-center justify-center gap-6 text-sm">
                 @if ($editUrl)

@@ -181,6 +181,7 @@ final class EventController extends Controller
             'locale' => $event->locale,
             'capacity' => $event->capacity,
             'allowWaitlist' => $event->allow_waitlist,
+            'hasAttendeeDirectory' => (bool) $event->has_attendee_directory,
             'timezone' => $event->timezone,
             'venueId' => $event->venue_id,
             'venueName' => $event->venue?->name,

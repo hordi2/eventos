@@ -322,6 +322,10 @@ final class RegistrationController extends Controller
             'cancelUrl' => $hideLinks ? null : $this->signedCancelUrl($organization, $event, $eventModel, $registration),
             // « Mon agenda » (D6) : proposé à qui a choisi au moins une session.
             'agendaUrl' => $this->personalAgendaUrl($eventModel, $registration),
+            // Annuaire des participants (D8), quand l'organisateur l'a ouvert.
+            'directoryUrl' => $eventModel->has_attendee_directory && $registration->status === RegistrationStatus::Confirmed
+                ? URL::temporarySignedRoute('guest.registration.directory', $this->linkExpiry($eventModel), [$organization, $event, $registration->id])
+                : null,
             // Faire-part en PDF : le même que la page, à garder ou imprimer.
             'invitationPdfUrl' => URL::temporarySignedRoute(
                 'guest.registration.invitation-pdf',
