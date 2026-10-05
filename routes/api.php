@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CheckInController;
+use App\Http\Controllers\Api\V1\McpController;
 use App\Http\Controllers\Api\V1\WebhookSubscriptionController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +29,12 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::delete('{webhook}', [WebhookSubscriptionController::class, 'destroy'])->name('destroy');
             Route::get('sample', [WebhookSubscriptionController::class, 'sample'])->name('sample');
         });
+
+    // Serveur MCP (D4) : l'organisateur branche l'assistant IA de son choix
+    // sur son compte, avec sa clé API. Lecture seule.
+    Route::middleware(['auth:sanctum', 'resolve-api-organization', 'throttle:120,1'])
+        ->post('mcp', [McpController::class, 'handle'])
+        ->name('mcp');
 
     Route::middleware(['auth:sanctum', 'resolve-api-check-in-event'])
         ->prefix('events/{event}')

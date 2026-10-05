@@ -370,12 +370,17 @@ php artisan queue:failed
       interne avec blocage, signalement et modération). Le suivi budgétaire
       (D7) existait déjà.
 
-      S'y ajoute l'empreinte carbone (D12 : déplacements déclarés par les
-      participants, repas, impressions, covoiturage et rapport RSE).
+      S'y ajoutent l'empreinte carbone (D12 : déplacements déclarés par les
+      participants, repas, impressions, covoiturage et rapport RSE), la
+      bibliothèque de modèles communautaire (D11) et le serveur MCP du D4,
+      qui laisse l'organisateur brancher l'assistant IA de son choix sur son
+      compte, en lecture.
 
-      Restent, par priorité du cahier des charges : D9 (application
-      participant en marque blanche), D11 (bibliothèque de modèles
-      communautaire) et D4 (IA opérationnelle).
+      Restent : D9 (application participant en marque blanche), et les trois
+      usages du D4 qui demandent un modèle de langage — création d'événement
+      en langage naturel, analyse, rédaction. Ceux-là attendent une décision :
+      quel fournisseur, quelle clé, et l'accord d'envoyer des données chez un
+      tiers.
       Le moteur revendeur du D10 — tarifs, marges, reversements — reste
       ouvert : il demande des décisions commerciales.
 
