@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\AddGuestContentSecurityPolicy;
 use App\Http\Middleware\AuthorizeOrganizationAbility;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ResolveApiCheckInEvent;
@@ -43,6 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'guest-locale' => SetGuestLocale::class,
             'resolve-api-check-in-event' => ResolveApiCheckInEvent::class,
             'resolve-api-organization' => ResolveApiOrganization::class,
+            'guest-csp' => AddGuestContentSecurityPolicy::class,
         ]);
 
         // Un webhook de prestataire (Postmark, T-043) ne porte jamais de

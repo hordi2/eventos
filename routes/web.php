@@ -103,16 +103,18 @@ Route::get('/', function () {
     return redirect()->route(auth()->check() ? 'dashboard' : 'login');
 });
 
-Route::get('status', StatusController::class)->name('status.index');
+Route::middleware('guest-csp')->group(function (): void {
+    Route::get('status', StatusController::class)->name('status.index');
 
-// Pages du pied de page (T-076/T-077 les précèdent : status et help existent
-// déjà) — publiques, jamais d'authentification, comme /status.
-Route::get('support', [StaticPageController::class, 'support'])->name('static.support');
-Route::get('partage-evenements', [StaticPageController::class, 'eventSharing'])->name('static.event-sharing');
-Route::get('feedback', [StaticPageController::class, 'feedback'])->name('static.feedback');
-Route::get('terms', [StaticPageController::class, 'terms'])->name('static.terms');
-Route::get('privacy', [StaticPageController::class, 'privacy'])->name('static.privacy');
-Route::get('affiliates', [StaticPageController::class, 'affiliates'])->name('static.affiliates');
+    // Pages du pied de page (T-076/T-077 les précèdent : status et help existent
+    // déjà) — publiques, jamais d'authentification, comme /status.
+    Route::get('support', [StaticPageController::class, 'support'])->name('static.support');
+    Route::get('partage-evenements', [StaticPageController::class, 'eventSharing'])->name('static.event-sharing');
+    Route::get('feedback', [StaticPageController::class, 'feedback'])->name('static.feedback');
+    Route::get('terms', [StaticPageController::class, 'terms'])->name('static.terms');
+    Route::get('privacy', [StaticPageController::class, 'privacy'])->name('static.privacy');
+    Route::get('affiliates', [StaticPageController::class, 'affiliates'])->name('static.affiliates');
+});
 
 Route::middleware('guest')->group(function (): void {
     Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
@@ -542,7 +544,7 @@ Route::middleware('auth')->group(function (): void {
 // Page RSVP publique (T-031) : jamais d'authentification, jamais de
 // création de compte demandée à l'invité. resolve-guest-event résout
 // organisation + événement depuis le slug et pose le contexte multi-tenant.
-Route::middleware(['resolve-guest-event', 'guest-locale'])
+Route::middleware(['resolve-guest-event', 'guest-locale', 'guest-csp'])
     ->prefix('r/{organization}/{event}')
     ->name('guest.registration.')
     ->group(function (): void {
@@ -632,7 +634,7 @@ Route::middleware(['resolve-guest-event', 'guest-locale'])
 // support depuis un lien personnel. Jamais d'authentification ; le slug de
 // l'organisation pose le contexte multi-tenant, le jeton fait la preuve
 // d'accès. Débit limité comme tout endpoint public (§7 du CLAUDE.md).
-Route::middleware(['guest-locale', 'throttle:30,1'])
+Route::middleware(['guest-locale', 'guest-csp', 'throttle:30,1'])
     ->prefix('intervenant/{organization}/{token}')
     ->name('speaker-portal.')
     ->group(function (): void {
@@ -644,7 +646,7 @@ Route::middleware(['guest-locale', 'throttle:30,1'])
 // Appel à contributions (D6) : page publique où chacun propose un sujet.
 // Ouverte à qui a le lien, sans compte — d'où le débit limité, plus serré
 // encore sur l'envoi (§7 du CLAUDE.md).
-Route::middleware(['guest-locale', 'throttle:60,1'])
+Route::middleware(['guest-locale', 'guest-csp', 'throttle:60,1'])
     ->prefix('contributions/{organization}/{event}')
     ->name('guest.proposals.')
     ->group(function (): void {
@@ -654,7 +656,7 @@ Route::middleware(['guest-locale', 'throttle:60,1'])
 
 // Panier et paiement des billets (T-058/T-059, M5.4/M5.3) : même principe
 // que la page RSVP ci-dessus (resolve-guest-event, jamais d'authentification).
-Route::middleware(['resolve-guest-event', 'guest-locale'])
+Route::middleware(['resolve-guest-event', 'guest-locale', 'guest-csp'])
     ->prefix('billets/{organization}/{event}')
     ->name('guest.ticketing.')
     ->group(function (): void {
@@ -676,7 +678,7 @@ Route::middleware(['resolve-guest-event', 'guest-locale'])
 // Lien de désabonnement (T-043) : signé, jamais authentifié — comme les
 // liens de modification/annulation d'inscription ci-dessus.
 Route::get('unsubscribe/{organization}/{contact}', UnsubscribeController::class)
-    ->middleware('signed')
+    ->middleware(['signed', 'guest-csp'])
     ->name('unsubscribe.show');
 
 // Webhook Postmark (T-043) : public, protégé par Basic Auth (voir
