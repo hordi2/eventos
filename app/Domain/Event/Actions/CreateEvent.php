@@ -68,6 +68,7 @@ final class CreateEvent
             'has_attendee_directory' => $data['has_attendee_directory'] ?? false,
             'has_attendee_messaging' => $data['has_attendee_messaging'] ?? false,
             'has_carbon_report' => $data['has_carbon_report'] ?? false,
+            'has_participant_app' => $data['has_participant_app'] ?? false,
             'edit_deadline' => $data['edit_deadline'] ?? null,
             'currency' => $data['currency'] ?? null,
         ]);

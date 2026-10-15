@@ -326,6 +326,10 @@ final class RegistrationController extends Controller
             'travelUrl' => $eventModel->has_carbon_report && $registration->status === RegistrationStatus::Confirmed
                 ? URL::temporarySignedRoute('guest.registration.travel', $this->linkExpiry($eventModel), [$organization, $event, $registration->id])
                 : null,
+            // Application participant (D9), quand l'organisateur l'a ouverte.
+            'applicationUrl' => $eventModel->has_participant_app && $registration->status === RegistrationStatus::Confirmed
+                ? URL::temporarySignedRoute('guest.registration.application', $this->linkExpiry($eventModel), [$organization, $event, $registration->id])
+                : null,
             // Annuaire des participants (D8), quand l'organisateur l'a ouvert.
             'directoryUrl' => $eventModel->has_attendee_directory && $registration->status === RegistrationStatus::Confirmed
                 ? URL::temporarySignedRoute('guest.registration.directory', $this->linkExpiry($eventModel), [$organization, $event, $registration->id])

@@ -44,6 +44,8 @@ final class CreateEventRequest extends FormRequest
             'has_attendee_messaging' => ['boolean'],
             // Empreinte carbone (D12).
             'has_carbon_report' => ['boolean'],
+            // Application participant en marque blanche (D9).
+            'has_participant_app' => ['boolean'],
             'timezone' => ['required', 'string', Rule::in(DateTimeZone::listIdentifiers())],
             // La RLS PostgreSQL (T-002) rend déjà invisible tout lieu d'une autre
             // organisation à cette requête : Rule::exists suffit, pas besoin de

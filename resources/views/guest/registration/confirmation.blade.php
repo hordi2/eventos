@@ -115,6 +115,15 @@
             </div>
         @endif
 
+        {{-- Application participant (D9) : une page installable, pas imposée. --}}
+        @if ($applicationUrl ?? null)
+            <div class="mb-8 flex justify-center">
+                <a href="{{ $applicationUrl }}" class="inline-flex min-h-11 items-center rounded-pill border border-line px-5 py-2.5 text-sm font-medium text-ink">
+                    {{ __('Ouvrir mon application') }}
+                </a>
+            </div>
+        @endif
+
         {{-- Mon déplacement (D12) : la seule source honnête de l'empreinte. --}}
         @if ($travelUrl ?? null)
             <div class="mb-8 flex justify-center">

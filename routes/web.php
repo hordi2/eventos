@@ -11,6 +11,7 @@ use App\Http\Controllers\Guest\GuestInvitationController;
 use App\Http\Controllers\Guest\InvitationPdfController;
 use App\Http\Controllers\Guest\InvitationQrController;
 use App\Http\Controllers\Guest\PageMediaController;
+use App\Http\Controllers\Guest\ParticipantAppController;
 use App\Http\Controllers\Guest\PersonalAgendaController;
 use App\Http\Controllers\Guest\ProposalController as GuestProposalController;
 use App\Http\Controllers\Guest\RegistrationController;
@@ -627,7 +628,14 @@ Route::middleware(['resolve-guest-event', 'guest-locale', 'guest-csp'])
             Route::get('inscriptions/{registration}/mon-agenda', [PersonalAgendaController::class, 'show'])->whereNumber('registration')->name('agenda');
             Route::get('inscriptions/{registration}/mon-agenda.ics', [PersonalAgendaController::class, 'calendar'])->whereNumber('registration')->name('agenda.ics');
             Route::get('inscriptions/{registration}/faire-part.pdf', [InvitationPdfController::class, 'forRegistration'])->whereNumber('registration')->middleware('throttle:20,1')->name('invitation-pdf');
+            // Application participant en marque blanche (D9).
+            Route::get('inscriptions/{registration}/application', [ParticipantAppController::class, 'show'])->whereNumber('registration')->name('application');
         });
+
+        // Le manifeste n'est pas signé (voir ParticipantAppController) :
+        // hors du groupe « signed » ci-dessus, mais toujours sous
+        // resolve-guest-event et la CSP des pages publiques.
+        Route::get('application/manifest.json', [ParticipantAppController::class, 'manifest'])->name('application.manifest');
     });
 
 // Portail intervenant (D6) : chacun confirme son créneau et dépose son

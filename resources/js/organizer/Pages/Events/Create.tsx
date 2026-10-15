@@ -45,6 +45,7 @@ interface EventDraft {
     hasAttendeeDirectory: boolean;
     hasAttendeeMessaging: boolean;
     hasCarbonReport: boolean;
+    hasParticipantApp: boolean;
     timezone: string;
     venueId: number | null;
     venueName: string | null;
@@ -191,6 +192,7 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
         has_attendee_directory: event?.hasAttendeeDirectory ?? false,
         has_attendee_messaging: event?.hasAttendeeMessaging ?? false,
         has_carbon_report: event?.hasCarbonReport ?? false,
+        has_participant_app: event?.hasParticipantApp ?? false,
         timezone: event?.timezone ?? 'Africa/Kinshasa',
         venue_id: event?.venueId ? String(event.venueId) : '',
         venue_name: '',
@@ -472,6 +474,25 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                                 </span>
                             </label>
                         </div>
+
+                        {/* Application participant en marque blanche (D9) : programme, plan,
+                            notifications, networking, questions au conférencier et sondages,
+                            réunis dans une page web installable aux couleurs de l'événement. */}
+                        <label className="mt-6 flex cursor-pointer items-start gap-3">
+                            <Checkbox
+                                checked={data.has_participant_app}
+                                onChange={(e) => setData('has_participant_app', e.target.checked)}
+                                className="mt-1"
+                            />
+                            <span>
+                                <span className="block text-sm text-ink">Application participant</span>
+                                <span className="block text-xs text-ink-soft">
+                                    Une page installable sur l'écran d'accueil du téléphone, aux couleurs de votre
+                                    événement : programme, plan du lieu, questions au conférencier et sondages en
+                                    direct.
+                                </span>
+                            </span>
+                        </label>
 
                         {/* Annuaire des participants (D8) : chacun y figure s'il le demande. */}
                         <label className="mt-6 flex cursor-pointer items-start gap-3">
