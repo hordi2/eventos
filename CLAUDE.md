@@ -358,7 +358,7 @@ php artisan queue:failed
       promo, pages invité en français et en anglais, page événement en blocs,
       kiosque d'accueil, agenda et mesure d'audience. WhatsApp, plan de table,
       séquences d'envois, Zapier/n8n, API et webhooks étaient déjà livrés.
-- [ ] Lot 3 — Montée en gamme. Traités : l'invitation (la page web est le
+- [x] **Lot 3 — Montée en gamme** — l'invitation (la page web est le
       modèle, le faire-part PDF et la version téléphone la suivent feuillet
       par feuillet — mêmes polices, même ordre, mêmes ornements ; le code
       d'entrée et la confirmation de présence la ferment, chacun sur sa
@@ -385,14 +385,19 @@ php artisan queue:failed
       naturel « sur ses données » (usage 2 du D4) n'est pas faite : elle
       suppose d'envoyer ces données chez un tiers, ce qui a été refusé.
 
-      Reste : D9 (application participant en marque blanche).
+      Le D9 (application participant en marque blanche) est livré en cinq
+      lots : le socle PWA installable (programme, plan du lieu), les
+      notifications push (VAPID, sans charge utile chiffrée — le contenu vit
+      dans le fil in-app), les questions au conférencier (votées, répondues
+      ou masquées par l'organisateur) et les sondages en direct (à choix
+      unique, sans WebSocket — la page de résultats se recharge toute
+      seule). Chaque pièce s'active indépendamment des autres.
+
       Le moteur revendeur du D10 — tarifs, marges, reversements — reste
       ouvert : il demande des décisions commerciales.
 
 **Reste du lot 2, hors code** : publier l'application mobile de check-in sur
 les stores (compte développeur à ouvrir).
 
-**Connu, à ticketer** : la CSP stricte des pages publiques annoncée au §7
-n'est écrite nulle part dans le code.
-
-**Dernière mise à jour** : 5 octobre 2026 (D8, D10, D11, D12 et D4 livrés)
+**Dernière mise à jour** : 26 octobre 2026 (D9 livré en cinq lots ; la CSP
+stricte des pages publiques, annoncée au §7, est également en place)
