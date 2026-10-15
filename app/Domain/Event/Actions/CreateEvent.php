@@ -70,6 +70,7 @@ final class CreateEvent
             'has_carbon_report' => $data['has_carbon_report'] ?? false,
             'has_participant_app' => $data['has_participant_app'] ?? false,
             'has_speaker_qa' => $data['has_speaker_qa'] ?? false,
+            'has_live_polls' => $data['has_live_polls'] ?? false,
             'edit_deadline' => $data['edit_deadline'] ?? null,
             'currency' => $data['currency'] ?? null,
         ]);

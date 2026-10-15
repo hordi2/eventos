@@ -166,6 +166,7 @@ final class EventController extends Controller
             'hasCarbonReport' => (bool) $event->has_carbon_report,
             'hasParticipantApp' => (bool) $event->has_participant_app,
             'hasSpeakerQa' => (bool) $event->has_speaker_qa,
+            'hasLivePolls' => (bool) $event->has_live_polls,
             'timezone' => $event->timezone,
             'venueId' => $event->venue_id,
             'venueName' => $event->venue?->name,

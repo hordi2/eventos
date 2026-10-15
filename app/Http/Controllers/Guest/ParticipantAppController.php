@@ -44,6 +44,9 @@ final class ParticipantAppController extends Controller
             'questionsUrl' => $eventModel->has_speaker_qa
                 ? URL::temporarySignedRoute('guest.registration.questions', $this->linkExpiry($eventModel), [$organization, $event, $registrationModel->id])
                 : null,
+            'pollsUrl' => $eventModel->has_live_polls
+                ? URL::temporarySignedRoute('guest.registration.polls', $this->linkExpiry($eventModel), [$organization, $event, $registrationModel->id])
+                : null,
         ]);
     }
 

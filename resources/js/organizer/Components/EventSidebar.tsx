@@ -98,6 +98,7 @@ function buildSections(nav: EventNav): SidebarSection[] {
                 { label: 'Empreinte carbone', icon: 'chart', linkKey: 'carbon' },
                 { label: 'Notifications push', icon: 'send', linkKey: 'pushNotifications' },
                 { label: 'Questions au conférencier', icon: 'megaphone', linkKey: 'sessionQuestions' },
+                { label: 'Sondages en direct', icon: 'chart', linkKey: 'livePolls' },
                 { label: "Livre d'or", icon: 'megaphone', linkKey: 'guestBook' },
                 { label: 'Modération', icon: 'megaphone', linkKey: 'moderation' },
                 { label: 'Exports', icon: 'download', linkKey: 'exports' },

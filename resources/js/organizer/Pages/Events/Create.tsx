@@ -47,6 +47,7 @@ interface EventDraft {
     hasCarbonReport: boolean;
     hasParticipantApp: boolean;
     hasSpeakerQa: boolean;
+    hasLivePolls: boolean;
     timezone: string;
     venueId: number | null;
     venueName: string | null;
@@ -195,6 +196,7 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
         has_carbon_report: event?.hasCarbonReport ?? false,
         has_participant_app: event?.hasParticipantApp ?? false,
         has_speaker_qa: event?.hasSpeakerQa ?? false,
+        has_live_polls: event?.hasLivePolls ?? false,
         timezone: event?.timezone ?? 'Africa/Kinshasa',
         venue_id: event?.venueId ? String(event.venueId) : '',
         venue_name: '',
@@ -508,6 +510,23 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                                     <span className="block text-xs text-ink-soft">
                                         Les participants posent leurs questions depuis l'application et votent pour
                                         celles des autres ; vous répondez ou les masquez.
+                                    </span>
+                                </span>
+                            </label>
+                        )}
+
+                        {data.has_participant_app && (
+                            <label className="mt-3 ml-8 flex cursor-pointer items-start gap-3">
+                                <Checkbox
+                                    checked={data.has_live_polls}
+                                    onChange={(e) => setData('has_live_polls', e.target.checked)}
+                                    className="mt-1"
+                                />
+                                <span>
+                                    <span className="block text-sm text-ink">Sondages en direct</span>
+                                    <span className="block text-xs text-ink-soft">
+                                        Posez une question à choix unique depuis votre tableau de bord ; les participants
+                                        votent depuis l'application, les résultats se mettent à jour en direct.
                                     </span>
                                 </span>
                             </label>

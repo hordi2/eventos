@@ -119,6 +119,8 @@ final class BuildEventNavigation
             'pushNotifications' => $link($gate->allows('sendCommunications', $organization) && $event->has_participant_app, route('events.push-notifications.index', $event->id)),
             // Questions au conférencier (D9) : proposées dès que l'organisateur ouvre la fonctionnalité.
             'sessionQuestions' => $link($canUpdate && $event->has_speaker_qa, route('events.questions.index', $event->id)),
+            // Sondages en direct (D9) : proposés dès que l'organisateur ouvre la fonctionnalité.
+            'livePolls' => $link($canUpdate && $event->has_live_polls, route('events.polls.index', $event->id)),
             // Proposé dès qu'un invité a laissé un mot : avant, il n'y a rien à modérer.
             'guestBook' => $link($canUpdate && $this->hasGuestBookMessages($event->id), route('events.guest-book.index', $event->id)),
             // Même règle pour la messagerie entre participants (D8) : le lien

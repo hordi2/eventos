@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Guest\AttendeeDirectoryController;
 use App\Http\Controllers\Guest\AttendeeMeetingController;
 use App\Http\Controllers\Guest\AttendeeMessageController;
+use App\Http\Controllers\Guest\EventPollController;
 use App\Http\Controllers\Guest\FormThemeStyleController;
 use App\Http\Controllers\Guest\GuestBookController;
 use App\Http\Controllers\Guest\GuestInvitationController;
@@ -59,6 +60,7 @@ use App\Http\Controllers\Organizer\EventFormController;
 use App\Http\Controllers\Organizer\EventGuestImportController;
 use App\Http\Controllers\Organizer\EventGuestListController;
 use App\Http\Controllers\Organizer\EventInvitationSendController;
+use App\Http\Controllers\Organizer\EventPollController as OrganizerEventPollController;
 use App\Http\Controllers\Organizer\EventPublicationController;
 use App\Http\Controllers\Organizer\EventReportController;
 use App\Http\Controllers\Organizer\EventSegmentController;
@@ -341,6 +343,12 @@ Route::middleware('auth')->group(function (): void {
         Route::post('events/{event}/questions/{question}/answer', [OrganizerSessionQuestionController::class, 'answer'])->whereNumber('question')->name('events.questions.answer');
         Route::post('events/{event}/questions/{question}/hide', [OrganizerSessionQuestionController::class, 'hide'])->whereNumber('question')->name('events.questions.hide');
         Route::post('events/{event}/questions/{question}/restore', [OrganizerSessionQuestionController::class, 'restore'])->whereNumber('question')->name('events.questions.restore');
+
+        // Sondages en direct (D9).
+        Route::get('events/{event}/polls', [OrganizerEventPollController::class, 'index'])->name('events.polls.index');
+        Route::post('events/{event}/polls', [OrganizerEventPollController::class, 'store'])->middleware('throttle:20,1')->name('events.polls.store');
+        Route::post('events/{event}/polls/{poll}/open', [OrganizerEventPollController::class, 'open'])->whereNumber('poll')->name('events.polls.open');
+        Route::post('events/{event}/polls/{poll}/close', [OrganizerEventPollController::class, 'close'])->whereNumber('poll')->name('events.polls.close');
 
         // Assistant de création et de rédaction (D4). Débit limité : chaque
         // appel coûte, et rien n'y part d'autre que le texte de l'organisateur.
@@ -651,6 +659,9 @@ Route::middleware(['resolve-guest-event', 'guest-locale', 'guest-csp'])
             Route::get('inscriptions/{registration}/questions', [SessionQuestionController::class, 'index'])->whereNumber('registration')->name('questions');
             Route::post('inscriptions/{registration}/questions', [SessionQuestionController::class, 'store'])->whereNumber('registration')->middleware('throttle:20,1')->name('questions.store');
             Route::post('inscriptions/{registration}/questions/{question}/votes', [SessionQuestionController::class, 'upvote'])->whereNumber('registration')->whereNumber('question')->middleware('throttle:30,1')->name('questions.votes');
+            // Sondages en direct (D9).
+            Route::get('inscriptions/{registration}/sondages', [EventPollController::class, 'index'])->whereNumber('registration')->name('polls');
+            Route::post('inscriptions/{registration}/sondages/{poll}/votes/{option}', [EventPollController::class, 'vote'])->whereNumber('registration')->whereNumber('poll')->whereNumber('option')->middleware('throttle:30,1')->name('polls.votes');
         });
 
         // Le manifeste n'est pas signé (voir ParticipantAppController) :
