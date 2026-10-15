@@ -10,8 +10,11 @@ use App\Domain\Form\Models\RegistrationStatus;
 use App\Http\Controllers\Controller;
 use App\Support\ParticipantApp\BuildParticipantAppManifest;
 use App\Support\ParticipantApp\PresentParticipantAppHub;
+use App\Support\WebPush\VapidKeyPair;
+use DateTimeInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Illuminate\View\View;
 
 /**
@@ -33,8 +36,11 @@ final class ParticipantAppController extends Controller
             'hub' => $presentParticipantAppHub->handle($eventModel),
             'manifestUrl' => route('guest.registration.application.manifest', [$organization, $event]),
             'directoryUrl' => $eventModel->has_attendee_directory
-                ? route('guest.registration.directory', [$organization, $event, $registrationModel->id])
+                ? URL::temporarySignedRoute('guest.registration.directory', $this->linkExpiry($eventModel), [$organization, $event, $registrationModel->id])
                 : null,
+            'pushSubscribeUrl' => URL::temporarySignedRoute('guest.registration.push-subscriptions.store', $this->linkExpiry($eventModel), [$organization, $event, $registrationModel->id]),
+            'pushUnsubscribeUrl' => URL::temporarySignedRoute('guest.registration.push-subscriptions.destroy', $this->linkExpiry($eventModel), [$organization, $event, $registrationModel->id]),
+            'vapidPublicKey' => VapidKeyPair::fromConfig()?->publicKey,
         ]);
     }
 
@@ -70,5 +76,10 @@ final class ParticipantAppController extends Controller
         abort_unless($model->status === RegistrationStatus::Confirmed, 404);
 
         return $model;
+    }
+
+    private function linkExpiry(Event $event): DateTimeInterface
+    {
+        return $event->edit_deadline ?? now()->addYear();
     }
 }

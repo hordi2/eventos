@@ -14,6 +14,7 @@ use App\Http\Controllers\Guest\PageMediaController;
 use App\Http\Controllers\Guest\ParticipantAppController;
 use App\Http\Controllers\Guest\PersonalAgendaController;
 use App\Http\Controllers\Guest\ProposalController as GuestProposalController;
+use App\Http\Controllers\Guest\PushSubscriptionController;
 use App\Http\Controllers\Guest\RegistrationController;
 use App\Http\Controllers\Guest\SpeakerPortalController;
 use App\Http\Controllers\Guest\StaticPageController;
@@ -75,6 +76,7 @@ use App\Http\Controllers\Organizer\OrganizationImageController;
 use App\Http\Controllers\Organizer\PageController;
 use App\Http\Controllers\Organizer\PromoCodeController;
 use App\Http\Controllers\Organizer\ProposalController;
+use App\Http\Controllers\Organizer\PushNotificationController;
 use App\Http\Controllers\Organizer\RegistrationFileController;
 use App\Http\Controllers\Organizer\SeatingController;
 use App\Http\Controllers\Organizer\SenderAgreementController;
@@ -327,6 +329,10 @@ Route::middleware('auth')->group(function (): void {
         Route::get('events/{event}/empreinte', [CarbonFootprintController::class, 'index'])->name('events.carbon.index');
         Route::patch('events/{event}/empreinte', [CarbonFootprintController::class, 'update'])->name('events.carbon.update');
         Route::get('events/{event}/empreinte.pdf', [CarbonFootprintController::class, 'report'])->name('events.carbon.report');
+
+        // Notifications push de l'application participant (D9).
+        Route::get('events/{event}/notifications-push', [PushNotificationController::class, 'index'])->name('events.push-notifications.index');
+        Route::post('events/{event}/notifications-push', [PushNotificationController::class, 'store'])->middleware('throttle:10,1')->name('events.push-notifications.store');
 
         // Assistant de création et de rédaction (D4). Débit limité : chaque
         // appel coûte, et rien n'y part d'autre que le texte de l'organisateur.
@@ -630,6 +636,9 @@ Route::middleware(['resolve-guest-event', 'guest-locale', 'guest-csp'])
             Route::get('inscriptions/{registration}/faire-part.pdf', [InvitationPdfController::class, 'forRegistration'])->whereNumber('registration')->middleware('throttle:20,1')->name('invitation-pdf');
             // Application participant en marque blanche (D9).
             Route::get('inscriptions/{registration}/application', [ParticipantAppController::class, 'show'])->whereNumber('registration')->name('application');
+            // Abonnement aux notifications push de l'application participant.
+            Route::post('inscriptions/{registration}/notifications-push', [PushSubscriptionController::class, 'store'])->whereNumber('registration')->middleware('throttle:20,1')->name('push-subscriptions.store');
+            Route::delete('inscriptions/{registration}/notifications-push', [PushSubscriptionController::class, 'destroy'])->whereNumber('registration')->middleware('throttle:20,1')->name('push-subscriptions.destroy');
         });
 
         // Le manifeste n'est pas signé (voir ParticipantAppController) :

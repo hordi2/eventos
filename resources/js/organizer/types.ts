@@ -46,6 +46,7 @@ export type EventNavLinkKey =
     | 'carbon'
     | 'guestBook'
     | 'moderation'
+    | 'pushNotifications'
     | 'referral';
 
 /**

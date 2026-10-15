@@ -56,10 +56,34 @@ it('ouvre la page de l\'application, avec son manifeste et sans l\'annuaire ferm
         ->assertJsonPath('display', 'standalone');
 });
 
-it('propose l\'annuaire depuis l\'application quand il est ouvert', function (): void {
+it('propose l\'annuaire depuis l\'application quand il est ouvert, avec un lien qui s\'ouvre vraiment', function (): void {
     ['url' => $url] = participantAppEvent(directory: true);
 
-    $this->get($url)->assertOk()->assertSee("Ouvrir l'annuaire");
+    $html = $this->get($url)->assertOk()->assertSee("Ouvrir l'annuaire")->getContent();
+
+    preg_match('/href="([^"]+)"[^>]*>\s*Ouvrir l&#039;annuaire/s', $html, $matches);
+    $directoryUrl = html_entity_decode($matches[1]);
+
+    expect($directoryUrl)->toContain('signature=');
+    $this->get($directoryUrl)->assertOk();
+});
+
+it('signe les liens d\'abonnement aux notifications push depuis l\'application', function (): void {
+    ['url' => $url] = participantAppEvent();
+
+    $html = $this->get($url)->assertOk()->getContent();
+
+    preg_match('/subscribeUrl:\s*\'([^\']+)\'/', $html, $subscribeMatch);
+    preg_match('/unsubscribeUrl:\s*\'([^\']+)\'/', $html, $unsubscribeMatch);
+    $decode = fn (string $value): string => json_decode('"'.$value.'"') ?? '';
+    $subscribeUrl = $decode($subscribeMatch[1] ?? '');
+    $unsubscribeUrl = $decode($unsubscribeMatch[1] ?? '');
+
+    expect($subscribeUrl)->toContain('signature=')
+        ->and($unsubscribeUrl)->toContain('signature=');
+
+    $this->postJson($subscribeUrl, ['endpoint' => 'https://fcm.googleapis.com/fcm/send/depuis-la-page'])->assertNoContent();
+    $this->deleteJson($unsubscribeUrl, ['endpoint' => 'https://fcm.googleapis.com/fcm/send/depuis-la-page'])->assertNoContent();
 });
 
 it('ferme l\'application et son manifeste tant que l\'organisateur ne l\'a pas ouverte', function (): void {

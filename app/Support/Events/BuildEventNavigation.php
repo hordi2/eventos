@@ -114,6 +114,9 @@ final class BuildEventNavigation
             'budget' => $link($gate->allows('viewFinancials', $organization) && ! $event->isSubEvent(), route('events.budget.index', $event->id)),
             // Empreinte carbone (D12) : proposée quand l'organisateur la mesure.
             'carbon' => $link($canUpdate && $event->has_carbon_report, route('events.carbon.index', $event->id)),
+            // Notifications push de l'application participant (D9) : proposées
+            // seulement quand l'application est activée sur l'événement.
+            'pushNotifications' => $link($gate->allows('sendCommunications', $organization) && $event->has_participant_app, route('events.push-notifications.index', $event->id)),
             // Proposé dès qu'un invité a laissé un mot : avant, il n'y a rien à modérer.
             'guestBook' => $link($canUpdate && $this->hasGuestBookMessages($event->id), route('events.guest-book.index', $event->id)),
             // Même règle pour la messagerie entre participants (D8) : le lien
