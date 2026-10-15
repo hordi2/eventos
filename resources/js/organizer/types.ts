@@ -47,6 +47,7 @@ export type EventNavLinkKey =
     | 'guestBook'
     | 'moderation'
     | 'pushNotifications'
+    | 'sessionQuestions'
     | 'referral';
 
 /**

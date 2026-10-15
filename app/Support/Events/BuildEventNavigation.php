@@ -117,6 +117,8 @@ final class BuildEventNavigation
             // Notifications push de l'application participant (D9) : proposées
             // seulement quand l'application est activée sur l'événement.
             'pushNotifications' => $link($gate->allows('sendCommunications', $organization) && $event->has_participant_app, route('events.push-notifications.index', $event->id)),
+            // Questions au conférencier (D9) : proposées dès que l'organisateur ouvre la fonctionnalité.
+            'sessionQuestions' => $link($canUpdate && $event->has_speaker_qa, route('events.questions.index', $event->id)),
             // Proposé dès qu'un invité a laissé un mot : avant, il n'y a rien à modérer.
             'guestBook' => $link($canUpdate && $this->hasGuestBookMessages($event->id), route('events.guest-book.index', $event->id)),
             // Même règle pour la messagerie entre participants (D8) : le lien

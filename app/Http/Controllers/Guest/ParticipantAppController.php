@@ -41,6 +41,9 @@ final class ParticipantAppController extends Controller
             'pushSubscribeUrl' => URL::temporarySignedRoute('guest.registration.push-subscriptions.store', $this->linkExpiry($eventModel), [$organization, $event, $registrationModel->id]),
             'pushUnsubscribeUrl' => URL::temporarySignedRoute('guest.registration.push-subscriptions.destroy', $this->linkExpiry($eventModel), [$organization, $event, $registrationModel->id]),
             'vapidPublicKey' => VapidKeyPair::fromConfig()?->publicKey,
+            'questionsUrl' => $eventModel->has_speaker_qa
+                ? URL::temporarySignedRoute('guest.registration.questions', $this->linkExpiry($eventModel), [$organization, $event, $registrationModel->id])
+                : null,
         ]);
     }
 

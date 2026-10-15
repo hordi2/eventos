@@ -166,6 +166,16 @@
             </div>
         @endif
 
+        @if ($questionsUrl)
+            <h2 class="mb-3 font-serif text-xl italic">{{ __('Questions au conférencier') }}</h2>
+            <div class="mb-10 rounded-card bg-bg px-5 py-4 ring-1 ring-line">
+                <p class="mb-3 text-sm text-ink-soft">{{ __('Posez votre question, votez pour celles des autres.') }}</p>
+                <a href="{{ $questionsUrl }}" class="inline-flex min-h-10 items-center rounded-pill border border-line px-4 py-2 text-sm text-ink">
+                    {{ __('Poser une question') }}
+                </a>
+            </div>
+        @endif
+
         @if ($directoryUrl)
             <h2 class="mb-3 font-serif text-xl italic">{{ __('Networking') }}</h2>
             <div class="mb-10 rounded-card bg-bg px-5 py-4 ring-1 ring-line">

@@ -46,6 +46,7 @@ interface EventDraft {
     hasAttendeeMessaging: boolean;
     hasCarbonReport: boolean;
     hasParticipantApp: boolean;
+    hasSpeakerQa: boolean;
     timezone: string;
     venueId: number | null;
     venueName: string | null;
@@ -193,6 +194,7 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
         has_attendee_messaging: event?.hasAttendeeMessaging ?? false,
         has_carbon_report: event?.hasCarbonReport ?? false,
         has_participant_app: event?.hasParticipantApp ?? false,
+        has_speaker_qa: event?.hasSpeakerQa ?? false,
         timezone: event?.timezone ?? 'Africa/Kinshasa',
         venue_id: event?.venueId ? String(event.venueId) : '',
         venue_name: '',
@@ -493,6 +495,23 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                                 </span>
                             </span>
                         </label>
+
+                        {data.has_participant_app && (
+                            <label className="mt-3 ml-8 flex cursor-pointer items-start gap-3">
+                                <Checkbox
+                                    checked={data.has_speaker_qa}
+                                    onChange={(e) => setData('has_speaker_qa', e.target.checked)}
+                                    className="mt-1"
+                                />
+                                <span>
+                                    <span className="block text-sm text-ink">Questions au conférencier</span>
+                                    <span className="block text-xs text-ink-soft">
+                                        Les participants posent leurs questions depuis l'application et votent pour
+                                        celles des autres ; vous répondez ou les masquez.
+                                    </span>
+                                </span>
+                            </label>
+                        )}
 
                         {/* Annuaire des participants (D8) : chacun y figure s'il le demande. */}
                         <label className="mt-6 flex cursor-pointer items-start gap-3">
