@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support\Payments;
 
+use App\Support\Money;
+
 /**
  * Couche d'abstraction fournisseur (M5.3, D3, T-053) : le métier
  * (InitiateMobileMoneyPayment, ReconcileMobileMoneyPayments) ne connaît que
@@ -21,4 +23,13 @@ interface MobileMoneyProvider
     public function initiateCharge(MobileMoneyChargeRequest $request): string;
 
     public function getChargeStatus(string $chargeId): MobileMoneyChargeStatus;
+
+    /**
+     * Remboursement total ou partiel d'une charge déjà encaissée (M5.5).
+     *
+     * @return string l'identifiant du remboursement chez le prestataire
+     *
+     * @throws MobileMoneyProviderUnavailableException si le prestataire est injoignable
+     */
+    public function refund(string $chargeId, Money $amount): string;
 }

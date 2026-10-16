@@ -112,6 +112,8 @@ final class BuildEventNavigation
             'promoCodes' => $link($gate->allows('manageTicketing', $organization), route('events.promo-codes.index', $event->id)),
             'exports' => $link($gate->allows('exportData', $organization), route('events.exports.index', $event->id)),
             'budget' => $link($gate->allows('viewFinancials', $organization) && ! $event->isSubEvent(), route('events.budget.index', $event->id)),
+            // Commandes et remboursements (M5.5).
+            'orders' => $link($gate->allows('viewFinancials', $organization), route('events.orders.index', $event->id)),
             // Empreinte carbone (D12) : proposée quand l'organisateur la mesure.
             'carbon' => $link($canUpdate && $event->has_carbon_report, route('events.carbon.index', $event->id)),
             // Notifications push de l'application participant (D9) : proposées

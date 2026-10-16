@@ -5,11 +5,14 @@ declare(strict_types=1);
 use App\Domain\Event\Models\Event;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Ticketing\Actions\CreateOrder;
+use App\Domain\Ticketing\Models\OrderStatus;
 use App\Domain\Ticketing\Models\Payment;
 use App\Domain\Ticketing\Models\PriceTier;
 use App\Domain\Ticketing\Models\TicketType;
 use App\Support\Capacity\Actions\GetRemainingCapacity;
+use App\Support\Money;
 use App\Support\MultiTenancy\CurrentOrganization;
+use App\Support\Payments\CardCheckoutProvider;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Stripe\WebhookSignature;
@@ -60,6 +63,11 @@ beforeEach(function (): void {
         [['ticket_type_id' => $this->ticketType->id, 'quantity' => 1]],
         (string) Str::uuid(),
     );
+
+    // Un vrai webhook Stripe arrive sans aucune organisation déjà posée :
+    // le contexte doit se déduire de la métadonnée, jamais d'un résidu
+    // laissé par la mise en place du test.
+    app(CurrentOrganization::class)->clear();
 });
 
 it('refuse une requête sans signature Stripe valide', function (): void {
@@ -67,7 +75,7 @@ it('refuse une requête sans signature Stripe valide', function (): void {
 
     $payload = stripeEventPayload('checkout.session.completed', 'evt_1', [
         'id' => 'cs_test_1', 'payment_intent' => 'pi_1', 'amount_total' => 2000, 'currency' => 'eur',
-        'metadata' => ['order_id' => (string) $this->order->id],
+        'metadata' => ['order_id' => (string) $this->order->id, 'organization_id' => (string) $this->organization->id],
     ]);
 
     test()->withHeader('Stripe-Signature', 't=1,v1=signature-invalide')->post(route('webhooks.stripe'), json_decode($payload, true))
@@ -80,7 +88,7 @@ it('confirme le paiement et émet les billets sur checkout.session.completed', f
         'payment_intent' => 'pi_1',
         'amount_total' => $this->order->total->amountMinor(),
         'currency' => mb_strtolower($this->order->total->currency()),
-        'metadata' => ['order_id' => (string) $this->order->id],
+        'metadata' => ['order_id' => (string) $this->order->id, 'organization_id' => (string) $this->organization->id],
     ]);
 
     postSignedStripeWebhook($payload)->assertOk();
@@ -96,7 +104,7 @@ it('traite un webhook rejoué 3 fois de façon idempotente : une seule confirmat
         'payment_intent' => 'pi_replay',
         'amount_total' => $this->order->total->amountMinor(),
         'currency' => mb_strtolower($this->order->total->currency()),
-        'metadata' => ['order_id' => (string) $this->order->id],
+        'metadata' => ['order_id' => (string) $this->order->id, 'organization_id' => (string) $this->organization->id],
     ]);
 
     postSignedStripeWebhook($payload)->assertOk();
@@ -113,7 +121,7 @@ it('échoue le paiement et libère le stock sur payment_intent.payment_failed', 
         'id' => 'pi_failed_1',
         'amount' => $this->order->total->amountMinor(),
         'currency' => mb_strtolower($this->order->total->currency()),
-        'metadata' => ['order_id' => (string) $this->order->id],
+        'metadata' => ['order_id' => (string) $this->order->id, 'organization_id' => (string) $this->organization->id],
         'last_payment_error' => ['message' => 'Votre carte a été refusée.'],
     ]);
 
@@ -127,7 +135,49 @@ it('échoue le paiement et libère le stock sur payment_intent.payment_failed', 
     expect($remaining)->toBe(3);
 });
 
-it('ignore silencieusement un webhook sans order_id en métadonnée', function (): void {
+it('rembourse automatiquement un paiement confirmé après l\'expiration de la réservation', function (): void {
+    $fake = new class implements CardCheckoutProvider
+    {
+        /** @var list<array{payment_intent_id: string, amount_minor: int}> */
+        public array $refunds = [];
+
+        public function createCheckoutSession(int $orderId, int $organizationId, Money $amount, string $successUrl, string $cancelUrl): string
+        {
+            return 'https://checkout.stripe.com/pay/cs_test_fake';
+        }
+
+        public function refund(string $paymentIntentId, Money $amount): string
+        {
+            $this->refunds[] = ['payment_intent_id' => $paymentIntentId, 'amount_minor' => $amount->amountMinor()];
+
+            return 're_test_auto';
+        }
+    };
+    app()->bind(CardCheckoutProvider::class, fn () => $fake);
+
+    app(CurrentOrganization::class)->set($this->organization);
+    $this->order->update(['status' => OrderStatus::Expired, 'reserved_until' => null]);
+    app(CurrentOrganization::class)->clear();
+
+    $payload = stripeEventPayload('checkout.session.completed', 'evt_late_1', [
+        'id' => 'cs_test_late',
+        'payment_intent' => 'pi_late',
+        'amount_total' => $this->order->total->amountMinor(),
+        'currency' => mb_strtolower($this->order->total->currency()),
+        'metadata' => ['order_id' => (string) $this->order->id, 'organization_id' => (string) $this->organization->id],
+    ]);
+
+    postSignedStripeWebhook($payload)->assertOk();
+
+    app(CurrentOrganization::class)->set($this->organization);
+    expect($this->order->fresh()->status->value)->toBe('expired');
+    expect(Payment::query()->count())->toBe(0);
+    expect($fake->refunds)->toHaveCount(1);
+    expect($fake->refunds[0]['payment_intent_id'])->toBe('pi_late');
+    expect($fake->refunds[0]['amount_minor'])->toBe($this->order->total->amountMinor());
+});
+
+it('ignore silencieusement un webhook sans order_id ni organization_id en métadonnée', function (): void {
     $payload = stripeEventPayload('checkout.session.completed', 'evt_no_meta', [
         'id' => 'cs_test_x', 'payment_intent' => 'pi_x', 'amount_total' => 1000, 'currency' => 'eur', 'metadata' => [],
     ]);

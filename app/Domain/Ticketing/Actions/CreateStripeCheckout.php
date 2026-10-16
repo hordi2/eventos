@@ -19,6 +19,6 @@ final class CreateStripeCheckout
             throw InvalidOrderTransitionException::notPending($order->id, $order->status);
         }
 
-        return $this->provider->createCheckoutSession($order->id, $order->total, $successUrl, $cancelUrl);
+        return $this->provider->createCheckoutSession($order->id, $order->organization_id, $order->total, $successUrl, $cancelUrl);
     }
 }

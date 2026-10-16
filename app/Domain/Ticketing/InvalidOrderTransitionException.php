@@ -28,4 +28,14 @@ final class InvalidOrderTransitionException extends RuntimeException
     {
         return new self("La commande #{$orderId} n'a pas choisi le paiement à l'arrivée (statut actuel : {$actual->value}).");
     }
+
+    public static function refundExceedsRemaining(int $orderId): self
+    {
+        return new self("Le remboursement demandé dépasse ce qu'il reste à rembourser sur la commande #{$orderId}.");
+    }
+
+    public static function noSucceededPayment(int $orderId): self
+    {
+        return new self("La commande #{$orderId} n'a aucun paiement encaissé à rembourser.");
+    }
 }

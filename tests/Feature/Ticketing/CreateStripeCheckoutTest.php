@@ -25,11 +25,16 @@ final class FakeCardCheckoutProvider implements CardCheckoutProvider
     /** @var list<array{order_id: int, amount_minor: int, currency: string}> */
     public array $created = [];
 
-    public function createCheckoutSession(int $orderId, Money $amount, string $successUrl, string $cancelUrl): string
+    public function createCheckoutSession(int $orderId, int $organizationId, Money $amount, string $successUrl, string $cancelUrl): string
     {
-        $this->created[] = ['order_id' => $orderId, 'amount_minor' => $amount->amountMinor(), 'currency' => $amount->currency()];
+        $this->created[] = ['order_id' => $orderId, 'organization_id' => $organizationId, 'amount_minor' => $amount->amountMinor(), 'currency' => $amount->currency()];
 
         return "https://checkout.stripe.com/pay/cs_test_{$orderId}";
+    }
+
+    public function refund(string $paymentIntentId, Money $amount): string
+    {
+        return 're_test_fake';
     }
 }
 

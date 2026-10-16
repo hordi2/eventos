@@ -140,9 +140,14 @@ it('propose le paiement par carte et redirige vers Stripe Checkout', function ()
 
     $fake = new class implements CardCheckoutProvider
     {
-        public function createCheckoutSession(int $orderId, Money $amount, string $successUrl, string $cancelUrl): string
+        public function createCheckoutSession(int $orderId, int $organizationId, Money $amount, string $successUrl, string $cancelUrl): string
         {
             return 'https://checkout.stripe.com/pay/cs_test_fake';
+        }
+
+        public function refund(string $paymentIntentId, Money $amount): string
+        {
+            return 're_test_fake';
         }
     };
     $this->app->bind(CardCheckoutProvider::class, fn () => $fake);

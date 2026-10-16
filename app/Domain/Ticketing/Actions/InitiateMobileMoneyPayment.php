@@ -46,6 +46,7 @@ final class InitiateMobileMoneyPayment
         try {
             $chargeId = $this->provider->initiateCharge(new MobileMoneyChargeRequest(
                 orderId: $order->id,
+                organizationId: $order->organization_id,
                 amount: $order->total,
                 countryCode: $countryCode,
                 phoneNumber: $phoneNumber,

@@ -50,6 +50,7 @@ final class Order extends Model
         'failed_at',
         'expired_at',
         'refunded_at',
+        'refunded_amount_minor',
         'abandoned_at',
     ];
 
@@ -103,5 +104,21 @@ final class Order extends Model
     public function donations(): HasMany
     {
         return $this->hasMany(Donation::class);
+    }
+
+    /**
+     * Ce qui a déjà été rendu à l'acheteur, dans la devise de la commande.
+     */
+    public function refundedAmount(): Money
+    {
+        return Money::fromMinorUnits((int) $this->refunded_amount_minor, $this->total->currency());
+    }
+
+    /**
+     * Ce qu'il reste à rembourser avant d'atteindre le total payé.
+     */
+    public function remainingRefundable(): Money
+    {
+        return $this->total->subtract($this->refundedAmount());
     }
 }

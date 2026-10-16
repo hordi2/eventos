@@ -63,7 +63,15 @@ final class FlutterwaveMobileMoneyProvider implements MobileMoneyProvider
                 'customer_id' => $customerId,
                 'payment_method_id' => $paymentMethodId,
                 'amount' => $this->toMajorUnits($request->amount),
-                'reference' => "order-{$request->orderId}-".Str::uuid(),
+                // org{id}-order{id} : le webhook (RecordFlutterwaveWebhookEvent)
+                // en a besoin pour poser le contexte multi-tenant avant de
+                // relire quoi que ce soit — la commande et le paiement sont
+                // tous deux protégés par la row-level security (règle 4.1 du
+                // CLAUDE.md), et le rôle applicatif n'a jamais BYPASSRLS
+                // (docker/postgres/init.sql). À vérifier avec un vrai compte
+                // Flutterwave : que « reference » est bien repris tel quel
+                // dans la charge renvoyée par le webhook.
+                'reference' => "org{$request->organizationId}-order{$request->orderId}-".Str::uuid(),
             ]);
 
             if ($response->failed()) {
@@ -89,6 +97,23 @@ final class FlutterwaveMobileMoneyProvider implements MobileMoneyProvider
             'failed' => MobileMoneyChargeStatus::Failed,
             default => MobileMoneyChargeStatus::Pending,
         };
+    }
+
+    public function refund(string $chargeId, Money $amount): string
+    {
+        try {
+            $response = $this->client()->post("/charges/{$chargeId}/refund", [
+                'amount' => $this->toMajorUnits($amount),
+            ]);
+
+            if ($response->failed()) {
+                throw MobileMoneyProviderUnavailableException::forProvider('flutterwave');
+            }
+
+            return (string) $response->json('data.id');
+        } catch (ConnectionException) {
+            throw MobileMoneyProviderUnavailableException::forProvider('flutterwave');
+        }
     }
 
     private function createCustomer(MobileMoneyChargeRequest $request): string

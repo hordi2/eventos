@@ -74,6 +74,7 @@ use App\Http\Controllers\Organizer\GuestBookController as OrganizerGuestBookCont
 use App\Http\Controllers\Organizer\HelpController;
 use App\Http\Controllers\Organizer\KioskController;
 use App\Http\Controllers\Organizer\MessageAutomationController;
+use App\Http\Controllers\Organizer\OrderController;
 use App\Http\Controllers\Organizer\OrganizationBrandingController;
 use App\Http\Controllers\Organizer\OrganizationImageController;
 use App\Http\Controllers\Organizer\PageController;
@@ -551,6 +552,10 @@ Route::middleware('auth')->group(function (): void {
         Route::post('ticket-types/{ticketType}/price-tiers', [TicketTypeController::class, 'storeTier'])->name('ticket-types.price-tiers.store');
         Route::patch('price-tiers/{priceTier}', [TicketTypeController::class, 'updateTier'])->name('price-tiers.update');
         Route::delete('price-tiers/{priceTier}', [TicketTypeController::class, 'destroyTier'])->name('price-tiers.destroy');
+
+        // Commandes et remboursements (M5.5).
+        Route::get('events/{event}/orders', [OrderController::class, 'index'])->name('events.orders.index');
+        Route::post('events/{event}/orders/{order}/refund', [OrderController::class, 'refund'])->whereNumber('order')->middleware('throttle:20,1')->name('events.orders.refund');
 
         Route::get('whatsapp-templates', [WhatsappTemplateController::class, 'index'])->name('whatsapp-templates.index');
         Route::post('whatsapp-templates', [WhatsappTemplateController::class, 'store'])->name('whatsapp-templates.store');

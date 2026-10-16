@@ -23,6 +23,7 @@ use App\Models\User;
 use App\Support\Capacity\Actions\GetRemainingCapacity;
 use App\Support\Money;
 use App\Support\MultiTenancy\CurrentOrganization;
+use App\Support\Payments\CardCheckoutProvider;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
@@ -209,6 +210,19 @@ it('est idempotent : expirer une commande déjà payée ne fait rien', function 
 it('rembourse une commande payée, annule ses billets et libère le stock', function (): void {
     [$organization, $ticketType, $tier, $order] = ticketingOrderContext();
     $paid = app(MarkOrderPaid::class)->handle($order, 'stripe', (string) Str::uuid(), $order->total);
+
+    app()->bind(CardCheckoutProvider::class, fn () => new class implements CardCheckoutProvider
+    {
+        public function createCheckoutSession(int $orderId, int $organizationId, Money $amount, string $successUrl, string $cancelUrl): string
+        {
+            return 'https://checkout.stripe.com/pay/cs_test_fake';
+        }
+
+        public function refund(string $paymentIntentId, Money $amount): string
+        {
+            return 're_test_fake';
+        }
+    });
 
     $admin = User::factory()->create();
     $admin->memberships()->create(['organization_id' => $organization->id, 'role' => MembershipRole::Admin]);

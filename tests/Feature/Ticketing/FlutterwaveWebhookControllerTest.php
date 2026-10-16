@@ -6,7 +6,9 @@ use App\Domain\Event\Models\Event;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Ticketing\Actions\CreateOrder;
 use App\Domain\Ticketing\Actions\InitiateMobileMoneyPayment;
+use App\Domain\Ticketing\Models\OrderStatus;
 use App\Domain\Ticketing\Models\Payment;
+use App\Domain\Ticketing\Models\PaymentStatus;
 use App\Domain\Ticketing\Models\PriceTier;
 use App\Domain\Ticketing\Models\TicketType;
 use App\Support\Capacity\Actions\GetRemainingCapacity;
@@ -34,12 +36,12 @@ function postSignedFlutterwaveWebhook(string $payload): TestResponse
     ], $payload);
 }
 
-function flutterwaveEventPayload(string $eventId, string $chargeId, string $status): string
+function flutterwaveEventPayload(string $eventId, string $chargeId, string $status, string $reference): string
 {
     return json_encode([
         'id' => $eventId,
         'type' => 'charge.completed',
-        'data' => ['id' => $chargeId, 'status' => $status, 'amount' => 2000, 'currency' => 'XOF'],
+        'data' => ['id' => $chargeId, 'status' => $status, 'amount' => 2000, 'currency' => 'XOF', 'reference' => $reference],
     ]);
 }
 
@@ -64,6 +66,12 @@ beforeEach(function (): void {
         (string) Str::uuid(),
     );
     $this->order = app(InitiateMobileMoneyPayment::class)->handle($order, '225', '0102030405', 'MTN');
+    $this->reference = "org{$this->organization->id}-order{$this->order->id}-".Str::uuid();
+
+    // Un vrai webhook Flutterwave arrive sans aucune organisation déjà
+    // posée : le contexte doit se déduire de la référence de la charge,
+    // jamais d'un résidu laissé par la mise en place du test.
+    app(CurrentOrganization::class)->clear();
 });
 
 it('refuse une requête sans signature Flutterwave valide', function (): void {
@@ -75,7 +83,7 @@ it('refuse une requête sans signature Flutterwave valide', function (): void {
 });
 
 it('confirme le paiement et émet les billets sur un statut succeeded', function (): void {
-    $payload = flutterwaveEventPayload('evt_paid_1', 'chg_1', 'succeeded');
+    $payload = flutterwaveEventPayload('evt_paid_1', 'chg_1', 'succeeded', $this->reference);
 
     postSignedFlutterwaveWebhook($payload)->assertOk();
 
@@ -85,7 +93,7 @@ it('confirme le paiement et émet les billets sur un statut succeeded', function
 });
 
 it('traite un webhook rejoué 3 fois de façon idempotente : une seule confirmation', function (): void {
-    $payload = flutterwaveEventPayload('evt_replay', 'chg_1', 'succeeded');
+    $payload = flutterwaveEventPayload('evt_replay', 'chg_1', 'succeeded', $this->reference);
 
     postSignedFlutterwaveWebhook($payload)->assertOk();
     postSignedFlutterwaveWebhook($payload)->assertOk();
@@ -97,7 +105,7 @@ it('traite un webhook rejoué 3 fois de façon idempotente : une seule confirmat
 });
 
 it('échoue le paiement et libère le stock sur un statut failed', function (): void {
-    $payload = flutterwaveEventPayload('evt_failed_1', 'chg_1', 'failed');
+    $payload = flutterwaveEventPayload('evt_failed_1', 'chg_1', 'failed', $this->reference);
 
     postSignedFlutterwaveWebhook($payload)->assertOk();
 
@@ -108,8 +116,26 @@ it('échoue le paiement et libère le stock sur un statut failed', function (): 
     expect($remaining)->toBe(3);
 });
 
+it('rembourse automatiquement un paiement confirmé après l\'expiration de la réservation', function (): void {
+    Http::fake([
+        '*/charges/chg_1/refund' => Http::response(['data' => ['id' => 'rf_auto_1']], 200),
+    ]);
+
+    app(CurrentOrganization::class)->set($this->organization);
+    $this->order->update(['status' => OrderStatus::Expired, 'reserved_until' => null]);
+    app(CurrentOrganization::class)->clear();
+
+    $payload = flutterwaveEventPayload('evt_late_1', 'chg_1', 'succeeded', $this->reference);
+    postSignedFlutterwaveWebhook($payload)->assertOk();
+
+    app(CurrentOrganization::class)->set($this->organization);
+    expect($this->order->fresh()->status->value)->toBe('expired');
+    expect(Payment::query()->where('status', PaymentStatus::Succeeded)->count())->toBe(0);
+    Http::assertSent(fn ($request): bool => str_contains($request->url(), '/charges/chg_1/refund'));
+});
+
 it('ignore silencieusement un webhook pour une charge inconnue', function (): void {
-    $payload = flutterwaveEventPayload('evt_unknown', 'chg_inconnue', 'succeeded');
+    $payload = flutterwaveEventPayload('evt_unknown', 'chg_inconnue', 'succeeded', $this->reference);
 
     postSignedFlutterwaveWebhook($payload)->assertOk();
 

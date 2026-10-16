@@ -20,7 +20,21 @@ use App\Support\Money;
 interface CardCheckoutProvider
 {
     /**
+     * $organizationId part en métadonnée (commande ET PaymentIntent) à côté
+     * de $orderId : le webhook en a besoin pour poser le contexte multi-
+     * tenant (CurrentOrganization) avant de relire la commande, elle-même
+     * protégée par la row-level security (règle 4.1 du CLAUDE.md) — sans
+     * ça, la recherche croisée organisation échoue toujours, le rôle
+     * applicatif n'ayant jamais BYPASSRLS (docker/postgres/init.sql).
+     *
      * @return string l'URL de paiement hébergée Stripe Checkout vers laquelle rediriger l'acheteur
      */
-    public function createCheckoutSession(int $orderId, Money $amount, string $successUrl, string $cancelUrl): string;
+    public function createCheckoutSession(int $orderId, int $organizationId, Money $amount, string $successUrl, string $cancelUrl): string;
+
+    /**
+     * Remboursement total ou partiel d'un paiement déjà encaissé (M5.5).
+     *
+     * @return string l'identifiant du remboursement chez le prestataire
+     */
+    public function refund(string $paymentIntentId, Money $amount): string;
 }

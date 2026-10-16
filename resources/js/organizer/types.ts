@@ -49,6 +49,7 @@ export type EventNavLinkKey =
     | 'pushNotifications'
     | 'sessionQuestions'
     | 'livePolls'
+    | 'orders'
     | 'referral';
 
 /**

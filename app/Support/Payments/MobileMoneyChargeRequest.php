@@ -17,6 +17,7 @@ final class MobileMoneyChargeRequest
 {
     public function __construct(
         public readonly int $orderId,
+        public readonly int $organizationId,
         public readonly Money $amount,
         public readonly string $countryCode,
         public readonly string $phoneNumber,
