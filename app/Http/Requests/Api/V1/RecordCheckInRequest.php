@@ -23,6 +23,10 @@ final class RecordCheckInRequest extends FormRequest
         return [
             'attendee_id' => ['required_without:ticket_id', 'prohibits:ticket_id', 'integer'],
             'ticket_id' => ['required_without:attendee_id', 'integer'],
+            // Présent pour un scan de QR (jamais pour une entrée choisie
+            // dans la liste) : seul ce qu'il résout fait foi, voir
+            // SyncCheckIns et App\Http\Controllers\Api\V1\CheckInController.
+            'qr_token' => ['nullable', 'string'],
             'device_local_id' => ['required', 'uuid'],
             'direction' => ['required', 'in:check_in,check_out'],
             'recorded_at' => ['required', 'date'],

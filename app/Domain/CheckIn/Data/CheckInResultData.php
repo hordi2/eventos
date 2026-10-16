@@ -10,7 +10,8 @@ final class CheckInResultData
 {
     public function __construct(
         public readonly string $deviceLocalId,
-        public readonly int $checkInId,
+        public readonly ?int $checkInId,
         public readonly CheckInStatus $status,
+        public readonly ?string $error = null,
     ) {}
 }

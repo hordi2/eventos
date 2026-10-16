@@ -24,6 +24,10 @@ final class SyncCheckInsRequest extends FormRequest
             'scans' => ['required', 'array', 'min:1', 'max:500'],
             'scans.*.attendee_id' => ['required_without:scans.*.ticket_id', 'prohibits:scans.*.ticket_id', 'integer'],
             'scans.*.ticket_id' => ['required_without:scans.*.attendee_id', 'integer'],
+            // Présent pour un scan de QR (jamais pour une entrée choisie
+            // dans la liste) : seul ce qu'il résout fait foi, voir
+            // App\Domain\CheckIn\Actions\SyncCheckIns.
+            'scans.*.qr_token' => ['nullable', 'string'],
             'scans.*.device_local_id' => ['required', 'uuid', 'distinct'],
             'scans.*.direction' => ['required', 'in:check_in,check_out'],
             'scans.*.recorded_at' => ['required', 'date'],

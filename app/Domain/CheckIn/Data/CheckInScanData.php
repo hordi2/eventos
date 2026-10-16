@@ -15,5 +15,6 @@ final class CheckInScanData
         public readonly string $deviceLocalId,
         public readonly CheckInDirection $direction,
         public readonly CarbonImmutable $recordedAt,
+        public readonly ?string $qrToken = null,
     ) {}
 }

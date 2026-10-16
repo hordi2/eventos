@@ -7,6 +7,7 @@ namespace App\Domain\Ticketing\Actions;
 use App\Domain\Ticketing\InvalidQrTokenException;
 use App\Domain\Ticketing\Models\Ticket;
 use App\Domain\Ticketing\Models\TicketStatus;
+use DomainException;
 use Firebase\JWT\ExpiredException;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
@@ -37,7 +38,7 @@ final class VerifyTicketQrToken
             throw InvalidQrTokenException::invalidSignature();
         } catch (ExpiredException) {
             throw InvalidQrTokenException::expired();
-        } catch (UnexpectedValueException) {
+        } catch (UnexpectedValueException|DomainException) {
             throw InvalidQrTokenException::malformed();
         }
 

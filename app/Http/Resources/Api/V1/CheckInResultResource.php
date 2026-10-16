@@ -22,6 +22,7 @@ final class CheckInResultResource extends JsonResource
             'device_local_id' => $this->resource->deviceLocalId,
             'check_in_id' => $this->resource->checkInId,
             'status' => $this->resource->status->value,
+            'error' => $this->resource->error,
         ];
     }
 }
