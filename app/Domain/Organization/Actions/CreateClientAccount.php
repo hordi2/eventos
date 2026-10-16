@@ -21,6 +21,12 @@ use Illuminate\Support\Str;
  * toutes les autres : l'agence la gère, mais pourra la lui rendre sans que
  * le client perde quoi que ce soit (ReleaseClientAccount).
  *
+ * Toujours ouvert sur le palier gratuit, quel que soit celui de l'agence :
+ * la facturation consolidée (D10, ManageClientSubscriptionItems) modifie
+ * l'abonnement Stripe de l'agence, jamais un effet de bord silencieux d'une
+ * simple ouverture de compte — l'agence choisit ensuite explicitement le
+ * palier de ce client (ChangeClientPlan, Paramètres → Mes clients).
+ *
  * Les membres de l'agence qui ont la main sur le portefeuille entrent
  * d'office dans le nouveau compte : sans cela, l'agence ouvrirait un compte
  * où elle ne pourrait pas travailler.
@@ -37,12 +43,7 @@ final class CreateClientAccount
                 'slug' => $this->uniqueSlug($name),
                 'managed_by_organization_id' => $agency->id,
                 'managed_since' => CarbonImmutable::now(),
-                // Le compte client hérite du plan de l'agence : c'est elle
-                // qui paie pour tout son portefeuille. Repli défensif :
-                // create() ne relit pas les valeurs par défaut de la base,
-                // une agence fraîchement créée peut porter un plan nul en
-                // mémoire malgré son défaut en base.
-                'plan' => $agency->plan ?? PlanTier::Free,
+                'plan' => PlanTier::Free,
             ]);
 
             // Ouvrir un compte client fait de vous une agence : le

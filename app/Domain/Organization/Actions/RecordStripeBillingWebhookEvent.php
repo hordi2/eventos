@@ -72,6 +72,7 @@ final class RecordStripeBillingWebhookEvent
 
         match ($event->type) {
             'checkout.session.completed' => $this->handleCheckoutCompleted($object),
+            'customer.subscription.created' => $this->handleSubscriptionCreated($object),
             'customer.subscription.updated' => $this->handleSubscriptionUpdated($object),
             'customer.subscription.deleted' => $this->handleSubscriptionDeleted($object),
             'invoice.payment_failed' => $this->handlePaymentFailed($object),
@@ -108,6 +109,35 @@ final class RecordStripeBillingWebhookEvent
         ]);
 
         $this->applyReferralReward->handle($organization->fresh());
+    }
+
+    /**
+     * L'article qui porte CE palier sur l'abonnement (jamais data[0] au
+     * hasard : une agence, D10, ajoutera plus tard un article par compte
+     * client sur ce même abonnement, voir ManageClientSubscriptionItems) —
+     * déjà présent dans la charge utile de cet événement (contrairement à
+     * checkout.session.completed, qui ne porte que l'ID de l'abonnement),
+     * jamais besoin d'un appel à l'API Stripe pour l'obtenir.
+     */
+    private function handleSubscriptionCreated(object $object): void
+    {
+        $organizationId = (int) ($object->metadata->organization_id ?? 0);
+        $organization = $this->findOrganization($organizationId);
+
+        if ($organization === null) {
+            Log::warning("Webhook Stripe (facturation) customer.subscription.created sans organisation valide : org #{$organizationId}.");
+
+            return;
+        }
+
+        $itemId = $object->items->data[0]->id ?? null;
+
+        if ($itemId === null) {
+            return;
+        }
+
+        $this->currentOrganization->set($organization->id);
+        $organization->update(['stripe_subscription_item_id' => (string) $itemId]);
     }
 
     private function handleSubscriptionUpdated(object $object): void
@@ -148,6 +178,7 @@ final class RecordStripeBillingWebhookEvent
         $organization->update([
             'plan' => PlanTier::Free,
             'stripe_subscription_id' => null,
+            'stripe_subscription_item_id' => null,
             'subscription_status' => null,
             'subscription_current_period_end' => null,
             'dunning_stage' => 0,

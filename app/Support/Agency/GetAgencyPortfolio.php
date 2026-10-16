@@ -105,6 +105,14 @@ final class GetAgencyPortfolio
             )->count(),
             revenue: Money::fromMinorUnits($this->revenue($client, $currency, $from, $to), $currency),
             managedSince: $client->managed_since?->translatedFormat('j F Y'),
+            plan: $client->plan,
+            wholesaleCost: Money::fromMinorUnits(
+                (int) config("plans.{$client->plan->value}.price_minor", 0),
+                (string) config("plans.{$client->plan->value}.currency", 'USD'),
+            ),
+            resalePrice: $client->resale_price_minor === null
+                ? null
+                : Money::fromMinorUnits($client->resale_price_minor, (string) $client->resale_currency),
         );
     }
 

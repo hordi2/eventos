@@ -1,10 +1,17 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { type FormEvent, useState } from 'react';
 import Button from '../../Components/Button';
 import InputError from '../../Components/InputError';
 import InputLabel from '../../Components/InputLabel';
+import Select from '../../Components/Select';
 import TextInput from '../../Components/TextInput';
 import SettingsLayout from '../../Layouts/SettingsLayout';
+
+interface PlanOption {
+    value: string;
+    label: string;
+    wholesaleCostLabel: string;
+}
 
 interface ClientRow {
     id: number;
@@ -16,11 +23,16 @@ interface ClientRow {
     registrationCount: number;
     revenue: string;
     managedSince: string | null;
+    plan: string;
+    wholesaleCost: string;
+    resalePrice: string | null;
+    margin: string | null;
 }
 
 interface Props {
     agency: { name: string };
     period: { from: string | null; to: string | null };
+    planOptions: PlanOption[];
     portfolio: {
         eventCount: number;
         registrationCount: number;
@@ -30,10 +42,53 @@ interface Props {
 }
 
 /**
+ * Prix de revente d'un client : montant + devise, modifiables ensemble,
+ * jamais traités par Itaza (voir SetClientResalePrice).
+ */
+function ResalePriceForm({ client }: { client: ClientRow }) {
+    const parsed = client.resalePrice?.match(/^([\d\s.,]+)\s*([A-Za-z$€]+)$/);
+    const form = useForm({
+        amount: parsed ? parsed[1].trim() : '',
+        currency: 'USD',
+    });
+
+    function submit(event: FormEvent) {
+        event.preventDefault();
+        router.patch(`/clients/${client.id}/resale-price`, form.data, { preserveScroll: true });
+    }
+
+    return (
+        <form onSubmit={submit} className="flex items-center gap-2">
+            <TextInput
+                value={form.data.amount}
+                onChange={(e) => form.setData('amount', e.target.value)}
+                placeholder="Prix de revente"
+                className="w-28 text-sm"
+            />
+            <Select
+                value={form.data.currency}
+                onChange={(e) => form.setData('currency', e.target.value)}
+                className="w-20 text-sm"
+            >
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="XOF">XOF</option>
+                <option value="XAF">XAF</option>
+                <option value="CDF">CDF</option>
+            </Select>
+            <button type="submit" className="text-sm text-ink underline underline-offset-4">
+                Enregistrer
+            </button>
+        </form>
+    );
+}
+
+/**
  * Portail agence (D10) : les comptes clients du portefeuille, leur activité,
  * et le total consolidé. Un compte rendu à son client lui reste entier.
  */
-export default function Index({ agency, period, portfolio }: Props) {
+export default function Index({ agency, period, planOptions, portfolio }: Props) {
+    const { errors } = usePage<{ errors: Record<string, string> }>().props;
     const [from, setFrom] = useState(period.from ?? '');
     const [to, setTo] = useState(period.to ?? '');
     const query = from || to ? `?du=${from}&au=${to}` : '';
@@ -56,9 +111,17 @@ export default function Index({ agency, period, portfolio }: Props) {
         router.delete(`/clients/${client.id}`, { onFinish: () => setReleasing(null) });
     }
 
+    function updatePlan(client: ClientRow, plan: string) {
+        router.patch(`/clients/${client.id}/plan`, { plan }, { preserveScroll: true });
+    }
+
     return (
         <SettingsLayout title="Mes clients" active="clients">
             <Head title="Mes clients" />
+
+            {errors.plan && (
+                <div className="mb-8 rounded-card bg-danger-bg p-4 text-sm text-danger ring-1 ring-danger/30">{errors.plan}</div>
+            )}
 
             <p className="mb-8 text-sm text-ink-soft">
                 Les comptes que {agency.name} gère pour ses clients. Chacun est un compte à part entière : vous pouvez le
@@ -156,6 +219,34 @@ export default function Index({ agency, period, portfolio }: Props) {
                                         {releasing === client.id ? 'Restitution…' : 'Rendre le compte'}
                                     </button>
                                 </div>
+                            </div>
+
+                            <div className="mt-4 flex flex-wrap items-center gap-6 border-t border-line pt-4">
+                                <div className="flex items-center gap-2">
+                                    <InputLabel htmlFor={`plan-${client.id}`} className="mb-0 text-xs">
+                                        Palier
+                                    </InputLabel>
+                                    <Select
+                                        id={`plan-${client.id}`}
+                                        value={client.plan}
+                                        onChange={(e) => updatePlan(client, e.target.value)}
+                                        className="w-44 text-sm"
+                                    >
+                                        {planOptions.map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label} — {option.wholesaleCostLabel}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                </div>
+
+                                <ResalePriceForm client={client} />
+
+                                {client.margin && (
+                                    <span className="text-sm text-ink-soft">
+                                        Marge : <span className="text-ink">{client.margin}</span>
+                                    </span>
+                                )}
                             </div>
                         </li>
                     ))}

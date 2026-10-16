@@ -297,6 +297,8 @@ Route::middleware('auth')->group(function (): void {
         Route::post('clients', [AgencyController::class, 'store'])->middleware('throttle:20,1')->name('agency.store');
         Route::get('clients/export', [AgencyController::class, 'export'])->name('agency.export');
         Route::get('clients/{client}/releve.pdf', [AgencyController::class, 'statement'])->whereNumber('client')->name('agency.statement');
+        Route::patch('clients/{client}/plan', [AgencyController::class, 'updatePlan'])->whereNumber('client')->name('agency.update-plan');
+        Route::patch('clients/{client}/resale-price', [AgencyController::class, 'updateResalePrice'])->whereNumber('client')->name('agency.update-resale-price');
         Route::delete('clients/{client}', [AgencyController::class, 'destroy'])->whereNumber('client')->name('agency.destroy');
     });
 

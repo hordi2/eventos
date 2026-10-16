@@ -34,6 +34,7 @@ final class Organization extends Model
         'plan',
         'stripe_customer_id',
         'stripe_subscription_id',
+        'stripe_subscription_item_id',
         'subscription_status',
         'subscription_current_period_end',
         'payment_failed_at',
@@ -53,6 +54,8 @@ final class Organization extends Model
         'brands_client_portals',
         'managed_by_organization_id',
         'managed_since',
+        'resale_price_minor',
+        'resale_currency',
     ];
 
     /**
@@ -80,6 +83,7 @@ final class Organization extends Model
             'is_agency' => 'boolean',
             'brands_client_portals' => 'boolean',
             'managed_since' => 'immutable_datetime',
+            'resale_price_minor' => 'integer',
         ];
     }
 

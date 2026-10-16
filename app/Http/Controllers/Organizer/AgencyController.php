@@ -4,15 +4,22 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Organizer;
 
+use App\Domain\Organization\Actions\ChangeClientPlan;
 use App\Domain\Organization\Actions\CreateClientAccount;
 use App\Domain\Organization\Actions\ReleaseClientAccount;
+use App\Domain\Organization\Actions\SetClientResalePrice;
 use App\Domain\Organization\Models\Organization;
+use App\Domain\Organization\Models\PlanTier;
+use App\Domain\Organization\StripeNotConfiguredException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\Agency\CreateClientAccountRequest;
+use App\Http\Requests\Organizer\Agency\UpdateClientPlanRequest;
+use App\Http\Requests\Organizer\Agency\UpdateClientResalePriceRequest;
 use App\Models\User;
 use App\Support\Agency\ClientAccountData;
 use App\Support\Agency\GetAgencyPortfolio;
 use App\Support\Export\SanitizeCsvRow;
+use App\Support\Money;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\CarbonImmutable;
@@ -23,6 +30,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use LogicException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -43,6 +51,14 @@ final class AgencyController extends Controller
         return Inertia::render('Agency/Index', [
             'agency' => ['name' => $agency->name],
             'period' => ['from' => $from?->toDateString(), 'to' => $to?->toDateString()],
+            'planOptions' => array_map(fn (PlanTier $plan): array => [
+                'value' => $plan->value,
+                'label' => $plan->label(),
+                'wholesaleCostLabel' => Money::fromMinorUnits(
+                    (int) config("plans.{$plan->value}.price_minor", 0),
+                    (string) config("plans.{$plan->value}.currency", 'USD'),
+                )->format(),
+            ], PlanTier::cases()),
             'portfolio' => [
                 'eventCount' => $portfolio->eventCount,
                 'registrationCount' => $portfolio->registrationCount,
@@ -57,9 +73,46 @@ final class AgencyController extends Controller
                     'registrationCount' => $client->registrationCount,
                     'revenue' => $client->revenue->format(),
                     'managedSince' => $client->managedSince,
+                    'plan' => $client->plan->value,
+                    'wholesaleCost' => $client->wholesaleCost->format(),
+                    'resalePrice' => $client->resalePrice?->format(),
+                    'margin' => $client->margin()?->format(),
                 ], $portfolio->clients),
             ],
         ]);
+    }
+
+    public function updatePlan(UpdateClientPlanRequest $request, int $client, ChangeClientPlan $changeClientPlan): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $agency = $this->agency();
+        $clientAccount = Organization::query()->findOrFail($client);
+
+        try {
+            $changeClientPlan->handle($agency, $clientAccount, $request->plan(), $user);
+        } catch (StripeNotConfiguredException|LogicException $exception) {
+            return back()->withErrors(['plan' => $exception->getMessage()]);
+        }
+
+        return back()->with('success', "Palier mis à jour pour « {$clientAccount->name} ».");
+    }
+
+    public function updateResalePrice(UpdateClientResalePriceRequest $request, int $client, SetClientResalePrice $setClientResalePrice): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $agency = $this->agency();
+        $clientAccount = Organization::query()->findOrFail($client);
+
+        $rawAmount = $request->validated('amount');
+        $resalePrice = $rawAmount === null || $rawAmount === ''
+            ? null
+            : Money::parse($rawAmount, (string) $request->validated('currency'));
+
+        $setClientResalePrice->handle($agency, $clientAccount, $user, $resalePrice);
+
+        return back()->with('success', "Prix de revente mis à jour pour « {$clientAccount->name} ».");
     }
 
     public function store(CreateClientAccountRequest $request, CreateClientAccount $createClientAccount): RedirectResponse

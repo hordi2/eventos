@@ -3,14 +3,17 @@
 declare(strict_types=1);
 
 use App\Domain\Event\Models\Event;
+use App\Domain\Organization\Actions\ChangeClientPlan;
 use App\Domain\Organization\Actions\CreateClientAccount;
 use App\Domain\Organization\Actions\ReleaseClientAccount;
+use App\Domain\Organization\Actions\SetClientResalePrice;
 use App\Domain\Organization\Models\Membership;
 use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Organization\Models\PlanTier;
 use App\Models\User;
 use App\Support\Agency\GetAgencyPortfolio;
+use App\Support\Money;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -45,8 +48,9 @@ it('ouvre le compte d\'un client et y fait entrer l\'agence', function (): void 
     expect($client->managed_by_organization_id)->toBe($agency->id)
         ->and($client->slug)->toBe('fondation-lumiere')
         ->and($client->managed_since)->not->toBeNull()
-        // Le compte client hérite du plan : c'est l'agence qui paie.
-        ->and($client->plan)->toBe(PlanTier::ProfessionalPro);
+        // Toujours gratuit à l'ouverture : l'agence choisit ensuite
+        // explicitement le palier de ce client (ChangeClientPlan).
+        ->and($client->plan)->toBe(PlanTier::Free);
 
     $membership = Membership::query()->where('organization_id', $client->id)->where('user_id', $admin->id)->sole();
     // Administratrice, jamais propriétaire : le compte appartient au client.
@@ -196,4 +200,115 @@ it('édite le relevé d\'un compte client, et le portefeuille en tableur', funct
     // Le relevé d'un compte qui n'est pas au portefeuille n'existe pas.
     $stranger = Organization::factory()->create();
     $this->actingAs($admin)->withSession($session)->get("/clients/{$stranger->id}/releve.pdf")->assertNotFound();
+});
+
+it('refuse de passer un compte client à un palier payant tant que l\'agence n\'a pas d\'abonnement Stripe actif', function (): void {
+    [$agency, $admin] = agencyWithRole(MembershipRole::Admin);
+    $client = app(CreateClientAccount::class)->handle($agency, $admin, 'Fondation Lumière');
+
+    expect(fn () => app(ChangeClientPlan::class)->handle($agency, $client, PlanTier::ProfessionalPro, $admin))
+        ->toThrow(LogicException::class);
+
+    expect($client->fresh()->plan)->toBe(PlanTier::Free);
+});
+
+it('laisse un compte client gratuit sur le palier gratuit sans toucher Stripe', function (): void {
+    [$agency, $admin] = agencyWithRole(MembershipRole::Admin);
+    $client = app(CreateClientAccount::class)->handle($agency, $admin, 'Fondation Lumière');
+
+    $updated = app(ChangeClientPlan::class)->handle($agency, $client, PlanTier::Free, $admin);
+
+    expect($updated->plan)->toBe(PlanTier::Free)
+        ->and($updated->stripe_subscription_item_id)->toBeNull();
+});
+
+it('refuse à qui n\'administre pas l\'agence de changer le palier d\'un client', function (): void {
+    [$agency, $admin] = agencyWithRole(MembershipRole::Admin);
+    $client = app(CreateClientAccount::class)->handle($agency, $admin, 'Fondation Lumière');
+    $editor = User::factory()->create();
+    app(CurrentOrganization::class)->set($agency);
+    $editor->memberships()->create(['organization_id' => $agency->id, 'role' => MembershipRole::Editor]);
+    app(CurrentOrganization::class)->clear();
+
+    expect(fn () => app(ChangeClientPlan::class)->handle($agency, $client, PlanTier::Free, $editor))
+        ->toThrow(AuthorizationException::class);
+});
+
+it('refuse de changer le palier d\'un compte qui n\'appartient pas à cette agence', function (): void {
+    [$agency, $admin] = agencyWithRole(MembershipRole::Admin);
+    [$other, $otherAdmin] = agencyWithRole(MembershipRole::Admin);
+    $client = app(CreateClientAccount::class)->handle($other, $otherAdmin, 'Fondation Lumière');
+
+    expect(fn () => app(ChangeClientPlan::class)->handle($agency, $client, PlanTier::Free, $admin))
+        ->toThrow(NotFoundHttpException::class);
+});
+
+it('fixe puis efface le prix de revente d\'un compte client', function (): void {
+    [$agency, $admin] = agencyWithRole(MembershipRole::Admin);
+    $client = app(CreateClientAccount::class)->handle($agency, $admin, 'Fondation Lumière');
+
+    $updated = app(SetClientResalePrice::class)->handle($agency, $client, $admin, Money::fromMinorUnits(15000, 'USD'));
+    expect($updated->resale_price_minor)->toBe(15000)
+        ->and($updated->resale_currency)->toBe('USD');
+
+    $cleared = app(SetClientResalePrice::class)->handle($agency, $client, $admin, null);
+    expect($cleared->resale_price_minor)->toBeNull()
+        ->and($cleared->resale_currency)->toBeNull();
+});
+
+it('calcule la marge seulement quand la revente est dans la même devise que le coût de gros', function (): void {
+    [$agency, $admin] = agencyWithRole(MembershipRole::Admin);
+    $client = app(CreateClientAccount::class)->handle($agency, $admin, 'Fondation Lumière');
+    app(ChangeClientPlan::class)->handle($agency, $client, PlanTier::Free, $admin);
+    app(SetClientResalePrice::class)->handle($agency, $client, $admin, Money::fromMinorUnits(2000, 'USD'));
+
+    $portfolio = app(GetAgencyPortfolio::class)->handle($agency);
+    $row = $portfolio->clients[0];
+
+    expect($row->plan)->toBe(PlanTier::Free)
+        ->and($row->wholesaleCost->isZero())->toBeTrue()
+        ->and($row->resalePrice?->amountMinor())->toBe(2000)
+        ->and($row->margin()?->amountMinor())->toBe(2000);
+});
+
+it('met à jour le prix de revente d\'un client depuis le portail', function (): void {
+    [$agency, $admin] = agencyWithRole(MembershipRole::Admin);
+    $client = app(CreateClientAccount::class)->handle($agency, $admin, 'Fondation Lumière');
+    $session = ['current_organization_id' => $agency->id];
+
+    $this->actingAs($admin)->withSession($session)
+        ->patch("/clients/{$client->id}/resale-price", ['amount' => '150', 'currency' => 'USD'])
+        ->assertSessionHas('success');
+
+    expect($client->fresh()->resale_price_minor)->toBe(15000);
+
+    $this->actingAs($admin)->withSession($session)
+        ->patch("/clients/{$client->id}/resale-price", [])
+        ->assertSessionHas('success');
+
+    expect($client->fresh()->resale_price_minor)->toBeNull();
+});
+
+it('refuse de passer un client à un palier payant depuis le portail tant que l\'agence n\'a pas d\'abonnement Stripe', function (): void {
+    [$agency, $admin] = agencyWithRole(MembershipRole::Admin);
+    $client = app(CreateClientAccount::class)->handle($agency, $admin, 'Fondation Lumière');
+    $session = ['current_organization_id' => $agency->id];
+
+    $this->actingAs($admin)->withSession($session)
+        ->patch("/clients/{$client->id}/plan", ['plan' => 'professional_pro'])
+        ->assertSessionHasErrors('plan');
+
+    expect($client->fresh()->plan)->toBe(PlanTier::Free);
+});
+
+it('rend un compte à son client en le repassant au palier gratuit', function (): void {
+    [$agency, $admin] = agencyWithRole(MembershipRole::Admin);
+    $client = app(CreateClientAccount::class)->handle($agency, $admin, 'Fondation Lumière');
+    app(SetClientResalePrice::class)->handle($agency, $client, $admin, Money::fromMinorUnits(5000, 'USD'));
+
+    app(ReleaseClientAccount::class)->handle($agency, $client, $admin);
+
+    expect($client->fresh()->plan)->toBe(PlanTier::Free)
+        ->and($client->fresh()->resale_price_minor)->toBeNull()
+        ->and($client->fresh()->stripe_subscription_item_id)->toBeNull();
 });

@@ -21,6 +21,13 @@ declare(strict_types=1);
  * volume d'inscriptions mensuel de l'organisation est mesuré aujourd'hui
  * (voir GetOrganizationUsage). `emails_per_month` est extrapolé à 5x le
  * volume d'inscriptions, comme sur les paliers gratuit/pro d'origine.
+ *
+ * `price_minor` (en centimes, `currency` toujours USD ici) est le prix de
+ * gros du palier — ce qu'il coûte à qui le porte. Pour un compte confié à
+ * une agence (D10, moteur revendeur), c'est ce montant que porte la facture
+ * consolidée de l'agence ; ce qu'elle facture à son client est un montant
+ * distinct, propre à ce compte (`organizations.resale_price_minor`), qui ne
+ * transite jamais par Itaza — voir ManageClientSubscriptionItems.
  */
 return [
 
@@ -30,6 +37,11 @@ return [
         'active_events' => 1,
         'stripe_price' => null,
         'price_label' => 'Gratuit',
+        // Coût de gros (D10, moteur revendeur) : ce que ce palier coûte à
+        // l'agence qui le porte pour un de ses clients — jamais ce qu'elle
+        // facture elle-même à ce client (resale_price_minor, par compte).
+        'price_minor' => 0,
+        'currency' => 'USD',
     ],
 
     'personal_essential' => [
@@ -38,6 +50,8 @@ return [
         'active_events' => 5,
         'stripe_price' => env('STRIPE_PRICE_PERSONAL_ESSENTIAL'),
         'price_label' => '8,9 $/mois',
+        'price_minor' => 890,
+        'currency' => 'USD',
     ],
 
     'personal_comfort' => [
@@ -46,6 +60,8 @@ return [
         'active_events' => 10,
         'stripe_price' => env('STRIPE_PRICE_PERSONAL_COMFORT'),
         'price_label' => '15 $/mois',
+        'price_minor' => 1500,
+        'currency' => 'USD',
     ],
 
     'professional_plus' => [
@@ -54,6 +70,8 @@ return [
         'active_events' => 5,
         'stripe_price' => env('STRIPE_PRICE_PROFESSIONAL_PLUS'),
         'price_label' => '35 $/mois',
+        'price_minor' => 3500,
+        'currency' => 'USD',
     ],
 
     'professional_career' => [
@@ -62,6 +80,8 @@ return [
         'active_events' => 15,
         'stripe_price' => env('STRIPE_PRICE_PROFESSIONAL_CAREER'),
         'price_label' => '99 $/mois',
+        'price_minor' => 9900,
+        'currency' => 'USD',
     ],
 
     'professional_pro' => [
@@ -70,6 +90,8 @@ return [
         'active_events' => null,
         'stripe_price' => env('STRIPE_PRICE_PROFESSIONAL_PRO'),
         'price_label' => '289 $/mois',
+        'price_minor' => 28900,
+        'currency' => 'USD',
     ],
 
 ];

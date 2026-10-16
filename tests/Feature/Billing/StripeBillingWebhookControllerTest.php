@@ -68,6 +68,31 @@ it('active le plan et enregistre l\'abonnement sur checkout.session.completed', 
     expect($fresh->subscription_status)->toBe('active');
 });
 
+it('retient l\'article Stripe de l\'abonnement sur customer.subscription.created', function (): void {
+    $organization = Organization::factory()->create();
+
+    $payload = stripeBillingEventPayload('customer.subscription.created', 'evt_sub_created_1', [
+        'customer' => 'cus_test_sub',
+        'metadata' => ['organization_id' => (string) $organization->id],
+        'items' => ['data' => [['id' => 'si_test_1']]],
+    ]);
+
+    postSignedStripeBillingWebhook($payload)->assertOk();
+
+    $fresh = Organization::query()->withoutGlobalScopes()->findOrFail($organization->id);
+    expect($fresh->stripe_subscription_item_id)->toBe('si_test_1');
+});
+
+it('ignore silencieusement customer.subscription.created sans organisation déductible', function (): void {
+    $payload = stripeBillingEventPayload('customer.subscription.created', 'evt_sub_created_2', [
+        'customer' => 'cus_inconnu',
+        'metadata' => [],
+        'items' => ['data' => [['id' => 'si_test_2']]],
+    ]);
+
+    postSignedStripeBillingWebhook($payload)->assertOk();
+});
+
 it('prolonge de 30 jours l\'abonnement du parrain et du filleul au premier paiement confirmé (Refer-a-Friend)', function (): void {
     $referrer = Organization::factory()->create([
         'referral_code' => 'ami-itaza',
