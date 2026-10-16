@@ -112,6 +112,17 @@ it('refuse un montant illisible ou plus précis que la devise', function (string
     'décimale en franc CFA' => ['500,5', 'XAF'],
 ])->throws(InvalidArgumentException::class);
 
+it('restitue le montant en décimal exact, sans jamais tronquer les centimes (intdiv seul le ferait)', function (string $currency, int $minorUnits, string $expected): void {
+    expect(Money::fromMinorUnits($minorUnits, $currency)->decimalString())->toBe($expected);
+})->with([
+    'EUR non rond' => ['EUR', 1099, '10.99'],
+    'EUR rond' => ['EUR', 1000, '10.00'],
+    'CDF non rond' => ['CDF', 1099, '10.99'],
+    'XOF (sans décimale)' => ['XOF', 5000, '5000'],
+    'XAF (sans décimale)' => ['XAF', 5000, '5000'],
+    'négatif' => ['EUR', -1099, '-10.99'],
+]);
+
 it('aucune méthode publique de Money n\'utilise le type float', function (): void {
     $reflection = new ReflectionClass(Money::class);
 

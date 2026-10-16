@@ -13,6 +13,7 @@ use App\Support\MultiTenancy\CurrentOrganization;
 use App\Support\Payments\MobileMoneyChargeStatus;
 use App\Support\Payments\MobileMoneyProvider;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Réconciliation quotidienne avec le prestataire Mobile Money (T-053, AC :
@@ -35,6 +36,12 @@ use Illuminate\Support\Facades\Log;
  * et peut avoir été revendu. Ce cas — rare, argent capturé sans billet —
  * est seulement journalisé pour une revue manuelle, pas géré
  * automatiquement (hors périmètre de ce ticket).
+ *
+ * Une erreur sur un paiement (prestataire injoignable, charge inconnue...)
+ * ne doit jamais interrompre le lot du jour : sans ce garde-fou, une
+ * seule charge en erreur empêcherait la réconciliation de tous les
+ * paiements suivants, de toutes les organisations suivantes, jusqu'au
+ * prochain passage.
  */
 final class ReconcileMobileMoneyPayments
 {
@@ -56,7 +63,11 @@ final class ReconcileMobileMoneyPayments
                 ->get();
 
             foreach ($pendingPayments as $payment) {
-                $this->reconcileOne($payment);
+                try {
+                    $this->reconcileOne($payment);
+                } catch (Throwable $exception) {
+                    Log::error("Échec de la réconciliation Flutterwave pour le paiement #{$payment->id} : {$exception->getMessage()}");
+                }
             }
         }
     }

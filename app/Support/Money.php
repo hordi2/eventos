@@ -211,24 +211,35 @@ final class Money
      */
     public function format(string $locale = 'fr'): string
     {
-        $exponent = self::decimals($this->currency);
-        $divisor = 10 ** $exponent;
-
-        $majorPart = intdiv($this->amountMinor, $divisor);
-        $minorPart = abs($this->amountMinor % $divisor);
-
-        $decimalValue = $exponent === 0
-            ? (string) $majorPart
-            : $majorPart.'.'.str_pad((string) $minorPart, $exponent, '0', STR_PAD_LEFT);
-
         $formatter = new NumberFormatter($locale, NumberFormatter::CURRENCY);
-        $formatted = $formatter->formatCurrency((float) $decimalValue, $this->currency);
+        $formatted = $formatter->formatCurrency((float) $this->decimalString(), $this->currency);
 
         if ($formatted === false) {
             throw new RuntimeException("Impossible de formater le montant pour la devise {$this->currency}.");
         }
 
         return $formatted;
+    }
+
+    /**
+     * Représentation décimale exacte du montant, en unité majeure, sans
+     * arrondi ni symbole de devise — pour une API externe qui attend un
+     * nombre décimal plutôt que la plus petite unité monétaire (ex.
+     * Flutterwave). Un intdiv() seul sur amountMinor() tronquerait les
+     * décimales (1099 centimes → 10, pas 10.99) : ce calcul les restitue
+     * toutes.
+     */
+    public function decimalString(): string
+    {
+        $exponent = self::decimals($this->currency);
+        $divisor = 10 ** $exponent;
+
+        $majorPart = intdiv($this->amountMinor, $divisor);
+        $minorPart = abs($this->amountMinor % $divisor);
+
+        return $exponent === 0
+            ? (string) $majorPart
+            : $majorPart.'.'.str_pad((string) $minorPart, $exponent, '0', STR_PAD_LEFT);
     }
 
     private function assertSameCurrency(self $other): void

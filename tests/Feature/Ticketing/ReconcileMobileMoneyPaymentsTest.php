@@ -126,3 +126,28 @@ it('réconcilie les paiements en attente de plusieurs organisations en une seule
     app(CurrentOrganization::class)->set($otherOrganization);
     expect($otherOrder->fresh()->status->value)->toBe('paid');
 });
+
+it('une erreur sur un paiement n\'empêche pas la réconciliation des autres', function (): void {
+    Log::spy();
+
+    app(CurrentOrganization::class)->set($this->organization);
+    $badOrder = Order::factory()->for($this->organization)->create(['event_id' => $this->ticketType->event_id]);
+    Payment::factory()->for($this->organization)->create([
+        'order_id' => $badOrder->id,
+        'provider' => 'flutterwave',
+        'provider_payment_id' => 'chg_bad',
+        'status' => PaymentStatus::Pending,
+    ]);
+    app(CurrentOrganization::class)->clear();
+
+    Http::fake([
+        '*/charges/chg_1' => Http::response(['data' => ['id' => 'chg_1', 'status' => 'succeeded']], 200),
+        '*/charges/chg_bad' => Http::response(null, 500),
+    ]);
+
+    app(ReconcileMobileMoneyPayments::class)->handle();
+
+    app(CurrentOrganization::class)->set($this->organization);
+    expect($this->order->fresh()->status->value)->toBe('paid');
+    Log::shouldHaveReceived('error')->once();
+});

@@ -16,10 +16,16 @@ use Illuminate\Support\Str;
  * défaut, cf. services.flutterwave.base_url) : créer un client, créer un
  * moyen de paiement mobile money, créer la charge qui référence les deux.
  *
- * Les montants Flutterwave sont en unité majeure (ex. 5000 = 5000 XOF),
- * contrairement à Stripe qui attend toujours des centimes — d'où la
- * conversion locale ci-dessous plutôt qu'une méthode publique sur Money
- * (Money reste toujours en unité mineure en interne, §4.2 CLAUDE.md).
+ * Les montants Flutterwave sont en unité majeure (ex. 5000 = 5000 XOF,
+ * 10.99 = 1099 centimes EUR), contrairement à Stripe qui attend toujours
+ * des centimes — d'où le passage par Money::decimalString() plutôt qu'un
+ * calcul local sur amountMinor() : Money reste toujours en unité mineure
+ * en interne (§4.2 CLAUDE.md), mais un intdiv() direct sur cette unité
+ * mineure tronquerait les décimales de toute devise à 2 chiffres (EUR,
+ * USD, CDF — ce dernier étant le marché prioritaire du §1) au lieu de les
+ * restituer. À vérifier avec un vrai compte Flutterwave : que l'API
+ * accepte bien un nombre décimal transmis en chaîne ("10.99") et pas
+ * seulement un nombre JSON.
  *
  * L'adresse exigée par la création du client n'est pas collectée par le
  * parcours d'achat actuel (T-051 : nom, e-mail, téléphone seulement) — les
@@ -29,14 +35,6 @@ use Illuminate\Support\Str;
  */
 final class FlutterwaveMobileMoneyProvider implements MobileMoneyProvider
 {
-    /**
-     * @var array<string, int>
-     */
-    private const ZERO_DECIMAL_CURRENCIES = [
-        'XOF' => 0,
-        'XAF' => 0,
-    ];
-
     /**
      * Clés numériques : PHP normalise automatiquement une clé de tableau
      * qui ressemble à un entier ("243") en entier — sans conséquence ici,
@@ -62,7 +60,7 @@ final class FlutterwaveMobileMoneyProvider implements MobileMoneyProvider
                 'currency' => $request->amount->currency(),
                 'customer_id' => $customerId,
                 'payment_method_id' => $paymentMethodId,
-                'amount' => $this->toMajorUnits($request->amount),
+                'amount' => $request->amount->decimalString(),
                 // org{id}-order{id} : le webhook (RecordFlutterwaveWebhookEvent)
                 // en a besoin pour poser le contexte multi-tenant avant de
                 // relire quoi que ce soit — la commande et le paiement sont
@@ -86,7 +84,11 @@ final class FlutterwaveMobileMoneyProvider implements MobileMoneyProvider
 
     public function getChargeStatus(string $chargeId): MobileMoneyChargeStatus
     {
-        $response = $this->client()->get("/charges/{$chargeId}");
+        try {
+            $response = $this->client()->get("/charges/{$chargeId}");
+        } catch (ConnectionException) {
+            throw MobileMoneyProviderUnavailableException::forProvider('flutterwave');
+        }
 
         if ($response->failed()) {
             throw MobileMoneyProviderUnavailableException::forProvider('flutterwave');
@@ -103,7 +105,7 @@ final class FlutterwaveMobileMoneyProvider implements MobileMoneyProvider
     {
         try {
             $response = $this->client()->post("/charges/{$chargeId}/refund", [
-                'amount' => $this->toMajorUnits($amount),
+                'amount' => $amount->decimalString(),
             ]);
 
             if ($response->failed()) {
@@ -161,12 +163,5 @@ final class FlutterwaveMobileMoneyProvider implements MobileMoneyProvider
         return Http::baseUrl((string) config('services.flutterwave.base_url'))
             ->withToken((string) config('services.flutterwave.secret'))
             ->acceptJson();
-    }
-
-    private function toMajorUnits(Money $amount): int
-    {
-        $exponent = self::ZERO_DECIMAL_CURRENCIES[$amount->currency()] ?? 2;
-
-        return intdiv($amount->amountMinor(), 10 ** $exponent);
     }
 }

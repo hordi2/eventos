@@ -8,6 +8,7 @@ use App\Domain\Ticketing\Actions\CreateOrder;
 use App\Domain\Ticketing\Actions\InitiateMobileMoneyPayment;
 use App\Domain\Ticketing\Models\PriceTier;
 use App\Domain\Ticketing\Models\TicketType;
+use App\Support\Money;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -47,6 +48,32 @@ it('initie une charge Mobile Money et crée un paiement en attente', function ()
 
     Http::assertSent(fn ($request): bool => str_contains($request->url(), '/payment-methods')
         && $request['mobile_money']['network'] === 'MTN');
+});
+
+it('transmet le montant exact à Flutterwave, sans tronquer les centimes', function (): void {
+    $organization = $this->organization;
+    $event = Event::factory()->for($organization)->create();
+    $ticketType = TicketType::factory()->for($organization)->create(['event_id' => $event->id]);
+    PriceTier::factory()->for($ticketType)->for($organization)->create(['name' => 'Normal', 'amount' => Money::fromMinorUnits(1099, 'EUR')]);
+
+    $order = app(CreateOrder::class)->handle(
+        $organization->id, $event->id,
+        ['name' => 'Alice Kouassi', 'email' => 'alice@example.com'],
+        [['ticket_type_id' => $ticketType->id, 'quantity' => 1]],
+        (string) Str::uuid(),
+    );
+
+    Http::fake([
+        '*/customers' => Http::response(['data' => ['id' => 'cus_123']], 200),
+        '*/payment-methods' => Http::response(['data' => ['id' => 'pmd_123']], 200),
+        '*/charges' => Http::response(['data' => ['id' => 'chg_123', 'status' => 'pending']], 200),
+    ]);
+
+    app(InitiateMobileMoneyPayment::class)->handle($order, '225', '0102030405', 'MTN');
+
+    Http::assertSent(fn ($request): bool => str_contains($request->url(), '/charges')
+        && $request['amount'] === '10.99'
+        && $request['currency'] === 'EUR');
 });
 
 it('bascule sur le paiement à l\'arrivée quand le prestataire est indisponible (mode dégradé)', function (): void {
