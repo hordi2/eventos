@@ -106,6 +106,7 @@ use App\Http\Controllers\Webhooks\FlutterwaveWebhookController;
 use App\Http\Controllers\Webhooks\PostmarkWebhookController;
 use App\Http\Controllers\Webhooks\StripeBillingWebhookController;
 use App\Http\Controllers\Webhooks\StripeWebhookController;
+use App\Http\Controllers\Webhooks\TwilioWhatsappInboundController;
 use App\Http\Controllers\Webhooks\TwilioWhatsappWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -781,6 +782,14 @@ Route::post('webhooks/postmark', PostmarkWebhookController::class)
 Route::post('webhooks/twilio-whatsapp/{organization}', TwilioWhatsappWebhookController::class)
     ->middleware('throttle:300,1')
     ->name('webhooks.twilio-whatsapp');
+
+// « Quand un message arrive » (D1, bouton de réponse rapide « Je viens » /
+// « Je ne viens pas ») : une seule URL pour toute la plateforme, à régler
+// une fois dans la console Twilio sur le numéro WhatsApp — voir
+// TwilioWhatsappInboundController pour pourquoi l'organisation n'y figure pas.
+Route::post('webhooks/twilio-whatsapp-inbound', TwilioWhatsappInboundController::class)
+    ->middleware('throttle:300,1')
+    ->name('webhooks.twilio-whatsapp.inbound');
 
 // Webhook Stripe (confirmation/échec de paiement, T-052) : public, protégé
 // par la signature Stripe-Signature (voir StripeWebhookController), jamais

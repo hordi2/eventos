@@ -35,6 +35,7 @@ final class ResolveMergeVariables
         'last_name' => '',
         'full_name' => 'cher invité',
         'rsvp_link' => '#',
+        'rsvp_reference' => '',
         'event_date' => 'date à confirmer',
         'event_location' => 'lieu à confirmer',
         'table' => '',
@@ -81,6 +82,10 @@ final class ResolveMergeVariables
             'last_name' => $contact->last_name,
             'full_name' => $contact->fullName(),
             'rsvp_link' => $event !== null ? $this->rsvpLink($event, $contact) : null,
+            // À poser dans la charge utile d'un bouton WhatsApp (D1) : lu
+            // tel quel par le webhook entrant pour retrouver l'invité, sans
+            // dépendre d'une organisation déjà connue dans l'URL de rappel.
+            'rsvp_reference' => $event !== null ? $this->rsvpReference($event, $contact) : null,
             'event_date' => $event !== null ? $this->eventDate($event) : null,
             'event_location' => $event !== null ? $this->eventLocation($event) : null,
             'table' => $event !== null
@@ -115,6 +120,23 @@ final class ResolveMergeVariables
         return $token !== null
             ? route('guest.registration.invitation.open', [$event->organization->slug, $event->slug, $token])
             : route('guest.registration.start', [$event->organization->slug, $event->slug]);
+    }
+
+    /**
+     * Organisation et jeton d'invitation, dans un seul repère stable
+     * ("org_id:invitation_token") : le webhook entrant Twilio n'a qu'une
+     * URL globale (un numéro WhatsApp pour toute la plateforme), jamais
+     * d'organisation dans le chemin — ce repère voyage donc dans la charge
+     * utile du bouton cliqué.
+     */
+    private function rsvpReference(Event $event, Contact $contact): ?string
+    {
+        $token = EventInvitee::query()
+            ->where('event_id', $event->id)
+            ->where('contact_id', $contact->id)
+            ->value('invitation_token');
+
+        return $token !== null ? "{$contact->organization_id}:{$token}" : null;
     }
 
     /**

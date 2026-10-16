@@ -14,7 +14,6 @@ use App\Domain\Form\Actions\UpdateRegistration;
 use App\Domain\Form\Data\AttendeeIdentity;
 use App\Domain\Form\Data\CompanionData;
 use App\Domain\Form\Data\EventEditPolicy;
-use App\Domain\Form\Data\EventRegistrationContext;
 use App\Domain\Form\Data\FormVisibilityContext;
 use App\Domain\Form\Data\RegistrationSubmissionMetadata;
 use App\Domain\Form\Data\SubmitRegistrationOutcome;
@@ -36,8 +35,6 @@ use App\Domain\Form\Support\FileUploadAnswer;
 use App\Domain\Form\Support\FormSettings;
 use App\Domain\Form\Support\IsRegistrationWindowOpen;
 use App\Domain\Form\Support\PresentRegistrationFiles;
-use App\Domain\Organization\Actions\GetEffectivePlan;
-use App\Domain\Organization\Actions\GetPlanQuotas;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Guest\SaveAnswersRequest;
 use App\Http\Requests\Guest\SaveIdentityRequest;
@@ -48,6 +45,7 @@ use App\Support\Events\EventCalendarLinks;
 use App\Support\GuestList\ResolveGuestInvitation;
 use App\Support\Messaging\GenerateEventIcs;
 use App\Support\Page\GetEventPage;
+use App\Support\Registration\BuildEventRegistrationContext;
 use App\Support\Registration\BuildGuestSubEventChoices;
 use App\Support\Registration\BuildGuestVisibilityContext;
 use App\Support\Registration\BuildSubEventContexts;
@@ -124,7 +122,7 @@ final class RegistrationController extends Controller
         $form = $this->requirePublishedForm($eventModel, is_string($slug) ? $slug : null);
         $this->captureAcquisitionMetadata($request);
 
-        if (! app(IsRegistrationWindowOpen::class)->handle($this->contextFor($eventModel))) {
+        if (! app(IsRegistrationWindowOpen::class)->handle(app(BuildEventRegistrationContext::class)->handle($eventModel))) {
             return view('guest.registration.closed', ['event' => $eventModel, 'reason' => 'window']);
         }
 
@@ -270,7 +268,7 @@ final class RegistrationController extends Controller
 
         try {
             $result = app(SubmitRegistration::class)->handle(
-                $this->contextFor($eventModel),
+                app(BuildEventRegistrationContext::class)->handle($eventModel),
                 $version,
                 new AttendeeIdentity($identity['email'] ?? '', $identity['first_name'] ?? null, $identity['last_name'] ?? null, $identity['phone'] ?? null, app(ResolveGuestInvitation::class)->handle($draft)?->contact->id),
                 $this->holderAnswers($draft),
@@ -664,7 +662,7 @@ final class RegistrationController extends Controller
         $eventModel = $this->event($request);
         $form = $this->requirePublishedForm($eventModel, $formSlug);
 
-        if (! app(IsRegistrationWindowOpen::class)->handle($this->contextFor($eventModel))) {
+        if (! app(IsRegistrationWindowOpen::class)->handle(app(BuildEventRegistrationContext::class)->handle($eventModel))) {
             return view('guest.registration.closed', ['event' => $eventModel, 'reason' => 'window']);
         }
 
@@ -709,26 +707,5 @@ final class RegistrationController extends Controller
         }
 
         return app(GetRemainingCapacity::class)->isFull('event', (string) $event->id, $event->capacity);
-    }
-
-    private function contextFor(Event $event): EventRegistrationContext
-    {
-        $event->loadMissing('organization');
-        $plan = app(GetEffectivePlan::class)->handle($event->organization);
-        $quotas = app(GetPlanQuotas::class)->handle($plan);
-
-        return new EventRegistrationContext(
-            eventId: $event->id,
-            organizationId: $event->organization_id,
-            capacity: $event->capacity,
-            allowWaitlist: $event->allow_waitlist,
-            registrationOpensAt: $event->registration_opens_at,
-            registrationClosesAt: $event->registration_closes_at,
-            timezone: $event->timezone,
-            registrationClosedMessage: $event->registration_closed_message,
-            organizationMonthlyRegistrationQuota: $quotas->registrationsPerMonth,
-            subEvents: app(BuildSubEventContexts::class)->handle($event),
-            requiresApproval: $event->requires_approval,
-        );
     }
 }

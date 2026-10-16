@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domain\CheckIn\Models\SeatAssignment;
 use App\Domain\CheckIn\Models\SeatingTable;
 use App\Domain\Contact\Models\Contact;
+use App\Domain\Contact\Models\EventInvitee;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\Venue;
 use App\Domain\Form\Models\RegistrationStatus;
@@ -31,6 +32,33 @@ it('résout les variables connues avec les données du contact et de l\'événem
     expect($resolved)->toContain('Salle Fleuve Congo');
     expect($resolved)->toContain('/r/itaza-events/gala-2026');
     expect($resolved)->not->toContain('{{');
+});
+
+it('résout {{rsvp_reference}} en organisation:jeton, pour le bouton WhatsApp', function (): void {
+    $organization = Organization::factory()->create();
+    app(CurrentOrganization::class)->set($organization);
+    $event = Event::factory()->for($organization)->create();
+    $contact = Contact::factory()->for($organization)->create();
+    $invitee = EventInvitee::factory()->create([
+        'organization_id' => $organization->id,
+        'event_id' => $event->id,
+        'contact_id' => $contact->id,
+    ]);
+
+    $resolved = app(ResolveMergeVariables::class)->resolve('{{rsvp_reference}}', $contact, $event);
+
+    expect($resolved)->toBe("{$organization->id}:{$invitee->invitation_token}");
+});
+
+it('affiche un repli vide pour {{rsvp_reference}} quand le contact n\'est pas sur la liste de l\'événement', function (): void {
+    $organization = Organization::factory()->create();
+    app(CurrentOrganization::class)->set($organization);
+    $event = Event::factory()->for($organization)->create();
+    $contact = Contact::factory()->for($organization)->create();
+
+    $resolved = app(ResolveMergeVariables::class)->resolve('[{{rsvp_reference}}]', $contact, $event);
+
+    expect($resolved)->toBe('[]');
 });
 
 it('affiche une valeur de repli quand une variable connue n\'a pas de donnée, jamais la balise brute', function (): void {
