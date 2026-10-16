@@ -116,7 +116,7 @@ it('règle le canal et les modèles des messages de suivi', function (): void {
 
     $this->actingAs($owner)->get('/whatsapp-templates')->assertInertia(fn ($page) => $page
         ->where('followUp.channel', 'email')
-        ->has('followUp.messages', 4));
+        ->has('followUp.messages', 5));
 
     $this->actingAs($owner)->post('/whatsapp-templates/follow-up', [
         'channel' => 'both',

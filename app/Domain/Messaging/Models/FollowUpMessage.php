@@ -15,6 +15,7 @@ enum FollowUpMessage: string
     case RegistrationRejected = 'registration_rejected';
     case DonationReceipt = 'donation_receipt';
     case RejectedFile = 'rejected_file';
+    case TicketIssued = 'ticket_issued';
 
     public function label(): string
     {
@@ -23,6 +24,7 @@ enum FollowUpMessage: string
             self::RegistrationRejected => 'Demande refusée',
             self::DonationReceipt => 'Reçu de don',
             self::RejectedFile => 'Fichier joint refusé',
+            self::TicketIssued => 'Billets émis',
         };
     }
 
@@ -33,6 +35,7 @@ enum FollowUpMessage: string
             self::RegistrationRejected => 'Quand vous refusez une demande.',
             self::DonationReceipt => 'Quand un don est réglé, avec son reçu.',
             self::RejectedFile => "Quand l'antivirus refuse un fichier envoyé par un invité.",
+            self::TicketIssued => "Quand une commande de billets est payée, en plus de l'e-mail avec les billets en pièce jointe.",
         };
     }
 

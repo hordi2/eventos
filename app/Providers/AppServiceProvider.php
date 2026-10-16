@@ -43,6 +43,7 @@ use App\Listeners\ReportHealthDiagnostics;
 use App\Listeners\SendConfirmationEmail;
 use App\Listeners\SendConfirmationWhatsapp;
 use App\Listeners\SendDonationReceipt;
+use App\Listeners\SendTicketEmail;
 use App\Listeners\Webhooks\DispatchRegistrationWebhooks;
 use App\Listeners\Webhooks\DispatchWaitlistWebhooks;
 use App\Support\Antivirus\ClamAvScanner;
@@ -118,6 +119,7 @@ class AppServiceProvider extends ServiceProvider
 
         // T-056 : reçu du don par e-mail une fois le paiement reçu.
         EventFacade::listen(OrderPaid::class, SendDonationReceipt::class);
+        EventFacade::listen(OrderPaid::class, SendTicketEmail::class);
 
         // Appel à contributions (D6) : accusé de réception au dépôt, réponse
         // une fois le sujet tranché. Toujours par e-mail : le proposant n'a
