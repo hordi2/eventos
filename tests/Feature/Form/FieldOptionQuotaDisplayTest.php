@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domain\Event\Models\EventType;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationDraft;
 use Illuminate\Support\Facades\URL;
@@ -24,7 +25,7 @@ it('grise l\'option de menu complète, sans empêcher l\'invité qui l\'a déjà
                 ['label' => 'Poulet'],
             ],
         ],
-    ]);
+    ], ['type' => EventType::Conference]);
     $base = "/r/{$organization->slug}/{$event->slug}";
 
     // Awa prend la seule part de poisson disponible.
@@ -63,7 +64,7 @@ it('ne grise jamais, à la modification, l\'option déjà détenue par l\'invit�
                 ['label' => 'Poulet'],
             ],
         ],
-    ], ['allow_guest_edit' => true]);
+    ], ['type' => EventType::Conference, 'allow_guest_edit' => true]);
     $base = "/r/{$organization->slug}/{$event->slug}";
 
     answerAsGuest($this, $event, $base, 'awa@example.com', ['menu' => 'poisson']);
