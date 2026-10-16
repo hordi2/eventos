@@ -35,6 +35,11 @@ final class CreateEventRequest extends FormRequest
             'registration_opens_at' => ['nullable', 'date'],
             'registration_closes_at' => ['nullable', 'date'],
             'requires_approval' => ['boolean'],
+            'allow_guest_edit' => ['boolean'],
+            // À l'heure de l'événement (résolu comme les autres dates optionnelles).
+            'edit_deadline' => ['nullable', 'date'],
+            'is_online' => ['boolean'],
+            'online_url' => ['nullable', 'url', 'required_if:is_online,true', 'max:2048'],
             'locale' => ['nullable', 'string', Rule::in(array_keys(GuestLocales::SUPPORTED))],
             // Vide : aucune limite de places, comme pour une session (T-024).
             'capacity' => ['nullable', 'integer', 'min:1', 'max:1000000'],

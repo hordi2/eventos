@@ -20,6 +20,9 @@ interface EventLayoutProps {
 const STATUS_MESSAGES: Record<string, string> = {
     'event-published': 'Événement publié : son lien public accepte les inscriptions.',
     'event-unpublished': "Événement repassé en « Inédit » : sa page publique et les inscriptions sont fermées.",
+    'event-archived': 'Événement archivé : sa page publique et les inscriptions sont fermées.',
+    'password-set': 'Mot de passe enregistré.',
+    'password-cleared': 'Mot de passe retiré : le lien seul suffit de nouveau.',
     'promo-code-saved': 'Code promo enregistré.',
     'promo-code-deleted': 'Code promo supprimé : il ne fonctionne plus.',
     'registration-approved': "Inscription acceptée : l'invité est prévenu et sa place est confirmée.",

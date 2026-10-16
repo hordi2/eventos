@@ -28,6 +28,7 @@ interface GuestListPageProps {
     needsAgreement: boolean;
     maxCompanions: number;
     accessClosed: boolean;
+    passwordProtected: boolean;
     canChangeAccess: boolean;
     canSend: boolean;
     emailTemplates: TemplateOption[];
@@ -81,6 +82,7 @@ export default function Index({
     needsAgreement,
     maxCompanions,
     accessClosed,
+    passwordProtected,
     canChangeAccess,
     canSend,
     emailTemplates,
@@ -93,6 +95,8 @@ export default function Index({
     const [copiedId, setCopiedId] = useState<number | null>(null);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [sendOpen, setSendOpen] = useState(false);
+    const [passwordInput, setPasswordInput] = useState('');
+    const [passwordError, setPasswordError] = useState<string | null>(null);
     const pageIds = invitees.data.map((invitee) => invitee.id);
     const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
 
@@ -145,6 +149,27 @@ export default function Index({
 
     function setAccess(closed: boolean) {
         router.patch(`${listUrl}/access`, { closed }, { preserveScroll: true });
+    }
+
+    function submitPassword(formEvent: FormEvent) {
+        formEvent.preventDefault();
+        setPasswordError(null);
+        const trimmed = passwordInput.trim();
+        router.patch(
+            `${listUrl}/password`,
+            { password: trimmed === '' ? null : trimmed },
+            {
+                preserveScroll: true,
+                onSuccess: () => setPasswordInput(''),
+                onError: (errors) => setPasswordError(errors.password ?? null),
+            },
+        );
+    }
+
+    function clearPassword() {
+        if (window.confirm("Retirer le mot de passe ? L'événement redevient accessible sans lui.")) {
+            router.patch(`${listUrl}/password`, { password: null }, { preserveScroll: true, onSuccess: () => setPasswordInput('') });
+        }
     }
 
     function renewLink(invitee: InviteeRow) {
@@ -207,6 +232,37 @@ export default function Index({
                                 : "Pour l'instant, toute personne qui a le lien de l'événement peut répondre. Activez pour le réserver à vos invités."}
                         </p>
                     </div>
+                </section>
+            )}
+
+            {canChangeAccess && (
+                <section className="mb-6 rounded-card bg-bg p-4 ring-1 ring-line">
+                    <p className="text-sm text-ink">Mot de passe</p>
+                    <p className="mt-1 text-sm text-ink-soft">
+                        {passwordProtected
+                            ? "Un mot de passe protège déjà cet événement : toute personne qui a le lien doit aussi le connaître pour répondre."
+                            : "Aucun mot de passe pour l'instant. Posez-en un pour que le lien seul ne suffise pas."}
+                    </p>
+                    <form onSubmit={submitPassword} className="mt-3 flex flex-wrap items-start gap-3">
+                        <div>
+                            <TextInput
+                                type="password"
+                                value={passwordInput}
+                                onChange={(e) => setPasswordInput(e.target.value)}
+                                placeholder={passwordProtected ? 'Nouveau mot de passe' : 'Choisir un mot de passe'}
+                                autoComplete="new-password"
+                            />
+                            {passwordError && <p className="mt-1 text-xs text-danger">{passwordError}</p>}
+                        </div>
+                        <Button type="submit" variant="secondary" className="sm:w-auto">
+                            {passwordProtected ? 'Changer le mot de passe' : 'Activer'}
+                        </Button>
+                        {passwordProtected && (
+                            <Button type="button" variant="secondary" onClick={clearPassword} className="sm:w-auto">
+                                Retirer la protection
+                            </Button>
+                        )}
+                    </form>
                 </section>
             )}
 

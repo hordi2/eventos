@@ -39,6 +39,10 @@ interface EventDraft {
     registrationOpensAt: string | null;
     registrationClosesAt: string | null;
     requiresApproval: boolean;
+    allowGuestEdit: boolean;
+    editDeadline: string | null;
+    isOnline: boolean;
+    onlineUrl: string | null;
     locale: string;
     capacity: number | null;
     allowWaitlist: boolean;
@@ -189,6 +193,10 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
         registration_opens_at: event?.registrationOpensAt ? toDatetimeLocalValue(event.registrationOpensAt, event.timezone) : '',
         registration_closes_at: event?.registrationClosesAt ? toDatetimeLocalValue(event.registrationClosesAt, event.timezone) : '',
         requires_approval: event?.requiresApproval ?? false,
+        allow_guest_edit: event?.allowGuestEdit ?? false,
+        edit_deadline: event?.editDeadline ? toDatetimeLocalValue(event.editDeadline, event.timezone) : '',
+        is_online: event?.isOnline ?? false,
+        online_url: event?.onlineUrl ?? '',
         locale: event?.locale ?? 'fr',
         capacity: event?.capacity != null ? String(event.capacity) : '',
         allow_waitlist: event?.allowWaitlist ?? false,
@@ -630,6 +638,34 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                                 </span>
                             </span>
                         </label>
+
+                        <label className="mt-6 flex cursor-pointer items-start gap-3">
+                            <Checkbox
+                                checked={data.allow_guest_edit}
+                                onChange={(e) => setData('allow_guest_edit', e.target.checked)}
+                                className="mt-1"
+                            />
+                            <span>
+                                <span className="block text-sm text-ink">L'invité peut modifier sa réponse</span>
+                                <span className="block text-xs text-ink-soft">
+                                    Il peut revenir sur sa réponse (accompagnants, allergies, champs du formulaire…) depuis son lien personnel.
+                                </span>
+                            </span>
+                        </label>
+
+                        {data.allow_guest_edit && (
+                            <div className="mt-3 ml-8 sm:max-w-xs">
+                                <InputLabel htmlFor="edit_deadline">Jusqu'à quand (optionnel)</InputLabel>
+                                <TextInput
+                                    id="edit_deadline"
+                                    type="datetime-local"
+                                    value={data.edit_deadline}
+                                    onChange={(e) => setData('edit_deadline', e.target.value)}
+                                />
+                                <InputError message={errors.edit_deadline} />
+                                <p className="mt-1.5 text-xs text-ink-soft">Sans date, la modification reste possible jusqu'au bout.</p>
+                            </div>
+                        )}
                     </fieldset>
 
                     <div>
@@ -647,6 +683,34 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                                 Nouveau lieu
                             </VenueModeButton>
                         </div>
+
+                        <label className="mt-4 flex cursor-pointer items-start gap-3">
+                            <Checkbox
+                                checked={data.is_online}
+                                onChange={(e) => setData('is_online', e.target.checked)}
+                                className="mt-1"
+                            />
+                            <span>
+                                <span className="block text-sm text-ink">C'est un événement en ligne</span>
+                                <span className="block text-xs text-ink-soft">
+                                    En plus du lieu, ou à sa place : un lien de visioconférence est proposé à l'invité.
+                                </span>
+                            </span>
+                        </label>
+
+                        {data.is_online && (
+                            <div className="mt-3">
+                                <InputLabel htmlFor="online_url">Lien de la visioconférence</InputLabel>
+                                <TextInput
+                                    id="online_url"
+                                    type="url"
+                                    value={data.online_url}
+                                    onChange={(e) => setData('online_url', e.target.value)}
+                                    placeholder="https://meet.example/mon-evenement"
+                                />
+                                <InputError message={errors.online_url} />
+                            </div>
+                        )}
 
                         {venueMode === 'existing' && (
                             <div className="mt-3">
@@ -796,6 +860,8 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                             value={event.registrationClosesAt ? formatInEventTimezone(event.registrationClosesAt, event.timezone) : 'Aucune'}
                         />
                         {event.venueName && <Row label="Lieu" value={event.venueName} />}
+                        {event.isOnline && <Row label="En ligne" value={event.onlineUrl ?? 'Lien à venir'} />}
+                        <Row label="Modification par l'invité" value={event.allowGuestEdit ? 'Autorisée' : 'Désactivée'} />
                     </dl>
 
                     <div className="flex flex-wrap gap-4">

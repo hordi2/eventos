@@ -98,6 +98,22 @@ it('utilise le type "other" et une fin à +3h par défaut quand ils sont omis', 
     expect($event->start_at->diffInHours($event->end_at))->toBe(3.0);
 });
 
+it('interprète l\'échéance de modification dans le fuseau de l\'événement, pas celui du serveur', function (): void {
+    [$organization, $admin] = organizationWithMember(MembershipRole::Owner);
+
+    $event = app(CreateEvent::class)->handle($organization, $admin, [
+        'title' => 'Conférence',
+        'type' => EventType::Conference,
+        'start_at' => now()->addWeek(),
+        'end_at' => now()->addWeek()->addHours(3),
+        'timezone' => 'Africa/Kinshasa',
+        'edit_deadline' => '2026-09-08T14:30',
+    ]);
+
+    // 14h30 à Kinshasa (UTC+1, sans heure d'été) doit être stockée comme 13h30 UTC.
+    expect($event->edit_deadline->utc()->format('H:i'))->toBe('13:30');
+});
+
 it('rejette un fuseau horaire qui n\'est pas dans la liste IANA', function (): void {
     [$organization, $admin] = organizationWithMember(MembershipRole::Owner);
 

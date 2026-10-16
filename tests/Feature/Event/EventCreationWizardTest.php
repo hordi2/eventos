@@ -173,6 +173,53 @@ it('crée un nouveau lieu à la volée et l\'attache à l\'événement', functio
     expect($event->venue->organization_id)->toBe($organization->id);
 });
 
+it('enregistre un événement en ligne avec son lien de visioconférence', function (): void {
+    [$organization, $admin] = organizationWithRole(MembershipRole::Admin);
+
+    $response = $this->actingAs($admin)->post('/events', [
+        'title' => 'Conférence en ligne',
+        'start_at' => '2026-09-08T14:30',
+        'timezone' => 'Africa/Kinshasa',
+        'is_online' => true,
+        'online_url' => 'https://meet.example/conference',
+    ]);
+
+    $event = Event::query()->where('organization_id', $organization->id)->firstOrFail();
+    $response->assertRedirect(route('events.show', $event));
+    expect($event->is_online)->toBeTrue();
+    expect($event->online_url)->toBe('https://meet.example/conference');
+});
+
+it('refuse un événement en ligne sans lien de visioconférence', function (): void {
+    [, $admin] = organizationWithRole(MembershipRole::Admin);
+
+    $response = $this->actingAs($admin)->post('/events', [
+        'title' => 'Conférence en ligne',
+        'start_at' => '2026-09-08T14:30',
+        'timezone' => 'Africa/Kinshasa',
+        'is_online' => true,
+    ]);
+
+    $response->assertSessionHasErrors('online_url');
+});
+
+it('autorise la modification par l\'invité avec une échéance', function (): void {
+    [$organization, $editor] = organizationWithRole(MembershipRole::Editor);
+    $event = Event::factory()->for($organization)->create();
+
+    $response = $this->actingAs($editor)->patch("/events/{$event->id}", [
+        'title' => $event->title,
+        'start_at' => '2026-09-08T14:30',
+        'timezone' => $event->timezone,
+        'allow_guest_edit' => true,
+        'edit_deadline' => '2026-09-01T00:00',
+    ]);
+
+    $response->assertRedirect(route('events.edit', $event));
+    expect($event->fresh()->allow_guest_edit)->toBeTrue();
+    expect($event->fresh()->edit_deadline)->not->toBeNull();
+});
+
 it('refuse un venue_id appartenant à une autre organisation', function (): void {
     [, $admin] = organizationWithRole(MembershipRole::Admin);
 

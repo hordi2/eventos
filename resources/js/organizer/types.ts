@@ -64,6 +64,8 @@ export interface EventNav {
     publicUrl: string | null;
     previewUrl: string | null;
     canChangeStatus: boolean;
+    canArchive: boolean;
+    canDelete: boolean;
     links: Record<EventNavLinkKey, string | null>;
 }
 

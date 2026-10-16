@@ -57,6 +57,25 @@ it('interprète une date de début envoyée sans fuseau dans le fuseau de l\'év
     expect($updated->start_at->utc()->format('H:i'))->toBe('13:30');
 });
 
+it('interprète l\'échéance de modification dans le fuseau de l\'événement, pas celui du serveur', function (): void {
+    [$organization, $admin] = organizationWithEditor(MembershipRole::Admin);
+    $event = Event::factory()->for($organization)->create(['timezone' => 'Africa/Kinshasa']);
+
+    $updated = app(UpdateEvent::class)->handle($event, $admin, ['edit_deadline' => '2026-09-08T14:30']);
+
+    // 14h30 à Kinshasa (UTC+1, sans heure d'été) doit être stockée comme 13h30 UTC.
+    expect($updated->edit_deadline->utc()->format('H:i'))->toBe('13:30');
+});
+
+it('retire l\'échéance de modification quand elle est envoyée vide', function (): void {
+    [$organization, $admin] = organizationWithEditor(MembershipRole::Admin);
+    $event = Event::factory()->for($organization)->create(['edit_deadline' => now()]);
+
+    $updated = app(UpdateEvent::class)->handle($event, $admin, ['edit_deadline' => null]);
+
+    expect($updated->edit_deadline)->toBeNull();
+});
+
 it('recalcule une fin par défaut quand end_at est envoyé vide', function (): void {
     [$organization, $admin] = organizationWithEditor(MembershipRole::Admin);
     $event = Event::factory()->for($organization)->create(['timezone' => 'UTC']);

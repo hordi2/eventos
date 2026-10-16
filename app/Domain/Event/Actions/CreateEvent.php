@@ -72,7 +72,7 @@ final class CreateEvent
             'has_participant_app' => $data['has_participant_app'] ?? false,
             'has_speaker_qa' => $data['has_speaker_qa'] ?? false,
             'has_live_polls' => $data['has_live_polls'] ?? false,
-            'edit_deadline' => $data['edit_deadline'] ?? null,
+            'edit_deadline' => isset($data['edit_deadline']) ? $this->resolveDateTime($data['edit_deadline'], $data['timezone']) : null,
             'currency' => $data['currency'] ?? null,
         ]);
     }

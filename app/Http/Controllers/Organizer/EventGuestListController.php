@@ -9,12 +9,14 @@ use App\Domain\Contact\Actions\RemoveEventInvitee;
 use App\Domain\Contact\Actions\UpdateEventInvitee;
 use App\Domain\Contact\Models\EventInvitee;
 use App\Domain\Contact\Support\GuestListTemplate;
+use App\Domain\Event\Actions\SetEventPassword;
 use App\Domain\Event\Actions\UpdateEventGuestListAccess;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventAccessMode;
 use App\Domain\Form\Support\FormSettings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\GuestList\SaveEventInviteeRequest;
+use App\Http\Requests\Organizer\GuestList\UpdateEventPasswordRequest;
 use App\Http\Requests\Organizer\GuestList\UpdateGuestListAccessRequest;
 use App\Models\User;
 use App\Support\GuestList\PresentEventGuestList;
@@ -99,6 +101,16 @@ final class EventGuestListController extends Controller
         return back()->with('status', $request->boolean('closed') ? 'guest-list-closed' : 'guest-list-opened');
     }
 
+    public function password(UpdateEventPasswordRequest $request, int $event, SetEventPassword $setEventPassword): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $setEventPassword->handle(Event::query()->findOrFail($event), $user, $request->string('password')->toString() ?: null);
+
+        return back()->with('status', $request->filled('password') ? 'password-set' : 'password-cleared');
+    }
+
     public function template(int $event, GuestListTemplate $guestListTemplate): BinaryFileResponse
     {
         Gate::authorize('viewGuests', Event::query()->findOrFail($event)->organization);
@@ -107,7 +119,7 @@ final class EventGuestListController extends Controller
     }
 
     /**
-     * @return array{canEdit: bool, needsAgreement: bool, accessClosed: bool, canChangeAccess: bool, canSend: bool}
+     * @return array{canEdit: bool, needsAgreement: bool, accessClosed: bool, passwordProtected: bool, canChangeAccess: bool, canSend: bool}
      */
     private function abilities(Event $event): array
     {
@@ -117,6 +129,7 @@ final class EventGuestListController extends Controller
             'canEdit' => $canEdit,
             'needsAgreement' => $canEdit && $event->organization->sender_agreement_accepted_at === null,
             'accessClosed' => $event->access_mode === EventAccessMode::ClosedList,
+            'passwordProtected' => $event->access_mode === EventAccessMode::Password,
             'canChangeAccess' => Gate::allows('update', $event),
             'canSend' => Gate::allows('sendCommunications', $event->organization),
         ];

@@ -57,7 +57,7 @@ export default function EventStatusMenu({ nav }: { nav: EventNav }) {
         </span>
     );
 
-    if (!nav.canChangeStatus) {
+    if (!nav.canChangeStatus && !nav.canDelete) {
         return <span className="inline-flex items-center rounded-pill border border-line bg-bg px-4 py-2 text-sm text-ink">{badge}</span>;
     }
 
@@ -71,6 +71,22 @@ export default function EventStatusMenu({ nav }: { nav: EventNav }) {
 
         if (confirm("Repasser l'événement en « Inédit » ? Sa page publique et les inscriptions seront fermées jusqu'à la prochaine publication.")) {
             router.post(`/events/${nav.id}/unpublish`, {}, { preserveScroll: true });
+        }
+    }
+
+    function archive() {
+        setOpen(false);
+
+        if (confirm("Archiver cet événement ? Sa page publique et les inscriptions seront fermées, définitivement cette fois.")) {
+            router.post(`/events/${nav.id}/archive`, {}, { preserveScroll: true });
+        }
+    }
+
+    function destroyEvent() {
+        setOpen(false);
+
+        if (confirm(`Supprimer « ${nav.title} » ? Impossible si des invités y sont déjà inscrits.`)) {
+            router.delete(`/events/${nav.id}`);
         }
     }
 
@@ -95,18 +111,22 @@ export default function EventStatusMenu({ nav }: { nav: EventNav }) {
 
             {open && (
                 <div role="menu" className="absolute top-full right-0 z-40 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-card border border-line bg-bg p-2 shadow-lg">
-                    <StatusOption
-                        title="Publié"
-                        description="Le lien public est en ligne et accepte les inscriptions."
-                        selected={nav.status === 'published'}
-                        onSelect={nav.status === 'draft' ? publish : undefined}
-                    />
-                    <StatusOption
-                        title="Inédit"
-                        description="Page publique et inscriptions fermées : visible seulement avec le lien de test."
-                        selected={nav.status === 'draft'}
-                        onSelect={nav.status === 'published' ? unpublish : undefined}
-                    />
+                    {nav.canChangeStatus && (
+                        <>
+                            <StatusOption
+                                title="Publié"
+                                description="Le lien public est en ligne et accepte les inscriptions."
+                                selected={nav.status === 'published'}
+                                onSelect={nav.status === 'draft' ? publish : undefined}
+                            />
+                            <StatusOption
+                                title="Inédit"
+                                description="Page publique et inscriptions fermées : visible seulement avec le lien de test."
+                                selected={nav.status === 'draft'}
+                                onSelect={nav.status === 'published' ? unpublish : undefined}
+                            />
+                        </>
+                    )}
 
                     <div className="my-2 border-t border-line" />
 
@@ -137,6 +157,31 @@ export default function EventStatusMenu({ nav }: { nav: EventNav }) {
                         <span className="flex-1">Calendrier d'ouverture</span>
                         <span className="rounded-pill border border-line px-2 py-0.5 text-[10px] tracking-[0.08em] uppercase">Bientôt</span>
                     </span>
+
+                    {(nav.canArchive || nav.canDelete) && <div className="my-2 border-t border-line" />}
+
+                    {nav.canArchive && (
+                        <button
+                            type="button"
+                            role="menuitem"
+                            onClick={archive}
+                            className="flex w-full items-center gap-3 rounded-card px-3 py-2.5 text-left text-sm text-ink hover:bg-bg-alt"
+                        >
+                            <EventIcon name="archive" className="h-4 w-4 text-ink-soft" />
+                            Archiver l'événement
+                        </button>
+                    )}
+                    {nav.canDelete && (
+                        <button
+                            type="button"
+                            role="menuitem"
+                            onClick={destroyEvent}
+                            className="flex w-full items-center gap-3 rounded-card px-3 py-2.5 text-left text-sm text-danger hover:bg-danger-bg"
+                        >
+                            <EventIcon name="trash" className="h-4 w-4" />
+                            Supprimer l'événement
+                        </button>
+                    )}
                 </div>
             )}
         </div>

@@ -65,8 +65,10 @@ final class UpdateEvent
 
         // Dates d'ouverture saisies à l'heure de l'événement (règle 4.3) ; une
         // valeur vide retire la borne : inscriptions ouvertes dès maintenant,
-        // ou jusqu'au bout.
-        foreach (['registration_opens_at', 'registration_closes_at'] as $key) {
+        // ou jusqu'au bout. edit_deadline suit la même règle : une échéance de
+        // modification se fixe aussi à l'heure de l'événement, jamais celle du
+        // serveur.
+        foreach (['registration_opens_at', 'registration_closes_at', 'edit_deadline'] as $key) {
             if (array_key_exists($key, $data)) {
                 $data[$key] = $data[$key] !== null ? CarbonImmutable::parse($data[$key], $timezone)->utc() : null;
             }

@@ -108,6 +108,10 @@ export default function Dashboard({ events, canCreateEvents }: Props) {
                 </div>
             )}
 
+            {flash.status === 'event-deleted' && (
+                <div className="mb-8 rounded-card bg-success-bg p-4 text-sm text-success ring-1 ring-success/30">Événement supprimé.</div>
+            )}
+
             <div className="mb-8 flex flex-wrap items-center gap-4">
                 <div className="relative flex-1">
                     <svg

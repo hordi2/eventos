@@ -69,6 +69,8 @@ final class BuildEventNavigation
             'publicUrl' => $event->status === EventStatus::Published ? $this->eventPublicLinks->publicUrl($event) : null,
             'previewUrl' => $canUpdate && $event->status === EventStatus::Draft ? $this->eventPublicLinks->previewUrl($event) : null,
             'canChangeStatus' => $canUpdate && $event->status !== EventStatus::Archived,
+            'canArchive' => $gate->allows('archive', $event) && $event->status !== EventStatus::Archived,
+            'canDelete' => $gate->allows('delete', $event),
             'links' => $this->links($gate, $user, $event, $canUpdate),
         ];
     }

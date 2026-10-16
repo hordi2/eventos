@@ -28,6 +28,8 @@ const ICON_PATHS = {
     check: 'M5 12.5l4.5 4.5L19 7.5',
     chevronRight: 'M9 6l6 6-6 6',
     chevronDown: 'M6 9l6 6 6-6',
+    archive: 'M3 4h18v4H3zM5 8v12h14V8M10 13h4',
+    trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6',
 } as const;
 
 export type EventIconName = keyof typeof ICON_PATHS;

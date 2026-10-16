@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Organizer;
 use App\Domain\Event\Actions\CreateEvent;
 use App\Domain\Event\Actions\DuplicateEvent;
 use App\Domain\Event\Actions\UpdateEvent;
+use App\Domain\Event\CannotDeleteEventException;
 use App\Domain\Event\Data\EventDuplicationPart;
 use App\Domain\Event\Models\Event;
 use App\Domain\Event\Models\EventAudience;
@@ -20,6 +21,7 @@ use App\Http\Requests\Organizer\Event\DuplicateEventRequest;
 use App\Http\Requests\Organizer\Event\UpdateEventRequest;
 use App\Models\User;
 use App\Support\Assistant\AnthropicAssistant;
+use App\Support\Events\DeleteEventWithRegistrationsCheck;
 use App\Support\Guest\GuestLocales;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Carbon\CarbonImmutable;
@@ -80,6 +82,20 @@ final class EventController extends Controller
         $updated = $action->handle($this->findEvent($event), $request->user(), $request->validated());
 
         return redirect()->route('events.edit', $updated);
+    }
+
+    public function destroy(Request $request, int $event, DeleteEventWithRegistrationsCheck $deleteEvent): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        try {
+            $deleteEvent->handle($this->findEvent($event), $user);
+        } catch (CannotDeleteEventException $exception) {
+            return back()->withErrors(['status' => $exception->getMessage()]);
+        }
+
+        return redirect()->route('dashboard')->with('status', 'event-deleted');
     }
 
     public function duplicate(DuplicateEventRequest $request, int $event, DuplicateEvent $action): RedirectResponse
@@ -158,6 +174,10 @@ final class EventController extends Controller
             'registrationOpensAt' => $event->registration_opens_at?->toIso8601String(),
             'registrationClosesAt' => $event->registration_closes_at?->toIso8601String(),
             'requiresApproval' => $event->requires_approval,
+            'allowGuestEdit' => (bool) $event->allow_guest_edit,
+            'editDeadline' => $event->edit_deadline?->toIso8601String(),
+            'isOnline' => (bool) $event->is_online,
+            'onlineUrl' => $event->online_url,
             'locale' => $event->locale,
             'capacity' => $event->capacity,
             'allowWaitlist' => $event->allow_waitlist,

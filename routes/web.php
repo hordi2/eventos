@@ -337,9 +337,11 @@ Route::middleware('auth')->group(function (): void {
         Route::post('events/{event}/checklist', [EventChecklistController::class, 'mark'])->name('events.checklist.mark');
         Route::post('events/{event}/publish', [EventPublicationController::class, 'publish'])->name('events.publish');
         Route::post('events/{event}/unpublish', [EventPublicationController::class, 'unpublish'])->name('events.unpublish');
+        Route::post('events/{event}/archive', [EventPublicationController::class, 'archive'])->name('events.archive');
 
         Route::get('events/{event}/edit', [EventController::class, 'edit'])->name('events.edit');
         Route::patch('events/{event}', [EventController::class, 'update'])->name('events.update');
+        Route::delete('events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
         Route::post('events/{event}/duplicate', [EventController::class, 'duplicate'])->name('events.duplicate');
 
         // Intervenants et programme (D6).
@@ -494,6 +496,7 @@ Route::middleware('auth')->group(function (): void {
         Route::post('events/{event}/guest-list', [EventGuestListController::class, 'store'])->name('events.guest-list.store');
         Route::get('events/{event}/guest-list/template', [EventGuestListController::class, 'template'])->name('events.guest-list.template');
         Route::patch('events/{event}/guest-list/access', [EventGuestListController::class, 'access'])->name('events.guest-list.access');
+        Route::patch('events/{event}/guest-list/password', [EventGuestListController::class, 'password'])->name('events.guest-list.password');
         // Envoi groupé des invitations : aperçu, puis envoi (débit limité, §7).
         Route::get('events/{event}/guest-list/send/preview', [EventInvitationSendController::class, 'preview'])->name('events.guest-list.send.preview');
         Route::post('events/{event}/guest-list/send', [EventInvitationSendController::class, 'store'])->middleware('throttle:10,1')->name('events.guest-list.send');

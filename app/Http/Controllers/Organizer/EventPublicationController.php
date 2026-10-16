@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Organizer;
 
+use App\Domain\Event\Actions\ArchiveEvent;
 use App\Domain\Event\Actions\UnpublishEvent;
 use App\Domain\Event\InvalidEventTransitionException;
 use App\Domain\Event\Models\Event;
@@ -44,5 +45,19 @@ final class EventPublicationController extends Controller
         }
 
         return back()->with('status', 'event-unpublished');
+    }
+
+    public function archive(Request $request, int $event, ArchiveEvent $archiveEvent): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        try {
+            $archiveEvent->handle(Event::query()->findOrFail($event), $user);
+        } catch (InvalidEventTransitionException $exception) {
+            return back()->withErrors(['status' => $exception->getMessage()]);
+        }
+
+        return back()->with('status', 'event-archived');
     }
 }
