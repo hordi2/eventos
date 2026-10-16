@@ -125,11 +125,21 @@
 
         @case('single_choice')
         @case('meal_choice')
+            @php($currentValue = old($oldKey, $value))
             <div role="radiogroup" aria-labelledby="{{ $inputId }}" class="space-y-2">
                 @foreach ($field->options as $option)
-                    <label class="flex items-center gap-2 text-sm text-ink">
-                        <input type="radio" name="{{ $inputName }}" value="{{ $option->value }}" @checked(old($oldKey, $value) === $option->value) @if ($field->is_required) required @endif>
+                    @php($isChosen = $currentValue === $option->value)
+                    {{-- Option en rupture (M2.4 du cahier des charges) : grisée
+                         avec la mention « Complet », jamais une liste d'attente
+                         — sauf si c'est déjà la réponse enregistrée de cet
+                         invité, qui garde sa place. --}}
+                    @php($isFull = ! $isChosen && \App\Domain\Form\Support\FieldOptionAvailability::isFull($option))
+                    <label class="flex items-center gap-2 text-sm text-ink {{ $isFull ? 'opacity-60' : '' }}">
+                        <input type="radio" name="{{ $inputName }}" value="{{ $option->value }}" @checked($isChosen) @disabled($isFull) @if ($field->is_required) required @endif>
                         {{ $option->label }}
+                        @if ($isFull)
+                            <span class="text-xs text-ink-soft">({{ __('Complet') }})</span>
+                        @endif
                     </label>
                 @endforeach
             </div>
@@ -139,9 +149,14 @@
             @php($selected = (array) old($oldKey, $value ?? []))
             <div class="space-y-2">
                 @foreach ($field->options as $option)
-                    <label class="flex items-center gap-2 text-sm text-ink">
-                        <input type="checkbox" name="{{ $inputName }}[]" value="{{ $option->value }}" @checked(in_array($option->value, $selected, true))>
+                    @php($isChosen = in_array($option->value, $selected, true))
+                    @php($isFull = ! $isChosen && \App\Domain\Form\Support\FieldOptionAvailability::isFull($option))
+                    <label class="flex items-center gap-2 text-sm text-ink {{ $isFull ? 'opacity-60' : '' }}">
+                        <input type="checkbox" name="{{ $inputName }}[]" value="{{ $option->value }}" @checked($isChosen) @disabled($isFull)>
                         {{ $option->label }}
+                        @if ($isFull)
+                            <span class="text-xs text-ink-soft">({{ __('Complet') }})</span>
+                        @endif
                     </label>
                 @endforeach
             </div>
@@ -179,7 +194,9 @@
             >
                 <option value="">Choisissez…</option>
                 @foreach ($field->options as $option)
-                    <option value="{{ $option->value }}" @selected(old($oldKey, $value) === $option->value)>{{ $option->label }}</option>
+                    @php($isChosen = old($oldKey, $value) === $option->value)
+                    @php($isFull = ! $isChosen && \App\Domain\Form\Support\FieldOptionAvailability::isFull($option))
+                    <option value="{{ $option->value }}" @selected($isChosen) @disabled($isFull)>{{ $option->label }}{{ $isFull ? ' ('.__('Complet').')' : '' }}</option>
                 @endforeach
             </select>
             @break
