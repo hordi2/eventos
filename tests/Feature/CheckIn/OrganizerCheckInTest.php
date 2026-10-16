@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\CheckIn\Models\CheckIn;
+use App\Domain\Event\Models\Event;
 use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Organization\Models\Organization;
 use App\Domain\Ticketing\Actions\GenerateTicketQrToken;
@@ -72,6 +73,24 @@ it('refuse un jeton de billet illisible', function (): void {
     $response = $this->actingAs($doorStaff)->postJson("/events/{$event->id}/check-in/scan", ['token' => 'pas-un-jwt']);
 
     $response->assertUnprocessable();
+    // Un 422 porte toujours {error} : c'est ce que le front (describeCheckInFailure)
+    // affiche tel quel, jamais un message générique inventé côté client.
+    $response->assertJsonStructure(['error']);
+});
+
+it('renvoie un message d\'erreur explicite pour le billet d\'un autre événement', function (): void {
+    config(['services.ticket_qr.secret' => 'test-qr-secret-au-moins-256-bits-pour-hs256']);
+    ['organization' => $organization, 'event' => $event, 'doorStaff' => $doorStaff] = makeCheckInEvent();
+    app(CurrentOrganization::class)->set($organization);
+    $otherEvent = Event::factory()->for($organization)->published()->create();
+    app(CurrentOrganization::class)->clear();
+    $ticket = makePaidTicket($organization, $otherEvent);
+    $token = generateQrTokenFor($ticket, $organization);
+
+    $response = $this->actingAs($doorStaff)->postJson("/events/{$event->id}/check-in/scan", ['token' => $token]);
+
+    $response->assertUnprocessable();
+    $response->assertJsonPath('error', "Ce QR code n'appartient pas à cet événement.");
 });
 
 it('enregistre manuellement un invité trouvé par recherche', function (): void {

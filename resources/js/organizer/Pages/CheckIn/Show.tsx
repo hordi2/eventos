@@ -9,6 +9,8 @@ import Modal from '../../Components/Modal';
 import Select from '../../Components/Select';
 import Table from '../../Components/Table';
 import TextInput from '../../Components/TextInput';
+import { describeCheckInFailure } from '../../describeCheckInFailure';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
 import EventLayout from '../../Layouts/EventLayout';
 
 interface Guest {
@@ -52,7 +54,8 @@ export default function Show({ event, guests: initialGuests, ticketTypes }: Prop
     const [kioskCode, setKioskCode] = useState('');
     const [kioskError, setKioskError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
-    const [feedback, setFeedback] = useState<{ type: 'success' | 'conflict' | 'error'; message: string } | null>(null);
+    const [feedback, setFeedback] = useState<{ type: 'success' | 'conflict' | 'error' | 'network'; message: string } | null>(null);
+    const isOnline = useOnlineStatus();
     const [webcamActive, setWebcamActive] = useState(false);
     const [webcamError, setWebcamError] = useState<string | null>(null);
     const [walkInOpen, setWalkInOpen] = useState(false);
@@ -99,7 +102,7 @@ export default function Show({ event, guests: initialGuests, ticketTypes }: Prop
         processingRef.current = true;
 
         try {
-            const response = await window.axios.post<ScanResponse>(`/events/${event.id}/check-in/scan`, { token });
+            const response = await window.axios.post<ScanResponse>(`/events/${event.id}/check-in/scan`, { token }, { timeout: 8000 });
             applyGuestUpdate(response.data.guest);
             setFeedback(
                 response.data.status === 'accepted'
@@ -107,10 +110,8 @@ export default function Show({ event, guests: initialGuests, ticketTypes }: Prop
                     : { type: 'conflict', message: `${response.data.guest?.name ?? 'Invité'} — déjà enregistré.` },
             );
         } catch (error) {
-            const message =
-                (error as { response?: { data?: { error?: string } } }).response?.data?.error ??
-                'Billet invalide ou illisible.';
-            setFeedback({ type: 'error', message });
+            const failure = describeCheckInFailure(error);
+            setFeedback({ type: failure.kind === 'network' ? 'network' : 'error', message: failure.message });
         } finally {
             window.setTimeout(() => {
                 processingRef.current = false;
@@ -120,18 +121,20 @@ export default function Show({ event, guests: initialGuests, ticketTypes }: Prop
 
     async function submitRecord(guest: Guest) {
         try {
-            const response = await window.axios.post<ScanResponse>(`/events/${event.id}/check-in/record`, {
-                guest_type: guest.guest_type,
-                id: guest.id,
-            });
+            const response = await window.axios.post<ScanResponse>(
+                `/events/${event.id}/check-in/record`,
+                { guest_type: guest.guest_type, id: guest.id },
+                { timeout: 8000 },
+            );
             applyGuestUpdate(response.data.guest);
             setFeedback(
                 response.data.status === 'accepted'
                     ? { type: 'success', message: `${guest.name} — entrée acceptée.` }
                     : { type: 'conflict', message: `${guest.name} — déjà enregistré.` },
             );
-        } catch {
-            setFeedback({ type: 'error', message: "Impossible d'enregistrer ce check-in." });
+        } catch (error) {
+            const failure = describeCheckInFailure(error);
+            setFeedback({ type: failure.kind === 'network' ? 'network' : 'error', message: failure.message });
         }
     }
 
@@ -141,22 +144,22 @@ export default function Show({ event, guests: initialGuests, ticketTypes }: Prop
         setWalkInSubmitting(true);
 
         try {
-            const response = await window.axios.post<ScanResponse>(`/events/${event.id}/check-in/walk-in`, {
-                ticket_type_id: Number(walkIn.ticketTypeId),
-                name: walkIn.name,
-                email: walkIn.email,
-                phone: walkIn.phone || null,
-            });
+            const response = await window.axios.post<ScanResponse>(
+                `/events/${event.id}/check-in/walk-in`,
+                {
+                    ticket_type_id: Number(walkIn.ticketTypeId),
+                    name: walkIn.name,
+                    email: walkIn.email,
+                    phone: walkIn.phone || null,
+                },
+                { timeout: 8000 },
+            );
             applyGuestUpdate(response.data.guest);
             setFeedback({ type: 'success', message: `${response.data.guest?.name ?? 'Invité'} — inscrit et entrée acceptée.` });
             setWalkIn(emptyWalkIn);
             setWalkInOpen(false);
         } catch (error) {
-            const message =
-                (error as { response?: { data?: { error?: string; message?: string } } }).response?.data?.error ??
-                (error as { response?: { data?: { message?: string } } }).response?.data?.message ??
-                "Impossible d'inscrire cet invité.";
-            setWalkInError(message);
+            setWalkInError(describeCheckInFailure(error).message);
         } finally {
             setWalkInSubmitting(false);
         }
@@ -278,16 +281,23 @@ export default function Show({ event, guests: initialGuests, ticketTypes }: Prop
 
             {webcamError && <p className="mb-6 text-sm text-danger">{webcamError}</p>}
 
+            {!isOnline && (
+                <div className="mb-6 rounded-card bg-bg-deep px-6 py-4 text-sm text-ink-soft ring-1 ring-line">
+                    Hors connexion — utilisez plutôt l'app mobile Itaza Check-in, qui fonctionne sans réseau.
+                </div>
+            )}
+
             {feedback && (
                 <div
                     className={`mb-6 rounded-card px-6 py-4 text-sm ${
                         feedback.type === 'success'
                             ? 'bg-success-bg text-success'
-                            : feedback.type === 'conflict'
+                            : feedback.type === 'conflict' || feedback.type === 'error'
                               ? 'bg-danger-bg text-danger'
                               : 'bg-bg-deep text-ink-soft'
                     }`}
                 >
+                    {feedback.type === 'network' && <span className="font-medium">Réseau — </span>}
                     {feedback.message}
                 </div>
             )}

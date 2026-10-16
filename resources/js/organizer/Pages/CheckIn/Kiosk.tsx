@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import QrScanner from 'qr-scanner';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { describeCheckInFailure } from '../../describeCheckInFailure';
 
 interface Guest {
     guest_type: string;
@@ -86,7 +87,7 @@ export default function Kiosk({ event, organizationName, checkInUrl }: KioskPage
         const url = 'token' in payload ? `/events/${event.id}/check-in/scan` : `/events/${event.id}/check-in/record`;
 
         try {
-            const response = await window.axios.post<ScanResponse>(url, payload);
+            const response = await window.axios.post<ScanResponse>(url, payload, { timeout: 8000 });
             const guest = response.data.guest;
 
             if (guest === null) {
@@ -98,8 +99,12 @@ export default function Kiosk({ event, organizationName, checkInUrl }: KioskPage
             setWelcome(guest.name);
             print(guest);
         } catch (failure) {
-            const message = (failure as { response?: { data?: { error?: string } } }).response?.data?.error;
-            setError(message ?? "Ce QR code n'a pas pu être lu. Demandez de l'aide à l'accueil.");
+            const described = describeCheckInFailure(failure);
+            setError(
+                described.kind === 'network'
+                    ? "Connexion perdue : votre arrivée n'est peut-être pas confirmée. Adressez-vous à l'accueil."
+                    : described.message,
+            );
         } finally {
             busyRef.current = false;
         }
@@ -118,6 +123,7 @@ export default function Kiosk({ event, organizationName, checkInUrl }: KioskPage
 
     async function runSearch(term: string) {
         setSearch(term);
+        setError(null);
 
         if (term.trim().length < 3) {
             setResults([]);
@@ -125,8 +131,17 @@ export default function Kiosk({ event, organizationName, checkInUrl }: KioskPage
             return;
         }
 
-        const response = await window.axios.get<{ guests: Guest[] }>(`/events/${event.id}/kiosk/search`, { params: { q: term } });
-        setResults(response.data.guests);
+        try {
+            const response = await window.axios.get<{ guests: Guest[] }>(`/events/${event.id}/kiosk/search`, {
+                params: { q: term },
+                timeout: 8000,
+            });
+            setResults(response.data.guests);
+        } catch (failure) {
+            const described = describeCheckInFailure(failure);
+            setError(described.kind === 'network' ? 'Connexion perdue : la recherche a échoué. Réessayez.' : described.message);
+            setResults([]);
+        }
     }
 
     function submitExit(submitEvent: FormEvent) {
