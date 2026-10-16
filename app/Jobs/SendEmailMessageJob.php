@@ -71,6 +71,7 @@ final class SendEmailMessageJob implements ShouldQueue
                 $emailMessage->subject,
                 $this->bodyHtml,
                 $this->unsubscribeUrl,
+                $this->organizationId,
                 $this->icsAttachment,
                 organizationLogoUrl: $organization?->logo_path !== null ? Storage::disk('public')->url($organization->logo_path) : null,
                 organizationPrimaryColor: $organization?->primary_color,

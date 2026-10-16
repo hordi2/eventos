@@ -11,6 +11,8 @@ use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Symfony\Component\Mailer\Header\MetadataHeader;
+use Symfony\Component\Mime\Email;
 
 /**
  * Enveloppe générique pour tout e-mail envoyé par SendEmail (T-043) — pas
@@ -26,12 +28,28 @@ final class GenericMail extends Mailable
         public readonly string $mailSubject,
         public readonly string $bodyHtml,
         public readonly ?string $unsubscribeUrl,
+        public readonly int $organizationId,
         public readonly ?string $icsAttachment = null,
         public readonly ?string $organizationLogoUrl = null,
         public readonly ?string $organizationPrimaryColor = null,
         public readonly ?string $fromName = null,
         public readonly ?string $replyToAddress = null,
     ) {}
+
+    /**
+     * Le webhook Postmark (RecordEmailWebhookEvent) a besoin de
+     * l'organisation pour poser le contexte multi-tenant avant de relire
+     * quoi que ce soit — EmailMessage est protégé par la row-level
+     * security (règle 4.1 du CLAUDE.md), et le rôle applicatif n'a jamais
+     * BYPASSRLS (docker/postgres/init.sql). Metadata est le mécanisme
+     * Postmark prévu pour ça : repris tel quel dans tous ses webhooks.
+     */
+    public function build(): void
+    {
+        $this->withSymfonyMessage(function (Email $message): void {
+            $message->getHeaders()->add(new MetadataHeader('organization_id', (string) $this->organizationId));
+        });
+    }
 
     public function envelope(): Envelope
     {

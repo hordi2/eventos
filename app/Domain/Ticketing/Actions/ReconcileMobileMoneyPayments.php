@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Ticketing\Actions;
 
+use App\Domain\Organization\Models\Organization;
 use App\Domain\Ticketing\Models\Order;
 use App\Domain\Ticketing\Models\OrderStatus;
 use App\Domain\Ticketing\Models\Payment;
@@ -18,6 +19,14 @@ use Illuminate\Support\Facades\Log;
  * « Réconciliation quotidienne automatique avec le fournisseur »),
  * filet de sécurité pour les paiements dont la confirmation par webhook ne
  * serait jamais arrivée (webhook manqué, panne temporaire...).
+ *
+ * Parcourt chaque organisation et pose son contexte avant toute lecture
+ * cloisonnée (même raisonnement que PurgeExpiredContacts) : Payment est
+ * protégé par la row-level security PostgreSQL (règle 4.1 du CLAUDE.md),
+ * et le rôle applicatif n'a jamais BYPASSRLS (docker/postgres/init.sql) —
+ * un withoutGlobalScopes() seul sur Payment ne ramènerait donc jamais
+ * aucune ligne pour cette tâche planifiée, qui ne tourne dans le contexte
+ * d'aucune organisation particulière.
  *
  * Un paiement toujours "pending" chez le prestataire au moment de la
  * réconciliation, alors que la commande a déjà expiré (les 15 minutes de
@@ -38,14 +47,17 @@ final class ReconcileMobileMoneyPayments
 
     public function handle(): void
     {
-        $pendingPayments = Payment::query()
-            ->withoutGlobalScopes()
-            ->where('provider', 'flutterwave')
-            ->where('status', PaymentStatus::Pending)
-            ->get();
+        foreach (Organization::query()->withoutGlobalScopes()->get() as $organization) {
+            $this->currentOrganization->set($organization);
 
-        foreach ($pendingPayments as $payment) {
-            $this->reconcileOne($payment);
+            $pendingPayments = Payment::query()
+                ->where('provider', 'flutterwave')
+                ->where('status', PaymentStatus::Pending)
+                ->get();
+
+            foreach ($pendingPayments as $payment) {
+                $this->reconcileOne($payment);
+            }
         }
     }
 
@@ -57,13 +69,11 @@ final class ReconcileMobileMoneyPayments
             return;
         }
 
-        $order = Order::query()->withoutGlobalScopes()->find($payment->order_id);
+        $order = Order::query()->find($payment->order_id);
 
         if ($order === null) {
             return;
         }
-
-        $this->currentOrganization->set($order->organization_id);
 
         if ($status === MobileMoneyChargeStatus::Succeeded) {
             if ($order->status !== OrderStatus::Pending) {

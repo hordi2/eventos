@@ -65,7 +65,7 @@ final class SendWhatsappMessageJob implements ShouldQueue
                 $whatsappMessage->to_phone_e164,
                 $this->providerTemplateSid,
                 $this->contentVariables,
-                route('webhooks.twilio-whatsapp'),
+                route('webhooks.twilio-whatsapp', ['organization' => $this->organizationId]),
             );
 
             $whatsappMessage->update([

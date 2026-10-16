@@ -40,22 +40,29 @@ final class RecordEmailWebhookEvent
         // a déjà été traité. upsert() ne conviendrait pas ici : avec un
         // $update vide, Laravel retombe sur un insert() nu qui échouerait
         // sur ce même conflit (voir ApplyTagToContacts pour ce piège).
-        $inserted = DB::table('email_webhook_events')->insertOrIgnore([[
-            'provider' => 'postmark',
-            'event_id' => $eventId,
-            'payload' => json_encode($payload),
-            'processed_at' => now(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]]);
+        //
+        // Insertion et traitement dans une seule transaction (même
+        // raisonnement que RecordStripeWebhookEvent, T-052) : une
+        // exception imprévue dans applyToEmailMessage() ne doit jamais
+        // marquer l'événement traité sans l'avoir réellement appliqué.
+        return DB::transaction(function () use ($payload, $eventId): ?EmailMessage {
+            $inserted = DB::table('email_webhook_events')->insertOrIgnore([[
+                'provider' => 'postmark',
+                'event_id' => $eventId,
+                'payload' => json_encode($payload),
+                'processed_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]]);
 
-        if ($inserted === 0) {
-            Log::info("Webhook Postmark déjà traité, ignoré : {$eventId}.");
+            if ($inserted === 0) {
+                Log::info("Webhook Postmark déjà traité, ignoré : {$eventId}.");
 
-            return null;
-        }
+                return null;
+            }
 
-        return $this->applyToEmailMessage($payload);
+            return $this->applyToEmailMessage($payload);
+        });
     }
 
     /**
@@ -77,25 +84,45 @@ final class RecordEmailWebhookEvent
     /**
      * @param  array<string, mixed>  $payload
      */
+    private function organizationIdFromMetadata(array $payload): ?int
+    {
+        $metadata = $payload['Metadata'] ?? null;
+
+        if (! is_array($metadata) || ! isset($metadata['organization_id'])) {
+            return null;
+        }
+
+        return (int) $metadata['organization_id'];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
     private function applyToEmailMessage(array $payload): ?EmailMessage
     {
         $messageId = (string) ($payload['MessageID'] ?? '');
+        $organizationId = $this->organizationIdFromMetadata($payload);
 
-        // Sans global scope : à ce stade, aucune organisation n'est encore
-        // connue (le webhook est public, sans middleware resolve-organization)
-        // — c'est justement ce que cette requête doit déterminer.
-        $emailMessage = EmailMessage::query()->withoutGlobalScopes()->where('provider_message_id', $messageId)->first();
+        if ($organizationId === null) {
+            Log::warning("Webhook Postmark reçu sans organisation déductible de la métadonnée : {$messageId}.");
+
+            return null;
+        }
+
+        // organization_id vient de la Metadata posée à l'envoi (GenericMail),
+        // jamais d'une relecture du message : la row-level security
+        // PostgreSQL (règle 4.1 du CLAUDE.md) bloquerait cette relecture
+        // tant que le contexte n'est pas posé — le rôle applicatif n'a
+        // jamais BYPASSRLS (docker/postgres/init.sql).
+        $this->currentOrganization->set($organizationId);
+
+        $emailMessage = EmailMessage::query()->where('provider_message_id', $messageId)->first();
 
         if ($emailMessage === null) {
             Log::warning("Webhook Postmark reçu pour un message inconnu : {$messageId}.");
 
             return null;
         }
-
-        // Organisation résolue : le contexte peut être positionné pour la
-        // suite (y compris pour l'appelant, qui doit pouvoir toucher au
-        // contact lié sans devoir le refaire lui-même).
-        $this->currentOrganization->set($emailMessage->organization_id);
 
         match ($payload['RecordType'] ?? null) {
             'Delivery' => $emailMessage->update(['status' => EmailMessageStatus::Delivered, 'delivered_at' => now()]),

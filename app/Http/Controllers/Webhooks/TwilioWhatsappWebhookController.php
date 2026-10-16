@@ -24,11 +24,11 @@ use Twilio\Security\RequestValidator;
  */
 final class TwilioWhatsappWebhookController extends Controller
 {
-    public function __invoke(Request $request, RecordWhatsappWebhookEvent $action): JsonResponse
+    public function __invoke(Request $request, RecordWhatsappWebhookEvent $action, string $organization): JsonResponse
     {
         $this->authorizeWebhook($request);
 
-        $whatsappMessage = $action->handle($request->all());
+        $whatsappMessage = $action->handle($request->all(), (int) $organization);
 
         if ($whatsappMessage !== null) {
             $this->invalidateContactIfNeeded($whatsappMessage);

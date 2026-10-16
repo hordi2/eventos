@@ -737,7 +737,10 @@ Route::post('webhooks/postmark', PostmarkWebhookController::class)
 // Webhook Twilio (statut de livraison WhatsApp) : public, protégé par la
 // signature X-Twilio-Signature (voir TwilioWhatsappWebhookController),
 // jamais par CSRF — même raisonnement que le webhook Postmark ci-dessus.
-Route::post('webhooks/twilio-whatsapp', TwilioWhatsappWebhookController::class)
+// {organization} dans l'URL (posée à l'envoi, SendWhatsappMessageJob) :
+// RecordWhatsappWebhookEvent en a besoin pour poser le contexte
+// multi-tenant avant de relire quoi que ce soit.
+Route::post('webhooks/twilio-whatsapp/{organization}', TwilioWhatsappWebhookController::class)
     ->middleware('throttle:300,1')
     ->name('webhooks.twilio-whatsapp');
 
