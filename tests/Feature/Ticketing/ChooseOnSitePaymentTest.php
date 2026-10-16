@@ -40,3 +40,7 @@ it('refuse de basculer une commande qui n\'est plus en attente', function (): vo
 
     app(ChooseOnSitePayment::class)->handle($this->order->fresh());
 })->throws(InvalidOrderTransitionException::class);
+
+it('refuse le paiement à l\'arrivée quand l\'organisateur l\'a désactivé pour l\'événement', function (): void {
+    app(ChooseOnSitePayment::class)->handle($this->order, allowOnSitePayment: false);
+})->throws(InvalidOrderTransitionException::class);

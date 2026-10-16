@@ -19,7 +19,6 @@ use App\Domain\Ticketing\Models\Ticket;
 use App\Domain\Ticketing\TicketsUnavailableException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Guest\MobileMoneyPaymentRequest;
-use App\Support\Payments\MobileMoneyProviderUnavailableException;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -61,19 +60,16 @@ final class TicketOrderPaymentController extends Controller
     {
         $orderModel = $this->order($request, $order);
 
-        try {
-            $action->handle(
-                $orderModel,
-                $request->validated('country_code'),
-                $request->validated('phone_number'),
-                $request->validated('network'),
-            );
-        } catch (MobileMoneyProviderUnavailableException) {
-            // InitiateMobileMoneyPayment bascule déjà la commande sur le
-            // paiement à l'arrivée en cas d'indisponibilité (mode dégradé,
-            // annexe C du CDC) — rien à faire ici, juste continuer vers le
-            // statut, qui affichera la confirmation correspondante.
-        }
+        // InitiateMobileMoneyPayment gère elle-même l'indisponibilité du
+        // prestataire (bascule sur le paiement à l'arrivée, ou échec
+        // explicite s'il est désactivé) : rien ne s'échappe d'ici.
+        $action->handle(
+            $orderModel,
+            $request->validated('country_code'),
+            $request->validated('phone_number'),
+            $request->validated('network'),
+            $this->event($request)->allow_on_site_payment,
+        );
 
         return redirect()->route('guest.ticketing.payment.status', [$organization, $event, $order]);
     }
@@ -83,10 +79,11 @@ final class TicketOrderPaymentController extends Controller
         $orderModel = $this->order($request, $order);
 
         try {
-            $action->handle($orderModel);
+            $action->handle($orderModel, $this->event($request)->allow_on_site_payment);
         } catch (InvalidOrderTransitionException) {
             // Déjà résolue (payée, expirée...) entre l'affichage de la page
-            // et ce clic — pas d'erreur, la page de statut montrera l'état réel.
+            // et ce clic, ou paiement à l'arrivée désactivé entre-temps —
+            // pas d'erreur, la page de statut montrera l'état réel.
         }
 
         return redirect()->route('guest.ticketing.payment.status', [$organization, $event, $order]);

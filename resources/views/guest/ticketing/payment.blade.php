@@ -71,12 +71,14 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('guest.ticketing.payment.on-site', [request()->route('organization'), request()->route('event'), $order->reservation_key]) }}">
-                @csrf
-                <button type="submit" class="min-h-11 w-full rounded-pill border border-line px-8 py-3 font-medium text-ink">
-                    {{ $isDonation ? __("Régler à l'accueil le jour de l'événement") : __("Payer à l'arrivée") }}
-                </button>
-            </form>
+            @if ($event->allow_on_site_payment)
+                <form method="POST" action="{{ route('guest.ticketing.payment.on-site', [request()->route('organization'), request()->route('event'), $order->reservation_key]) }}">
+                    @csrf
+                    <button type="submit" class="min-h-11 w-full rounded-pill border border-line px-8 py-3 font-medium text-ink">
+                        {{ $isDonation ? __("Régler à l'accueil le jour de l'événement") : __("Payer à l'arrivée") }}
+                    </button>
+                </form>
+            @endif
         </div>
     </div>
 @endsection

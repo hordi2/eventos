@@ -26,16 +26,19 @@ use Carbon\CarbonImmutable;
  * Mode dégradé (annexe C du CDC : « Fiabilité des agrégateurs Mobile
  * Money ») : si le prestataire est injoignable, bascule automatiquement
  * sur le paiement à l'arrivée (ChooseOnSitePayment, T-054) plutôt que de
- * faire échouer la réservation de l'invité.
+ * faire échouer la réservation de l'invité — sauf si l'organisateur a
+ * désactivé ce mode de paiement, auquel cas la commande échoue
+ * explicitement (FailOrderPayment) plutôt que de contourner son choix.
  */
 final class InitiateMobileMoneyPayment
 {
     public function __construct(
         private readonly MobileMoneyProvider $provider,
         private readonly ChooseOnSitePayment $chooseOnSitePayment,
+        private readonly FailOrderPayment $failOrderPayment,
     ) {}
 
-    public function handle(Order $order, string $countryCode, string $phoneNumber, string $network): Order
+    public function handle(Order $order, string $countryCode, string $phoneNumber, string $network, bool $allowOnSitePayment = true): Order
     {
         if ($order->status !== OrderStatus::Pending) {
             throw InvalidOrderTransitionException::notPending($order->id, $order->status);
@@ -56,6 +59,10 @@ final class InitiateMobileMoneyPayment
                 buyerLastName: $lastName,
             ));
         } catch (MobileMoneyProviderUnavailableException) {
+            if (! $allowOnSitePayment) {
+                return $this->failOrderPayment->handle($order, 'flutterwave', null, "Mobile Money indisponible et paiement à l'arrivée désactivé par l'organisateur.");
+            }
+
             return $this->chooseOnSitePayment->handle($order);
         }
 

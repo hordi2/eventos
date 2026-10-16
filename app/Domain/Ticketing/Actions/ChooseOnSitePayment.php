@@ -15,11 +15,22 @@ use App\Domain\Ticketing\Models\OrderStatus;
  * l'arrivée n'a pas cette contrainte, l'événement peut avoir lieu dans
  * plusieurs semaines. ExpireOrderJob, déjà programmé par CreateOrder, ne
  * fera donc rien à son échéance (la commande n'est plus "pending").
+ *
+ * $allowOnSitePayment est fourni par l'appelant (events.allow_on_site_payment,
+ * Domain/Event) plutôt que résolu ici : Domain/Ticketing ne dépend jamais
+ * directement d'un modèle de Domain/Event (section 3 du CLAUDE.md). Son
+ * défaut à true couvre AddWalkInGuest (encaissement par le personnel au
+ * comptoir, T-063) : ce réglage ne concerne que le choix de l'invité en
+ * ligne, jamais le personnel sur place.
  */
 final class ChooseOnSitePayment
 {
-    public function handle(Order $order): Order
+    public function handle(Order $order, bool $allowOnSitePayment = true): Order
     {
+        if (! $allowOnSitePayment) {
+            throw InvalidOrderTransitionException::onSitePaymentDisabled($order->id);
+        }
+
         if ($order->status !== OrderStatus::Pending) {
             throw InvalidOrderTransitionException::notPending($order->id, $order->status);
         }

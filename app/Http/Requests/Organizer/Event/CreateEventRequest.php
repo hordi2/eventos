@@ -39,6 +39,7 @@ final class CreateEventRequest extends FormRequest
             // Vide : aucune limite de places, comme pour une session (T-024).
             'capacity' => ['nullable', 'integer', 'min:1', 'max:1000000'],
             'allow_waitlist' => ['boolean'],
+            'allow_on_site_payment' => ['boolean'],
             // Annuaire des participants (D8).
             'has_attendee_directory' => ['boolean'],
             'has_attendee_messaging' => ['boolean'],

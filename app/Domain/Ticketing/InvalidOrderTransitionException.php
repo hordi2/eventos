@@ -38,4 +38,9 @@ final class InvalidOrderTransitionException extends RuntimeException
     {
         return new self("La commande #{$orderId} n'a aucun paiement encaissé à rembourser.");
     }
+
+    public static function onSitePaymentDisabled(int $orderId): self
+    {
+        return new self("L'organisateur a désactivé le paiement à l'arrivée pour la commande #{$orderId}.");
+    }
 }

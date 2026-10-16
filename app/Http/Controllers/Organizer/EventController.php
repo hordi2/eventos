@@ -161,6 +161,7 @@ final class EventController extends Controller
             'locale' => $event->locale,
             'capacity' => $event->capacity,
             'allowWaitlist' => $event->allow_waitlist,
+            'allowOnSitePayment' => (bool) $event->allow_on_site_payment,
             'hasAttendeeDirectory' => (bool) $event->has_attendee_directory,
             'hasAttendeeMessaging' => (bool) $event->has_attendee_messaging,
             'hasCarbonReport' => (bool) $event->has_carbon_report,

@@ -85,3 +85,13 @@ it('bascule sur le paiement à l\'arrivée quand le prestataire est indisponible
     expect($updated->reserved_until)->toBeNull();
     expect($updated->payments)->toHaveCount(0);
 });
+
+it('échoue la commande plutôt que de basculer sur le paiement à l\'arrivée quand celui-ci est désactivé', function (): void {
+    Http::fake(['*/customers' => Http::response(null, 500)]);
+
+    $updated = app(InitiateMobileMoneyPayment::class)->handle($this->order, '225', '0102030405', 'MTN', allowOnSitePayment: false);
+
+    expect($updated->status->value)->toBe('failed');
+    expect($updated->payments)->toHaveCount(1);
+    expect($updated->payments->first()->status->value)->toBe('failed');
+});

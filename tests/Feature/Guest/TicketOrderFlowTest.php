@@ -91,6 +91,33 @@ it('confirme immédiatement une réservation avec paiement à l\'arrivée', func
     $page->assertSee('Réservation confirmée');
 });
 
+it('cache le paiement à l\'arrivée et refuse de l\'enregistrer quand l\'organisateur l\'a désactivé', function (): void {
+    ['organization' => $organization, 'event' => $event, 'ticketType' => $ticketType] = makeGuestTicketedEvent();
+    app(CurrentOrganization::class)->set($organization);
+    $event->update(['allow_on_site_payment' => false]);
+    app(CurrentOrganization::class)->clear();
+
+    $this->post("/billets/{$organization->slug}/{$event->slug}", [
+        'checkout_token' => (string) Str::uuid(),
+        'buyer_name' => 'Alice',
+        'buyer_email' => 'alice@example.com',
+        'items' => [$ticketType->id => 1],
+    ]);
+
+    app(CurrentOrganization::class)->set($organization);
+    $order = Order::query()->where('buyer_email', 'alice@example.com')->firstOrFail();
+    app(CurrentOrganization::class)->clear();
+
+    $paymentPage = $this->get("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/paiement");
+    $paymentPage->assertDontSee("Payer à l'arrivée");
+
+    $onSite = $this->post("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/paiement/arrivee");
+    $onSite->assertRedirect("/billets/{$organization->slug}/{$event->slug}/{$order->reservation_key}/statut");
+
+    app(CurrentOrganization::class)->set($organization);
+    expect($order->fresh()->status->value)->toBe('pending');
+});
+
 it('affiche l\'écran d\'attente pour une commande Mobile Money en attente puis confirme après webhook', function (): void {
     config(['services.flutterwave.secret' => 'test-secret']);
     Http::fake([

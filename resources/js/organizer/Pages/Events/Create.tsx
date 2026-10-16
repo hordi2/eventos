@@ -42,6 +42,7 @@ interface EventDraft {
     locale: string;
     capacity: number | null;
     allowWaitlist: boolean;
+    allowOnSitePayment: boolean;
     hasAttendeeDirectory: boolean;
     hasAttendeeMessaging: boolean;
     hasCarbonReport: boolean;
@@ -191,6 +192,7 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
         locale: event?.locale ?? 'fr',
         capacity: event?.capacity != null ? String(event.capacity) : '',
         allow_waitlist: event?.allowWaitlist ?? false,
+        allow_on_site_payment: event?.allowOnSitePayment ?? true,
         has_attendee_directory: event?.hasAttendeeDirectory ?? false,
         has_attendee_messaging: event?.hasAttendeeMessaging ?? false,
         has_carbon_report: event?.hasCarbonReport ?? false,
@@ -478,6 +480,21 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                                 </span>
                             </label>
                         </div>
+
+                        <label className="mt-6 flex cursor-pointer items-start gap-3">
+                            <Checkbox
+                                checked={data.allow_on_site_payment}
+                                onChange={(e) => setData('allow_on_site_payment', e.target.checked)}
+                                className="mt-1"
+                            />
+                            <span>
+                                <span className="block text-sm text-ink">Paiement à l'arrivée</span>
+                                <span className="block text-xs text-ink-soft">
+                                    L'invité peut réserver sans payer en ligne et régler en espèces à l'accueil. Désactivez si vous ne
+                                    voulez pas encaisser d'espèces pour cet événement.
+                                </span>
+                            </span>
+                        </label>
 
                         {/* Application participant en marque blanche (D9) : programme, plan,
                             notifications, networking, questions au conférencier et sondages,

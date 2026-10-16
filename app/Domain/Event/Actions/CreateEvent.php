@@ -65,6 +65,7 @@ final class CreateEvent
             'requires_approval' => $data['requires_approval'] ?? false,
             'allow_waitlist' => $data['allow_waitlist'] ?? false,
             'allow_guest_edit' => $data['allow_guest_edit'] ?? false,
+            'allow_on_site_payment' => $data['allow_on_site_payment'] ?? true,
             'has_attendee_directory' => $data['has_attendee_directory'] ?? false,
             'has_attendee_messaging' => $data['has_attendee_messaging'] ?? false,
             'has_carbon_report' => $data['has_carbon_report'] ?? false,
