@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Organizer\Settings;
 
+use App\Support\Webhooks\SafeWebhookUrlRule;
 use App\Support\Webhooks\WebhookEvent;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -21,7 +22,7 @@ final class StoreWebhookRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'url' => ['required', 'url', 'max:2048'],
+            'url' => ['required', 'url:https', 'max:2048', new SafeWebhookUrlRule],
             'subscribed_events' => ['required', 'array', 'min:1'],
             'subscribed_events.*' => [Rule::in(WebhookEvent::values())],
         ];

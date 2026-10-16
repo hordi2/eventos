@@ -35,6 +35,18 @@ it('refuse une URL de destination non chiffrée', function (): void {
     $response->assertJsonValidationErrors('target_url');
 });
 
+it('refuse une URL de destination qui pointe vers un réseau interne (SSRF)', function (): void {
+    ['doorStaff' => $owner] = makeCheckInEvent(MembershipRole::Owner);
+
+    $response = $this->actingAs($owner, 'sanctum')->postJson('/api/v1/hooks', [
+        'target_url' => 'https://169.254.169.254/latest/meta-data',
+        'event' => 'registration.created',
+    ]);
+
+    $response->assertUnprocessable();
+    $response->assertJsonValidationErrors('target_url');
+});
+
 it('refuse un événement inconnu à l\'abonnement', function (): void {
     ['doorStaff' => $owner] = makeCheckInEvent(MembershipRole::Owner);
 

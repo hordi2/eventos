@@ -6,6 +6,7 @@ namespace App\Jobs;
 
 use App\Support\MultiTenancy\CurrentOrganization;
 use App\Support\Webhooks\Models\Webhook;
+use App\Support\Webhooks\TargetsPrivateNetwork;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -52,13 +53,23 @@ final class DeliverWebhookJob implements ShouldQueue
         $this->deliveryId = (string) Str::uuid();
     }
 
-    public function handle(CurrentOrganization $currentOrganization): void
+    public function handle(CurrentOrganization $currentOrganization, TargetsPrivateNetwork $targetsPrivateNetwork): void
     {
         $currentOrganization->set($this->organizationId);
 
         $webhook = Webhook::query()->find($this->webhookId);
 
         if ($webhook === null || ! $webhook->is_active) {
+            return;
+        }
+
+        // Revérifié à l'envoi, pas seulement à l'enregistrement (StoreWebhookRequest,
+        // SubscribeWebhookRequest) : un nom de domaine public à l'époque peut
+        // avoir été repointé depuis vers une adresse interne (SSRF par
+        // « DNS rebinding », §7 du CLAUDE.md).
+        if ($targetsPrivateNetwork->handle($webhook->url)) {
+            $webhook->update(['last_delivery_at' => now(), 'last_delivery_status' => 'failed']);
+
             return;
         }
 

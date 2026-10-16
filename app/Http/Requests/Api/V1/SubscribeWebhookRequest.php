@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Support\Webhooks\SafeWebhookUrlRule;
 use App\Support\Webhooks\WebhookEvent;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -29,7 +30,7 @@ final class SubscribeWebhookRequest extends FormRequest
             // https uniquement : la charge utile contient des données
             // personnelles d'invités (nom, e-mail), jamais en clair sur le
             // réseau.
-            'target_url' => ['required', 'url:https', 'max:2048'],
+            'target_url' => ['required', 'url:https', 'max:2048', new SafeWebhookUrlRule],
             'event' => ['required', Rule::enum(WebhookEvent::class)],
         ];
     }

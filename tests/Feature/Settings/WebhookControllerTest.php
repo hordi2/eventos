@@ -24,6 +24,15 @@ it('crée un webhook et affiche le secret en clair une seule fois via le flash',
     app(CurrentOrganization::class)->clear();
 });
 
+it('refuse une URL de webhook qui pointe vers un réseau interne (SSRF)', function (): void {
+    ['doorStaff' => $owner] = makeCheckInEvent(MembershipRole::Owner);
+
+    $this->actingAs($owner)->post('/settings/api/webhooks', [
+        'url' => 'https://169.254.169.254/latest/meta-data',
+        'subscribed_events' => ['registration.created'],
+    ])->assertSessionHasErrors('url');
+});
+
 it('refuse un événement inconnu', function (): void {
     ['doorStaff' => $owner] = makeCheckInEvent(MembershipRole::Owner);
 

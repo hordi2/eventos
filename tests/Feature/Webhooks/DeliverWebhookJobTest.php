@@ -6,6 +6,7 @@ use App\Domain\Organization\Models\Organization;
 use App\Jobs\DeliverWebhookJob;
 use App\Support\MultiTenancy\CurrentOrganization;
 use App\Support\Webhooks\Models\Webhook;
+use App\Support\Webhooks\TargetsPrivateNetwork;
 use Illuminate\Support\Facades\Http;
 
 it('livre l\'événement signé et journalise le succès', function (): void {
@@ -20,6 +21,7 @@ it('livre l\'événement signé et journalise le succès', function (): void {
 
     (new DeliverWebhookJob($organization->id, $webhook->id, 'registration.created', ['registration_id' => 42]))->handle(
         app(CurrentOrganization::class),
+        app(TargetsPrivateNetwork::class),
     );
 
     Http::assertSent(function ($request) {
@@ -49,7 +51,7 @@ it('journalise l\'échec et relance l\'exception pour déclencher un réessai', 
 
     $job = new DeliverWebhookJob($organization->id, $webhook->id, 'registration.created', []);
 
-    expect(fn () => $job->handle(app(CurrentOrganization::class)))->toThrow(Exception::class);
+    expect(fn () => $job->handle(app(CurrentOrganization::class), app(TargetsPrivateNetwork::class)))->toThrow(Exception::class);
 
     app(CurrentOrganization::class)->set($organization);
     expect($webhook->fresh()->last_delivery_status)->toBe('failed');
@@ -63,7 +65,10 @@ it('ne fait aucun appel HTTP pour un webhook désactivé entre-temps', function 
     $webhook = Webhook::factory()->inactive()->for($organization)->create();
     app(CurrentOrganization::class)->clear();
 
-    (new DeliverWebhookJob($organization->id, $webhook->id, 'registration.created', []))->handle(app(CurrentOrganization::class));
+    (new DeliverWebhookJob($organization->id, $webhook->id, 'registration.created', []))->handle(
+        app(CurrentOrganization::class),
+        app(TargetsPrivateNetwork::class),
+    );
 
     Http::assertNothingSent();
 });
