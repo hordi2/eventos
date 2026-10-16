@@ -54,7 +54,7 @@
             @if (count($table->guests) > 0)
                 <ul>
                     @foreach ($table->guests as $guest)
-                        <li>{{ $guest->name }}</li>
+                        <li>{{ in_array("{$guest->guestType}:{$guest->id}", $accessibleGuestKeys, true) ? '♿ ' : '' }}{{ $guest->name }}</li>
                     @endforeach
                 </ul>
             @else

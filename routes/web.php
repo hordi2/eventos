@@ -538,6 +538,7 @@ Route::middleware('auth')->group(function (): void {
         Route::delete('events/{event}/seating/tables/{table}', [SeatingController::class, 'destroyTable'])->name('events.seating.tables.destroy');
         Route::post('events/{event}/seating/tables/{table}/assign', [SeatingController::class, 'assign'])->name('events.seating.tables.assign');
         Route::post('events/{event}/seating/unassign', [SeatingController::class, 'unassign'])->name('events.seating.unassign');
+        Route::patch('events/{event}/seating/accessibility', [SeatingController::class, 'setAccessibilityNeed'])->name('events.seating.accessibility');
         Route::post('events/{event}/seating/auto-place', [SeatingController::class, 'autoPlace'])->name('events.seating.auto-place');
         Route::post('events/{event}/seating/constraints', [SeatingController::class, 'storeConstraint'])->name('events.seating.constraints.store');
         Route::delete('events/{event}/seating/constraints/{constraint}', [SeatingController::class, 'destroyConstraint'])->name('events.seating.constraints.destroy');

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\CheckIn\Models\SeatAssignment;
+use App\Domain\CheckIn\Models\SeatingAccessibilityNeed;
 use App\Domain\CheckIn\Models\SeatingConstraint;
 use App\Domain\CheckIn\Models\SeatingTable;
 use App\Domain\Organization\Models\MembershipRole;
@@ -135,6 +136,30 @@ it('enregistre une contrainte, normalisée quel que soit l\'ordre des deux invit
     app(CurrentOrganization::class)->clear();
 });
 
+it('marque un invité comme ayant besoin d\'un accès PMR puis retire ce marquage', function (): void {
+    ['organization' => $organization, 'event' => $event, 'doorStaff' => $owner] = makeCheckInEvent(MembershipRole::Owner);
+
+    $this->actingAs($owner)->patchJson("/events/{$event->id}/seating/accessibility", [
+        'guest_type' => 'attendee',
+        'guest_id' => 7,
+        'needs_accessible_seating' => true,
+    ])->assertNoContent();
+
+    app(CurrentOrganization::class)->set($organization);
+    expect(SeatingAccessibilityNeed::query()->where('event_id', $event->id)->where('guest_type', 'attendee')->where('guest_id', 7)->exists())->toBeTrue();
+    app(CurrentOrganization::class)->clear();
+
+    $this->actingAs($owner)->patchJson("/events/{$event->id}/seating/accessibility", [
+        'guest_type' => 'attendee',
+        'guest_id' => 7,
+        'needs_accessible_seating' => false,
+    ])->assertNoContent();
+
+    app(CurrentOrganization::class)->set($organization);
+    expect(SeatingAccessibilityNeed::query()->where('event_id', $event->id)->where('guest_type', 'attendee')->where('guest_id', 7)->exists())->toBeFalse();
+    app(CurrentOrganization::class)->clear();
+});
+
 it('lance le placement automatique et affecte les invités non placés', function (): void {
     ['organization' => $organization, 'event' => $event, 'doorStaff' => $owner] = makeCheckInEvent(MembershipRole::Owner);
     makeCheckedInAttendee($organization, $event);
@@ -148,6 +173,32 @@ it('lance le placement automatique et affecte les invités non placés', functio
     $response->assertOk();
     $response->assertJsonPath('placed_count', 2);
     $response->assertJsonPath('unplaced_count', 0);
+});
+
+it('place automatiquement un invité à mobilité réduite sur la table accessible, pas sur celle qui tasse le mieux', function (): void {
+    ['organization' => $organization, 'event' => $event, 'doorStaff' => $owner] = makeCheckInEvent(MembershipRole::Owner);
+    $attendee = makeCheckedInAttendee($organization, $event);
+    app(CurrentOrganization::class)->set($organization);
+    // La table non accessible laisserait moins de place vide (meilleur
+    // tassement) : sans la règle d'accessibilité, l'heuristique l'aurait choisie.
+    SeatingTable::factory()->for($organization)->create(['event_id' => $event->id, 'capacity' => 2, 'is_accessible' => false]);
+    SeatingTable::factory()->for($organization)->accessible()->create(['event_id' => $event->id, 'capacity' => 8]);
+    app(CurrentOrganization::class)->clear();
+
+    $this->actingAs($owner)->patchJson("/events/{$event->id}/seating/accessibility", [
+        'guest_type' => 'attendee',
+        'guest_id' => $attendee->id,
+        'needs_accessible_seating' => true,
+    ])->assertNoContent();
+
+    $this->actingAs($owner)->postJson("/events/{$event->id}/seating/auto-place")
+        ->assertOk()
+        ->assertJsonPath('placed_count', 1);
+
+    app(CurrentOrganization::class)->set($organization);
+    $assignment = SeatAssignment::query()->where('event_id', $event->id)->where('guest_id', $attendee->id)->sole();
+    expect(SeatingTable::query()->find($assignment->seating_table_id)->is_accessible)->toBeTrue();
+    app(CurrentOrganization::class)->clear();
 });
 
 it('affiche le plan de table pour un membre habilité', function (): void {

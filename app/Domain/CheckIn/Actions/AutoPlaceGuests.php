@@ -16,11 +16,15 @@ use App\Domain\CheckIn\Data\AutoPlaceResult;
  *
  * Étapes : regroupe d'abord les invités liés par une contrainte
  * "doit être avec" (union-find, les groupes voyagent ensemble ou pas du
- * tout) ; place les plus gros groupes en premier (plus difficiles à caser) ;
+ * tout) ; place en premier les groupes qui comptent un besoin d'accès PMR
+ * (les plus contraints, une seule table peut les recevoir), puis les
+ * groupes restants du plus gros au plus petit (plus difficiles à caser) ;
  * pour chaque groupe, choisit la table dont la place restante après
  * placement serait la plus faible parmi celles qui peuvent l'accueillir en
  * entier sans y placer deux invités "ne doit pas être avec" — équilibrage
- * du remplissage en tassant les tables plutôt qu'en les étalant.
+ * du remplissage en tassant les tables plutôt qu'en les étalant. Un groupe
+ * qui n'a pas besoin d'accès PMR évite les tables qui en portent un tant
+ * qu'une autre peut l'accueillir, pour les garder libres à qui en a besoin.
  *
  * Ne reçoit et ne renvoie que des tableaux de scalaires : aucune requête ni
  * dépendance à un modèle d'un autre module (section 3 du CLAUDE.md),
@@ -30,16 +34,22 @@ use App\Domain\CheckIn\Data\AutoPlaceResult;
 final class AutoPlaceGuests
 {
     /**
-     * @param  list<array{guest_type: string, guest_id: int}>  $unassignedGuests
-     * @param  list<array{id: int, remaining: int}>  $tables
+     * @param  list<array{guest_type: string, guest_id: int, needs_accessible?: bool}>  $unassignedGuests
+     * @param  list<array{id: int, remaining: int, is_accessible?: bool}>  $tables
      * @param  list<array{guest_a: string, guest_b: string, type: string}>  $constraints
      */
     public function handle(array $unassignedGuests, array $tables, array $constraints): AutoPlaceResult
     {
         $mustNotBeWith = $this->buildMustNotBeWithMap($constraints);
         $groups = $this->groupByMustBeWith($unassignedGuests, $constraints);
+        $accessibleTableIds = collect($tables)->filter(fn (array $table): bool => $table['is_accessible'] ?? false)->pluck('id')->all();
 
-        usort($groups, fn (array $a, array $b): int => count($b) <=> count($a));
+        usort($groups, function (array $a, array $b): int {
+            $needsA = $this->groupNeedsAccessible($a);
+            $needsB = $this->groupNeedsAccessible($b);
+
+            return $needsB <=> $needsA ?: count($b) <=> count($a);
+        });
 
         $remaining = collect($tables)->keyBy('id')->map(fn (array $table): int => $table['remaining'])->all();
         $seatedAt = []; // "type:id" => table_id, pour vérifier les conflits au fil du placement.
@@ -47,7 +57,7 @@ final class AutoPlaceGuests
         $unplaced = [];
 
         foreach ($groups as $group) {
-            $tableId = $this->findBestTable($group, $remaining, $seatedAt, $mustNotBeWith);
+            $tableId = $this->findBestTable($group, $remaining, $seatedAt, $mustNotBeWith, $accessibleTableIds);
 
             if ($tableId === null) {
                 array_push($unplaced, ...$group);
@@ -141,18 +151,54 @@ final class AutoPlaceGuests
     }
 
     /**
+     * @param  list<array{guest_type: string, guest_id: int, needs_accessible?: bool}>  $group
+     */
+    private function groupNeedsAccessible(array $group): bool
+    {
+        foreach ($group as $guest) {
+            if ($guest['needs_accessible'] ?? false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  list<array{guest_type: string, guest_id: int, needs_accessible?: bool}>  $group
+     * @param  array<int, int>  $remaining
+     * @param  array<string, int>  $seatedAt
+     * @param  array<string, list<string>>  $mustNotBeWith
+     * @param  list<int>  $accessibleTableIds
+     */
+    private function findBestTable(array $group, array $remaining, array $seatedAt, array $mustNotBeWith, array $accessibleTableIds): ?int
+    {
+        if ($this->groupNeedsAccessible($group)) {
+            return $this->bestAmong($group, $remaining, $seatedAt, $mustNotBeWith, $accessibleTableIds);
+        }
+
+        $nonAccessibleTableIds = array_diff(array_keys($remaining), $accessibleTableIds);
+
+        return $this->bestAmong($group, $remaining, $seatedAt, $mustNotBeWith, $nonAccessibleTableIds)
+            ?? $this->bestAmong($group, $remaining, $seatedAt, $mustNotBeWith, $accessibleTableIds);
+    }
+
+    /**
      * @param  list<array{guest_type: string, guest_id: int}>  $group
      * @param  array<int, int>  $remaining
      * @param  array<string, int>  $seatedAt
      * @param  array<string, list<string>>  $mustNotBeWith
+     * @param  list<int>  $candidateTableIds
      */
-    private function findBestTable(array $group, array $remaining, array $seatedAt, array $mustNotBeWith): ?int
+    private function bestAmong(array $group, array $remaining, array $seatedAt, array $mustNotBeWith, array $candidateTableIds): ?int
     {
         $best = null;
         $bestLeftover = null;
 
-        foreach ($remaining as $tableId => $capacity) {
-            if ($capacity < count($group)) {
+        foreach ($candidateTableIds as $tableId) {
+            $capacity = $remaining[$tableId] ?? null;
+
+            if ($capacity === null || $capacity < count($group)) {
                 continue;
             }
 

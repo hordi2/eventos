@@ -36,12 +36,18 @@ interface Constraint {
     type: 'must_be_with' | 'must_not_be_with';
 }
 
+interface AccessibilityNeed {
+    guest_type: string;
+    guest_id: number;
+}
+
 interface Props {
     event: { id: number; title: string };
     tables: SeatingTable[];
     unassignedGuests: Guest[];
     constraints: Constraint[];
     shapes: string[];
+    accessibilityNeeds: AccessibilityNeed[];
 }
 
 interface OpenSeat {
@@ -100,10 +106,20 @@ function seatPosition(table: SeatingTable, index: number, total: number): { left
     };
 }
 
-export default function Show({ event, tables: initialTables, unassignedGuests: initialUnassigned, constraints: initialConstraints, shapes }: Props) {
+export default function Show({
+    event,
+    tables: initialTables,
+    unassignedGuests: initialUnassigned,
+    constraints: initialConstraints,
+    shapes,
+    accessibilityNeeds: initialAccessibilityNeeds,
+}: Props) {
     const [tables, setTables] = useState<SeatingTable[]>(initialTables);
     const [unassignedGuests, setUnassignedGuests] = useState<Guest[]>(initialUnassigned);
     const [constraints, setConstraints] = useState<Constraint[]>(initialConstraints);
+    const [accessibleGuestKeys, setAccessibleGuestKeys] = useState<Set<string>>(
+        () => new Set(initialAccessibilityNeeds.map((need) => `${need.guest_type}:${need.guest_id}`)),
+    );
     const [newTableShape, setNewTableShape] = useState(shapes[0] ?? 'round');
     const [newTableCapacity, setNewTableCapacity] = useState('8');
     const [newTableAccessible, setNewTableAccessible] = useState(false);
@@ -174,6 +190,32 @@ export default function Show({ event, tables: initialTables, unassignedGuests: i
             })),
         );
         setFeedback(null);
+    }
+
+    function needsAccessible(guest: Guest): boolean {
+        return accessibleGuestKeys.has(guestKey(guest));
+    }
+
+    async function handleToggleGuestAccessibility(guest: Guest) {
+        const needed = !needsAccessible(guest);
+
+        await window.axios.patch(`/events/${event.id}/seating/accessibility`, {
+            guest_type: guest.guest_type,
+            guest_id: guest.id,
+            needs_accessible_seating: needed,
+        });
+
+        setAccessibleGuestKeys((current) => {
+            const next = new Set(current);
+
+            if (needed) {
+                next.add(guestKey(guest));
+            } else {
+                next.delete(guestKey(guest));
+            }
+
+            return next;
+        });
     }
 
     async function handleUnassign(guest: Guest) {
@@ -409,7 +451,17 @@ export default function Show({ event, tables: initialTables, unassignedGuests: i
                                                 <div className="absolute left-8 top-0 z-20 w-56 space-y-2 rounded-card bg-bg p-3 text-xs shadow-lg ring-1 ring-line">
                                                     {seat.type === 'filled' ? (
                                                         <>
-                                                            <p className="font-medium">{seat.guest.name}</p>
+                                                            <p className="font-medium">
+                                                                {needsAccessible(seat.guest) && <span title="Besoin d'accès PMR">♿ </span>}
+                                                                {seat.guest.name}
+                                                            </p>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => void handleToggleGuestAccessibility(seat.guest)}
+                                                                className="w-full text-left text-ink-soft underline"
+                                                            >
+                                                                {needsAccessible(seat.guest) ? "Retirer le besoin d'accès PMR" : "Marquer un besoin d'accès PMR"}
+                                                            </button>
                                                             <Button
                                                                 variant="secondary"
                                                                 className="w-full"
@@ -471,9 +523,24 @@ export default function Show({ event, tables: initialTables, unassignedGuests: i
                                     key={guestKey(guest)}
                                     draggable
                                     onDragStart={(e) => e.dataTransfer.setData('text/guest-key', guestKey(guest))}
-                                    className="cursor-move rounded bg-bg-deep px-2 py-1 text-sm"
+                                    className="flex cursor-move items-center justify-between gap-2 rounded bg-bg-deep px-2 py-1 text-sm"
                                 >
-                                    {guest.name}
+                                    <span className="truncate">
+                                        {needsAccessible(guest) && (
+                                            <span title="Besoin d'accès PMR" aria-label="Besoin d'accès PMR" className="mr-1">
+                                                ♿
+                                            </span>
+                                        )}
+                                        {guest.name}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => void handleToggleGuestAccessibility(guest)}
+                                        title={needsAccessible(guest) ? 'Retirer le besoin d\'accès PMR' : 'Marquer un besoin d\'accès PMR'}
+                                        className="shrink-0 text-xs text-ink-soft underline"
+                                    >
+                                        {needsAccessible(guest) ? 'Retirer' : 'PMR'}
+                                    </button>
                                 </li>
                             ))}
                             {unassignedGuests.length === 0 && <li className="text-sm text-ink-soft">Aucun invité en attente.</li>}

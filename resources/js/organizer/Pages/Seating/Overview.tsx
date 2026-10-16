@@ -21,9 +21,15 @@ interface SeatingTable {
     guests: Guest[];
 }
 
+interface AccessibilityNeed {
+    guest_type: string;
+    guest_id: number;
+}
+
 interface Props {
     event: { id: number; title: string };
     tables: SeatingTable[];
+    accessibilityNeeds: AccessibilityNeed[];
 }
 
 // Même disposition en cercle que l'éditeur (Seating/Show), reprise ici sans
@@ -69,9 +75,10 @@ function seatPosition(table: SeatingTable, index: number, total: number): { left
     };
 }
 
-export default function Overview({ event, tables }: Props) {
+export default function Overview({ event, tables, accessibilityNeeds }: Props) {
     const canvasWidth = Math.max(800, ...tables.map((t) => t.position_x + t.width + 80));
     const canvasHeight = Math.max(560, ...tables.map((t) => t.position_y + t.height + 80));
+    const accessibleGuestKeys = new Set(accessibilityNeeds.map((need) => `${need.guest_type}:${need.guest_id}`));
 
     return (
         <EventLayout title="Vue d'ensemble de la salle" eyebrow={event.title}>
@@ -119,7 +126,7 @@ export default function Overview({ event, tables }: Props) {
                                             style={{ left: position.left, top: position.top, width: SEAT_SIZE, height: SEAT_SIZE }}
                                             title={seat.type === 'filled' ? seat.guest.name : 'Place libre'}
                                         >
-                                            {seat.type === 'filled' ? initials(seat.guest.name) : ''}
+                                            {seat.type === 'filled' && accessibleGuestKeys.has(guestKey(seat.guest)) ? '♿' : seat.type === 'filled' ? initials(seat.guest.name) : ''}
                                         </div>
                                     );
                                 })}
@@ -138,7 +145,10 @@ export default function Overview({ event, tables }: Props) {
                         </h3>
                         <ul className="space-y-1 text-sm">
                             {table.guests.map((guest) => (
-                                <li key={guestKey(guest)}>{guest.name}</li>
+                                <li key={guestKey(guest)}>
+                                    {accessibleGuestKeys.has(guestKey(guest)) && <span title="Besoin d'accès PMR">♿ </span>}
+                                    {guest.name}
+                                </li>
                             ))}
                             {table.guests.length === 0 && <li className="text-ink-soft">Vide.</li>}
                         </ul>

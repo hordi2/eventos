@@ -8,6 +8,7 @@ use App\Domain\CheckIn\Actions\AutoPlaceGuests;
 use App\Domain\CheckIn\Data\AutoPlaceResult;
 use App\Domain\CheckIn\Data\GuestData;
 use App\Domain\CheckIn\Models\SeatAssignment;
+use App\Domain\CheckIn\Models\SeatingAccessibilityNeed;
 use App\Domain\CheckIn\Models\SeatingConstraint;
 use App\Domain\CheckIn\Models\SeatingTable;
 use App\Domain\Event\Models\Event;
@@ -32,8 +33,18 @@ final class RunAutoPlacement
     {
         $plan = $this->getSeatingPlan->handle($event);
 
+        $accessibilityNeeds = SeatingAccessibilityNeed::query()
+            ->where('event_id', $event->id)
+            ->get()
+            ->map(fn (SeatingAccessibilityNeed $need): string => "{$need->guest_type}:{$need->guest_id}")
+            ->all();
+
         $unassignedGuests = array_map(
-            fn (GuestData $guest): array => ['guest_type' => $guest->guestType, 'guest_id' => $guest->id],
+            fn (GuestData $guest): array => [
+                'guest_type' => $guest->guestType,
+                'guest_id' => $guest->id,
+                'needs_accessible' => in_array("{$guest->guestType}:{$guest->id}", $accessibilityNeeds, true),
+            ],
             $plan->unassignedGuests,
         );
 
@@ -43,6 +54,7 @@ final class RunAutoPlacement
             ->map(fn (SeatingTable $table): array => [
                 'id' => $table->id,
                 'remaining' => $table->capacity - SeatAssignment::query()->where('seating_table_id', $table->id)->count(),
+                'is_accessible' => $table->is_accessible,
             ])
             ->filter(fn (array $table): bool => $table['remaining'] > 0)
             ->values()

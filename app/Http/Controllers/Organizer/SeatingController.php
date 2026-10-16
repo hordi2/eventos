@@ -9,10 +9,12 @@ use App\Domain\CheckIn\Actions\CreateSeatingConstraint;
 use App\Domain\CheckIn\Actions\CreateSeatingTable;
 use App\Domain\CheckIn\Actions\DeleteSeatingConstraint;
 use App\Domain\CheckIn\Actions\DeleteSeatingTable;
+use App\Domain\CheckIn\Actions\SetGuestAccessibilityNeed;
 use App\Domain\CheckIn\Actions\UnassignGuestFromTable;
 use App\Domain\CheckIn\Actions\UpdateSeatingTable;
 use App\Domain\CheckIn\Data\GuestData;
 use App\Domain\CheckIn\Data\SeatingTableData;
+use App\Domain\CheckIn\Models\SeatingAccessibilityNeed;
 use App\Domain\CheckIn\Models\SeatingConstraint;
 use App\Domain\CheckIn\Models\SeatingConstraintType;
 use App\Domain\CheckIn\Models\SeatingTable;
@@ -21,6 +23,7 @@ use App\Domain\CheckIn\SeatingTableFullException;
 use App\Domain\Event\Models\Event;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organizer\Seating\AssignGuestRequest;
+use App\Http\Requests\Organizer\Seating\SetGuestAccessibilityNeedRequest;
 use App\Http\Requests\Organizer\Seating\StoreSeatingConstraintRequest;
 use App\Http\Requests\Organizer\Seating\StoreSeatingTableRequest;
 use App\Http\Requests\Organizer\Seating\UpdateSeatingTableRequest;
@@ -43,6 +46,7 @@ final class SeatingController extends Controller
 
         $plan = $getSeatingPlan->handle($event);
         $constraints = SeatingConstraint::query()->where('event_id', $event->id)->get();
+        $accessibilityNeeds = SeatingAccessibilityNeed::query()->where('event_id', $event->id)->get();
 
         return Inertia::render('Seating/Show', [
             'event' => ['id' => $event->id, 'title' => $event->title],
@@ -57,7 +61,27 @@ final class SeatingController extends Controller
                 'type' => $constraint->type->value,
             ]),
             'shapes' => array_map(fn (SeatingTableShape $shape): string => $shape->value, SeatingTableShape::cases()),
+            'accessibilityNeeds' => $accessibilityNeeds->map(fn (SeatingAccessibilityNeed $need): array => [
+                'guest_type' => $need->guest_type,
+                'guest_id' => $need->guest_id,
+            ]),
         ]);
+    }
+
+    public function setAccessibilityNeed(int $event, SetGuestAccessibilityNeedRequest $request, SetGuestAccessibilityNeed $action): JsonResponse
+    {
+        $eventModel = $this->findEvent($event);
+
+        $action->handle(
+            organization: $eventModel->organization,
+            eventId: $eventModel->id,
+            guestType: $request->string('guest_type')->toString(),
+            guestId: $request->integer('guest_id'),
+            needsAccessibleSeating: $request->boolean('needs_accessible_seating'),
+            user: $request->user(),
+        );
+
+        return response()->json(null, 204);
     }
 
     /**
@@ -72,10 +96,15 @@ final class SeatingController extends Controller
         Gate::authorize('viewGuests', $event->organization);
 
         $plan = $getSeatingPlan->handle($event);
+        $accessibilityNeeds = SeatingAccessibilityNeed::query()->where('event_id', $event->id)->get();
 
         return Inertia::render('Seating/Overview', [
             'event' => ['id' => $event->id, 'title' => $event->title],
             'tables' => array_map($this->serializeTable(...), $plan->tables),
+            'accessibilityNeeds' => $accessibilityNeeds->map(fn (SeatingAccessibilityNeed $need): array => [
+                'guest_type' => $need->guest_type,
+                'guest_id' => $need->guest_id,
+            ]),
         ]);
     }
 
@@ -235,7 +264,11 @@ final class SeatingController extends Controller
 
         $plan = $getSeatingPlan->handle($event);
 
-        $pdf = Pdf::loadView('seating.plan-pdf', ['event' => $event, 'tables' => $plan->tables])->output();
+        $pdf = Pdf::loadView('seating.plan-pdf', [
+            'event' => $event,
+            'tables' => $plan->tables,
+            'accessibleGuestKeys' => $this->accessibleGuestKeys($event),
+        ])->output();
 
         return response($pdf, 200, [
             'Content-Type' => 'application/pdf',
@@ -250,12 +283,28 @@ final class SeatingController extends Controller
 
         $plan = $getSeatingPlan->handle($event);
 
-        $pdf = Pdf::loadView('seating.lists-pdf', ['event' => $event, 'tables' => $plan->tables])->output();
+        $pdf = Pdf::loadView('seating.lists-pdf', [
+            'event' => $event,
+            'tables' => $plan->tables,
+            'accessibleGuestKeys' => $this->accessibleGuestKeys($event),
+        ])->output();
 
         return response($pdf, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => "attachment; filename=\"listes-par-table-{$event->id}.pdf\"",
         ]);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function accessibleGuestKeys(Event $event): array
+    {
+        return SeatingAccessibilityNeed::query()
+            ->where('event_id', $event->id)
+            ->get()
+            ->map(fn (SeatingAccessibilityNeed $need): string => "{$need->guest_type}:{$need->guest_id}")
+            ->all();
     }
 
     /**
