@@ -83,6 +83,7 @@ export interface SharedProps {
         whiteLabel: boolean;
         referral: boolean;
         eventSharing: boolean;
+        team: boolean;
         clients: boolean;
     };
     organizations: OrganizationChoice[];

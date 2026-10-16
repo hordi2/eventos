@@ -152,6 +152,7 @@ class HandleInertiaRequests extends Middleware
                 'whiteLabel' => false,
                 'referral' => false,
                 'eventSharing' => false,
+                'team' => false,
                 'clients' => false,
             ];
         }
@@ -167,6 +168,7 @@ class HandleInertiaRequests extends Middleware
             'whiteLabel' => $gate->allows('manageBranding', $organization),
             'referral' => $gate->allows('manageBilling', $organization),
             'eventSharing' => $gate->allows('inviteMembers', $organization),
+            'team' => $gate->allows('inviteMembers', $organization),
             // Portefeuille (D10) : seulement pour une agence, et seulement
             // pour qui peut l'administrer.
             'clients' => $organization->is_agency && $gate->allows('manageClients', $organization),

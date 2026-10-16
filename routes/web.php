@@ -39,6 +39,7 @@ use App\Http\Controllers\Organizer\Auth\MfaChallengeController;
 use App\Http\Controllers\Organizer\Auth\NewPasswordController;
 use App\Http\Controllers\Organizer\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Organizer\Auth\RegisteredUserController;
+use App\Http\Controllers\Organizer\Auth\TeamInvitationController;
 use App\Http\Controllers\Organizer\Auth\VerifyEmailController;
 use App\Http\Controllers\Organizer\BadgeController;
 use App\Http\Controllers\Organizer\BillingController;
@@ -92,6 +93,7 @@ use App\Http\Controllers\Organizer\Settings\NotificationController;
 use App\Http\Controllers\Organizer\Settings\ProfileController;
 use App\Http\Controllers\Organizer\Settings\ReferralController;
 use App\Http\Controllers\Organizer\Settings\SecurityController;
+use App\Http\Controllers\Organizer\Settings\TeamController;
 use App\Http\Controllers\Organizer\Settings\WhiteLabelController;
 use App\Http\Controllers\Organizer\SpeakerController;
 use App\Http\Controllers\Organizer\StockPhotoController;
@@ -159,6 +161,22 @@ Route::prefix('invitations/{organization}/{token}')
             ->middleware(['auth', 'throttle:6,1'])
             ->name('accept');
         Route::post('inscription', [CollaboratorInvitationController::class, 'register'])
+            ->middleware(['guest', 'throttle:6,1'])
+            ->name('register');
+    });
+
+// Invitation d'un membre de l'équipe (Paramètres → Équipe) : même mécanique
+// que l'invitation d'un collaborateur ci-dessus, mais attribue un rôle à
+// l'échelle de l'organisation plutôt qu'un accès par événement.
+Route::prefix('team-invitations/{organization}/{token}')
+    ->name('team-invitations.')
+    ->middleware('throttle:30,1')
+    ->group(function (): void {
+        Route::get('/', [TeamInvitationController::class, 'show'])->name('show');
+        Route::post('accepter', [TeamInvitationController::class, 'accept'])
+            ->middleware(['auth', 'throttle:6,1'])
+            ->name('accept');
+        Route::post('inscription', [TeamInvitationController::class, 'register'])
             ->middleware(['guest', 'throttle:6,1'])
             ->name('register');
     });
@@ -244,6 +262,20 @@ Route::middleware('auth')->group(function (): void {
             Route::patch('{collaborator}', [EventSharingController::class, 'update'])->name('update');
             Route::post('{collaborator}/resend', [EventSharingController::class, 'resend'])->middleware('throttle:10,1')->name('resend');
             Route::delete('{collaborator}', [EventSharingController::class, 'destroy'])->name('destroy');
+        });
+
+    Route::middleware(['verified', 'resolve-organization', 'can-organization:inviteMembers'])
+        ->prefix('settings/team')
+        ->name('settings.team.')
+        ->group(function (): void {
+            Route::get('/', [TeamController::class, 'index'])->name('index');
+            Route::post('/', [TeamController::class, 'store'])->middleware('throttle:20,1')->name('store');
+            Route::patch('{membership}', [TeamController::class, 'updateRole'])->name('update-role');
+            Route::delete('{membership}', [TeamController::class, 'destroy'])->name('destroy');
+            Route::post('invitations/{invitation}/resend', [TeamController::class, 'resendInvitation'])
+                ->middleware('throttle:10,1')
+                ->name('invitations.resend');
+            Route::delete('invitations/{invitation}', [TeamController::class, 'cancelInvitation'])->name('invitations.cancel');
         });
 
     Route::middleware(['verified', 'resolve-organization', 'can-organization:viewAuditLog'])->group(function (): void {

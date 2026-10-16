@@ -12,6 +12,7 @@ export type SettingsSection =
     | 'integrations'
     | 'white-label'
     | 'referral'
+    | 'team'
     | 'clients'
     | 'audit-log'
     | 'compliance';
@@ -28,6 +29,7 @@ export default function SettingsLayout({ title, active, children }: PropsWithChi
         { key: 'profile', label: 'Mon compte', href: '/settings/profile', visible: true },
         { key: 'security', label: 'Sécurité', href: '/settings/security', visible: true },
         { key: 'notifications', label: 'Notifications', href: '/settings/notifications', visible: true },
+        { key: 'team', label: 'Équipe', href: '/settings/team', visible: settingsAccess.team },
         { key: 'clients', label: 'Mes clients', href: '/clients', visible: settingsAccess.clients },
         { key: 'billing', label: 'Facturation', href: '/billing', visible: settingsAccess.billing },
         { key: 'integrations', label: 'Intégrations', href: '/settings/api', visible: settingsAccess.integrations },
