@@ -51,6 +51,31 @@ final class EventForms
     }
 
     /**
+     * Toutes les questions jamais posées par l'événement, formulaires et
+     * versions confondues — y compris une question retirée depuis une
+     * version plus récente. Sert à l'export (§4.7) : une réponse déjà
+     * collectée ne doit jamais disparaître de la colonne qui l'affiche
+     * simplement parce que la question a depuis été retirée ou renommée.
+     * Le libellé retenu pour une clé qui existe dans plusieurs versions est
+     * celui de sa version la plus récente.
+     *
+     * @return Collection<int, FormField>
+     */
+    public function allFieldsEverUsed(int $eventId): Collection
+    {
+        return Form::query()
+            ->where('event_id', $eventId)
+            ->with('versions.fields.options')
+            ->orderByDesc('is_default')
+            ->orderBy('id')
+            ->get()
+            ->flatMap(fn (Form $form): Collection => $form->versions->sortByDesc('version_number'))
+            ->flatMap(fn (FormVersion $version): Collection => $version->fields)
+            ->unique(fn (FormField $field): string => $field->key)
+            ->values();
+    }
+
+    /**
      * Le formulaire qu'ouvre un lien : celui du slug, sinon celui par défaut.
      */
     public function forLink(int $eventId, ?string $slug): ?Form

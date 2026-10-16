@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Listeners;
 
 use App\Domain\Event\Models\Event;
+use App\Domain\Form\Events\RegistrationApproved;
 use App\Domain\Form\Models\Registration;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Support\Capacity\Events\WaitlistEntryPromoted;
@@ -19,6 +20,12 @@ use App\Support\Capacity\Events\WaitlistEntryPromoted;
  * Vit hors de Domain/Form (comme SendConfirmationEmail) depuis qu'il lit le
  * réglage « validation manuelle » de l'événement : personne n'est confirmé
  * sans l'accord de l'organisateur quand il l'a demandé.
+ *
+ * RegistrationApproved n'est dispatché que pour l'inscription principale
+ * (jamais une session, §ApproveRegistration : une confirmation couvre déjà
+ * toutes les sessions de l'invité) et seulement si la promotion aboutit
+ * directement à une place confirmée — sans lui, une place libérée ne
+ * prévenait jamais l'invité promu (e-mail, WhatsApp, don promis ouvert).
  */
 final class ConfirmPromotedRegistration
 {
@@ -34,7 +41,12 @@ final class ConfirmPromotedRegistration
             return;
         }
 
-        $registration->update(['status' => $this->promotedStatus($registration)]);
+        $status = $this->promotedStatus($registration);
+        $registration->update(['status' => $status]);
+
+        if ($status === RegistrationStatus::Confirmed && $registration->parent_registration_id === null) {
+            RegistrationApproved::dispatch($registration->fresh());
+        }
     }
 
     /**

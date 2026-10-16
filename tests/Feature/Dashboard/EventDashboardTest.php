@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domain\CheckIn\Models\CheckIn;
 use App\Domain\Contact\Models\Contact;
+use App\Domain\Form\Models\Attendee;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Ticketing\Models\Order;
@@ -47,6 +48,41 @@ it('calcule les statistiques du tableau de bord (invités confirmés, présents,
     expect($stats->registrationCurve)->not->toBeEmpty();
     expect($stats->arrivalCurve)->toHaveCount(1);
     expect($stats->arrivalCurve[0]['count'])->toBe(1);
+});
+
+it('compte les accompagnants au dénominateur, pas seulement au numérateur : le taux de présence ne dépasse jamais 100 %', function (): void {
+    ['organization' => $organization, 'event' => $event] = makeCheckInEvent(MembershipRole::Owner);
+    $primary = makeCheckedInAttendee($organization, $event);
+
+    app(CurrentOrganization::class)->set($organization);
+
+    $companion = Attendee::factory()->create([
+        'organization_id' => $organization->id,
+        'registration_id' => $primary->registration_id,
+        'is_primary' => false,
+    ]);
+
+    // Le titulaire ET son accompagnant arrivent tous les deux : chacun scanne
+    // son propre billet, chacun compte pour une personne présente.
+    foreach ([$primary, $companion] as $attendee) {
+        CheckIn::query()->create([
+            'organization_id' => $organization->id,
+            'event_id' => $event->id,
+            'attendee_id' => $attendee->id,
+            'device_local_id' => (string) Str::uuid(),
+            'direction' => 'check_in',
+            'status' => 'accepted',
+            'recorded_at' => CarbonImmutable::now(),
+        ]);
+    }
+
+    $stats = app(GetEventDashboardStats::class)->handle($event->fresh());
+
+    app(CurrentOrganization::class)->clear();
+
+    expect($stats->confirmedCount)->toBe(2);
+    expect($stats->presentCount)->toBe(2);
+    expect($stats->presenceRate)->toBe(1.0);
 });
 
 it('la courbe cumulée grandit de façon monotone au fil des jours', function (): void {

@@ -5,11 +5,17 @@ declare(strict_types=1);
 use App\Domain\Analytics\Models\Export;
 use App\Domain\CheckIn\Models\CheckIn;
 use App\Domain\Contact\Models\Contact;
+use App\Domain\Form\Actions\PublishFormVersion;
+use App\Domain\Form\Actions\ReviseForm;
+use App\Domain\Form\Models\FieldType;
+use App\Domain\Form\Models\Form;
 use App\Domain\Form\Models\RegistrationStatus;
 use App\Domain\Organization\Models\AuditLog;
+use App\Domain\Organization\Models\Membership;
 use App\Domain\Organization\Models\MembershipRole;
 use App\Domain\Ticketing\Models\Order;
 use App\Domain\Ticketing\Models\OrderStatus;
+use App\Models\User;
 use App\Support\Money;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Support\Facades\Storage;
@@ -85,6 +91,39 @@ it('exporte les commandes payées en CSV', function (): void {
 
     $download = $this->actingAs($owner)->get("/events/{$event->id}/exports/{$response->json('id')}/download");
     expect($download->getContent())->toContain('Jean Test')->toContain('Payée');
+});
+
+it('conserve dans l\'export la réponse à une question retirée depuis une version plus récente du formulaire', function (): void {
+    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent([
+        ['key' => 'nom_complet', 'type' => 'short_text', 'label' => 'Nom complet', 'is_required' => true],
+        ['key' => 'diner', 'type' => 'yes_no', 'label' => 'Présent au dîner ?'],
+    ]);
+
+    answerAsGuest($this, $event, "/r/{$organization->slug}/{$event->slug}", 'presente@example.com', [
+        'nom_complet' => 'Awa Diallo',
+        'diner' => '1',
+    ]);
+
+    app(CurrentOrganization::class)->set($organization);
+    $owner = User::factory()->create();
+    Membership::factory()->for($organization)->for($owner)->create(['role' => MembershipRole::Owner]);
+    $form = Form::query()->where('event_id', $event->id)->firstOrFail();
+    // "diner" retiré dans cette nouvelle version : la réponse déjà
+    // collectée ne doit pas pour autant disparaître de l'export (§4.7).
+    app(ReviseForm::class)->handle($form, $owner, [
+        ['key' => 'nom_complet', 'type' => FieldType::ShortText, 'label' => 'Nom complet', 'is_required' => true],
+    ]);
+    app(PublishFormVersion::class)->handle($form->fresh(), $owner);
+    app(CurrentOrganization::class)->clear();
+
+    $response = $this->actingAs($owner)->postJson("/events/{$event->id}/exports", [
+        'type' => 'registrations',
+        'columns' => ['first_name', 'last_name', 'question:diner'],
+    ]);
+
+    $response->assertCreated();
+    $download = $this->actingAs($owner)->get("/events/{$event->id}/exports/{$response->json('id')}/download");
+    expect($download->getContent())->toContain('Awa')->toContain('Oui');
 });
 
 it('exporte les invités enregistrés (check-ins) en CSV', function (): void {

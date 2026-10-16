@@ -92,14 +92,17 @@ final class BuildExportRows
     }
 
     /**
-     * Une colonne par question des formulaires, préfixée pour ne jamais
-     * entrer en collision avec les colonnes fixes ci-dessus.
+     * Une colonne par question jamais posée par les formulaires de
+     * l'événement (toutes versions confondues, §4.7 : une question retirée
+     * depuis ne doit jamais faire disparaître les réponses déjà collectées),
+     * préfixée pour ne jamais entrer en collision avec les colonnes fixes
+     * ci-dessus.
      *
      * @return array<string, string>
      */
     private function questionColumns(Event $event): array
     {
-        return $this->eventForms->referenceFields($event->id)
+        return $this->eventForms->allFieldsEverUsed($event->id)
             ->reject(fn (FormField $field): bool => $field->type === FieldType::InformationalText)
             ->mapWithKeys(fn (FormField $field): array => [self::QUESTION_PREFIX.$field->key => $field->label])
             ->all();

@@ -73,6 +73,13 @@ final class GetEventDashboardStats
             ->count();
     }
 
+    /**
+     * Chaque accompagnant compte pour une personne, comme le titulaire :
+     * presentGuestCount compte un check-in par attendee (titulaire ou
+     * accompagnant, chacun avec son propre billet/QR), jamais seulement le
+     * titulaire — un dénominateur limité aux titulaires ferait dépasser les
+     * 100 % de présence dès qu'un accompagnant se présente.
+     */
     private function confirmedGuestCount(Event $event): int
     {
         $registrations = DB::table('registrations')
@@ -80,7 +87,6 @@ final class GetEventDashboardStats
             ->where('registrations.organization_id', $event->organization_id)
             ->where('registrations.event_id', $event->id)
             ->where('registrations.status', RegistrationStatus::Confirmed->value)
-            ->where('attendees.is_primary', true)
             ->whereNull('attendees.deleted_at')
             ->whereNull('registrations.deleted_at')
             ->count();
