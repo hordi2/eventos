@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CheckInController;
+use App\Http\Controllers\Api\V1\EventController;
+use App\Http\Controllers\Api\V1\EventRegistrationController;
 use App\Http\Controllers\Api\V1\McpController;
 use App\Http\Controllers\Api\V1\WebhookSubscriptionController;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +37,22 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::middleware(['auth:sanctum', 'resolve-api-organization', 'throttle:120,1'])
         ->post('mcp', [McpController::class, 'handle'])
         ->name('mcp');
+
+    // Lecture seule (M9.2) : les événements et inscriptions de l'organisation
+    // de la clé API, pour une intégration qui a besoin de les interroger
+    // plutôt que d'attendre un webhook (Zapier, n8n, tableau de bord maison).
+    Route::middleware(['auth:sanctum', 'resolve-api-organization', 'throttle:120,1'])
+        ->prefix('events')
+        ->name('events.')
+        ->group(function (): void {
+            Route::get('/', [EventController::class, 'index'])->name('index');
+            Route::get('{event}', [EventController::class, 'show'])->whereNumber('event')->name('show');
+            Route::get('{event}/registrations', [EventRegistrationController::class, 'index'])->whereNumber('event')->name('registrations.index');
+            Route::get('{event}/registrations/{registration}', [EventRegistrationController::class, 'show'])
+                ->whereNumber('event')
+                ->whereNumber('registration')
+                ->name('registrations.show');
+        });
 
     Route::middleware(['auth:sanctum', 'resolve-api-check-in-event'])
         ->prefix('events/{event}')
