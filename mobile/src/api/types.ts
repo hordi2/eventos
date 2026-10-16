@@ -20,6 +20,7 @@ export interface ApiErrorBody {
 export interface CheckInScan {
   attendee_id?: number;
   ticket_id?: number;
+  qr_token?: string;
   device_local_id: string;
   direction: 'check_in' | 'check_out';
   recorded_at: string;
@@ -27,6 +28,7 @@ export interface CheckInScan {
 
 export interface CheckInSyncResult {
   device_local_id: string;
-  check_in_id: number;
-  status: 'accepted' | 'conflict';
+  check_in_id: number | null;
+  status: 'accepted' | 'conflict' | 'rejected';
+  error?: string;
 }

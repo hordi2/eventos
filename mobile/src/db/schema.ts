@@ -11,9 +11,12 @@ import { appSchema, tableSchema } from '@nozbe/watermelondb';
  * généré ici, jamais côté serveur, pour que l'écriture locale n'ait besoin
  * d'aucune connexion. synced distingue les lignes encore à envoyer (T-061c)
  * de celles déjà confirmées par le serveur, conservées pour l'historique.
+ * qr_token (v3) porte le jeton brut scanné quand il y en avait un : seul le
+ * serveur peut le vérifier (signature + expiration + statut, §4.6 du
+ * CLAUDE.md) ; absent pour un check-in passé par la recherche manuelle.
  */
 export const schema = appSchema({
-  version: 2,
+  version: 3,
   tables: [
     tableSchema({
       name: 'guests',
@@ -37,6 +40,7 @@ export const schema = appSchema({
         { name: 'device_local_id', type: 'string', isIndexed: true },
         { name: 'recorded_at', type: 'string' },
         { name: 'synced', type: 'boolean', isIndexed: true },
+        { name: 'qr_token', type: 'string', isOptional: true },
       ],
     }),
   ],

@@ -23,6 +23,7 @@ export async function recordLocalCheckIn(
   eventId: number,
   guestType: 'attendee' | 'ticket',
   remoteId: number,
+  qrToken: string | null = null,
 ): Promise<LocalCheckInResult> {
   const guestsCollection = database.get<Guest>('guests');
   const matches = await guestsCollection
@@ -54,6 +55,7 @@ export async function recordLocalCheckIn(
       record.deviceLocalId = deviceLocalId;
       record.recordedAt = recordedAt;
       record.synced = false;
+      record.qrToken = qrToken;
     });
   });
 

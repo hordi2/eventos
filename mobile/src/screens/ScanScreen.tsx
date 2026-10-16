@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Button, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { decodeTicketIdFromQrToken } from '../api/qrToken';
+import { decodeScannedGuest } from '../api/qrToken';
 import { recordLocalCheckIn, type LocalCheckInResult } from '../db/recordLocalCheckIn';
 
 interface Props {
@@ -35,16 +35,16 @@ export default function ScanScreen({ eventId, onSwitchToList, onCheckInRecorded 
 
     processingRef.current = true;
 
-    const ticketId = decodeTicketIdFromQrToken(data);
+    const scanned = decodeScannedGuest(data);
 
-    if (ticketId === null) {
+    if (scanned === null) {
       setFeedback({ type: 'error', message: 'QR illisible.' });
       releaseAfterCooldown();
 
       return;
     }
 
-    const result = await recordLocalCheckIn(eventId, 'ticket', ticketId);
+    const result = await recordLocalCheckIn(eventId, scanned.type, scanned.id, data);
     setFeedback(describeResult(result));
 
     if (result.status === 'accepted') {
@@ -109,7 +109,7 @@ function describeResult(result: LocalCheckInResult): Feedback {
     case 'conflict':
       return { type: 'conflict', message: `${result.guest.name}\nDéjà enregistré` };
     case 'not_found':
-      return { type: 'error', message: "Ce billet n'appartient pas à cet événement." };
+      return { type: 'error', message: "Ce QR code n'appartient pas à cet événement." };
   }
 }
 

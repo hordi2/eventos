@@ -9,12 +9,17 @@ const MAX_SCANS_PER_REQUEST = 500;
 /**
  * Envoie la file d'attente locale au serveur (T-061c). Un "conflit" renvoyé
  * par l'API n'est pas une erreur de synchronisation : c'est un autre poste
- * qui a déjà enregistré cet invité entre-temps (M7.1.4) — la ligne locale
- * est marquée synced dans les deux cas (accepted et conflict), seule une
- * vraie erreur réseau/serveur laisse la ligne en attente pour une
- * prochaine tentative. `guests.checked_in` n'a pas besoin d'être retouché
- * ici : il est déjà à true depuis recordLocalCheckIn, qu'il s'agisse au
- * final d'un accepted ou d'un conflict.
+ * qui a déjà enregistré cet invité entre-temps (M7.1.4). Un "rejected"
+ * (jeton QR invalide à la vérification serveur, §4.6 CLAUDE.md) est, de la
+ * même façon, un verdict définitif et non une panne passagère. La ligne
+ * locale est marquée synced dans les trois cas (accepted, conflict,
+ * rejected) ; seule une vraie erreur réseau/serveur la laisse en attente
+ * pour une prochaine tentative. `guests.checked_in` n'a pas besoin d'être
+ * retouché ici : il est déjà à true depuis recordLocalCheckIn, qu'il
+ * s'agisse au final d'un accepted ou d'un conflict (un rejected, lui,
+ * n'avait jamais mis `checked_in` à true côté serveur — seulement en local,
+ * de façon optimiste ; en rester là reste la limite acceptée de l'écriture
+ * hors ligne).
  */
 export async function syncPendingCheckIns(eventId: number, token: string): Promise<number> {
   const collection = database.get<PendingCheckIn>('pending_check_ins');
@@ -27,6 +32,7 @@ export async function syncPendingCheckIns(eventId: number, token: string): Promi
   const batch = pending.slice(0, MAX_SCANS_PER_REQUEST);
   const scans: CheckInScan[] = batch.map((record) => ({
     ...(record.guestType === 'attendee' ? { attendee_id: record.remoteId } : { ticket_id: record.remoteId }),
+    ...(record.qrToken !== null ? { qr_token: record.qrToken } : {}),
     device_local_id: record.deviceLocalId,
     direction: 'check_in',
     recorded_at: record.recordedAt,

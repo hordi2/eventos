@@ -10,4 +10,5 @@ export default class PendingCheckIn extends Model {
   @text('device_local_id') deviceLocalId: string;
   @text('recorded_at') recordedAt: string;
   @field('synced') synced: boolean;
+  @text('qr_token') qrToken: string | null;
 }
