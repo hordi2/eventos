@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Organizer;
 use App\Domain\Organization\Actions\RecordAuditLog;
 use App\Domain\Organization\Models\AuditLog;
 use App\Http\Controllers\Controller;
+use App\Support\Export\SanitizeCsvRow;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
@@ -59,13 +60,13 @@ final class AuditLogController extends Controller
                 ->orderBy('created_at')
                 ->chunk(500, function (Collection $logs) use ($handle): void {
                     foreach ($logs as $log) {
-                        fputcsv($handle, [
+                        fputcsv($handle, SanitizeCsvRow::handle([
                             $log->created_at->toIso8601String(),
                             $log->action,
                             $log->causer?->name,
                             $log->subject_type,
                             $log->ip_address,
-                        ]);
+                        ]));
                     }
                 });
 

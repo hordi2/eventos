@@ -8,6 +8,7 @@ use App\Domain\Analytics\Models\Export;
 use App\Domain\Analytics\Models\ExportStatus;
 use App\Domain\Event\Models\Event;
 use App\Support\Export\BuildExportRows;
+use App\Support\Export\SanitizeCsvRow;
 use App\Support\MultiTenancy\CurrentOrganization;
 use App\Support\Segments\EventSegment;
 use Illuminate\Bus\Queueable;
@@ -70,7 +71,7 @@ final class ProcessExportJob implements ShouldQueue
             $rowCount = 0;
 
             foreach ($buildExportRows->rows($event, $export->type, $columnKeys, $segment) as $row) {
-                fputcsv($stream, array_values($row));
+                fputcsv($stream, array_values(SanitizeCsvRow::handle($row)));
                 $rowCount++;
             }
 

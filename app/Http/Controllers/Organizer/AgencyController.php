@@ -12,6 +12,7 @@ use App\Http\Requests\Organizer\Agency\CreateClientAccountRequest;
 use App\Models\User;
 use App\Support\Agency\ClientAccountData;
 use App\Support\Agency\GetAgencyPortfolio;
+use App\Support\Export\SanitizeCsvRow;
 use App\Support\MultiTenancy\CurrentOrganization;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\CarbonImmutable;
@@ -137,13 +138,13 @@ final class AgencyController extends Controller
             fputcsv($handle, ['Compte client', 'Confié depuis', 'Événements', 'Inscrits', 'Recettes']);
 
             foreach ($portfolio->clients as $client) {
-                fputcsv($handle, [
+                fputcsv($handle, SanitizeCsvRow::handle([
                     $client->name,
                     $client->managedSince,
                     $client->eventCount,
                     $client->registrationCount,
                     $client->revenue->format(),
-                ]);
+                ]));
             }
 
             fputcsv($handle, [

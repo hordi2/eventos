@@ -47,6 +47,23 @@ it('exporte les invités en CSV, filtrés par segment, et journalise la demande'
     expect(AuditLog::query()->where('action', 'export.requested')->where('subject_id', $exportId)->exists())->toBeTrue();
 });
 
+it('neutralise une valeur de contact qui ressemble à une formule, pour empêcher l\'injection CSV à l\'ouverture', function (): void {
+    ['organization' => $organization, 'event' => $event, 'doorStaff' => $owner] = makeCheckInEvent(MembershipRole::Owner);
+    app(CurrentOrganization::class)->set($organization);
+    $contact = Contact::factory()->for($organization)->create(['first_name' => '=1+1', 'last_name' => 'Kanku']);
+    registerContactForEvent($organization, $event, $contact, RegistrationStatus::Confirmed);
+    app(CurrentOrganization::class)->clear();
+
+    $response = $this->actingAs($owner)->postJson("/events/{$event->id}/exports", [
+        'type' => 'contacts',
+        'columns' => ['first_name', 'last_name', 'status'],
+    ]);
+    $response->assertCreated();
+
+    $download = $this->actingAs($owner)->get("/events/{$event->id}/exports/{$response->json('id')}/download");
+    expect($download->getContent())->toContain('\'=1+1');
+});
+
 it('exporte les commandes payées en CSV', function (): void {
     ['organization' => $organization, 'event' => $event, 'doorStaff' => $owner] = makeCheckInEvent(MembershipRole::Owner);
     app(CurrentOrganization::class)->set($organization);
