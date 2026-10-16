@@ -32,6 +32,12 @@ final class SeatingTableFactory extends Factory
             'width' => 120,
             'height' => 120,
             'rotation' => 0,
+            'is_accessible' => false,
         ];
+    }
+
+    public function accessible(): static
+    {
+        return $this->state(fn (): array => ['is_accessible' => true]);
     }
 }

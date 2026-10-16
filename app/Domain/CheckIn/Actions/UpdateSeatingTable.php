@@ -28,6 +28,7 @@ final class UpdateSeatingTable
         ?float $width = null,
         ?float $height = null,
         ?float $rotation = null,
+        ?bool $isAccessible = null,
     ): SeatingTable {
         Gate::forUser($user)->authorize('updateGuests', $table->organization);
 
@@ -40,6 +41,7 @@ final class UpdateSeatingTable
             'width' => $width,
             'height' => $height,
             'rotation' => $rotation,
+            'is_accessible' => $isAccessible,
         ], fn (mixed $value): bool => $value !== null));
 
         return $table->fresh();

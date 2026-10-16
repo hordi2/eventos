@@ -24,6 +24,7 @@ final class CreateSeatingTable
         int $capacity,
         User $user,
         ?string $name = null,
+        bool $isAccessible = false,
     ): SeatingTable {
         Gate::forUser($user)->authorize('updateGuests', $organization);
 
@@ -45,6 +46,7 @@ final class CreateSeatingTable
             'width' => 120,
             'height' => 120,
             'rotation' => 0,
+            'is_accessible' => $isAccessible,
         ]);
     }
 }

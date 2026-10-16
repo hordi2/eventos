@@ -56,6 +56,7 @@ final class GetSeatingPlan
                 width: $table->width,
                 height: $table->height,
                 rotation: $table->rotation,
+                isAccessible: $table->is_accessible,
                 guests: $tableGuests,
             );
         })->all();

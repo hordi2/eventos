@@ -19,6 +19,7 @@ final class SeatingTableData
         public readonly float $width,
         public readonly float $height,
         public readonly float $rotation,
+        public readonly bool $isAccessible,
         public readonly array $guests,
     ) {}
 }

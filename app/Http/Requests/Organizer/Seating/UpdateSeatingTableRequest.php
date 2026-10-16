@@ -29,6 +29,7 @@ final class UpdateSeatingTableRequest extends FormRequest
             'width' => ['sometimes', 'numeric', 'min:20'],
             'height' => ['sometimes', 'numeric', 'min:20'],
             'rotation' => ['sometimes', 'numeric'],
+            'is_accessible' => ['sometimes', 'boolean'],
         ];
     }
 }

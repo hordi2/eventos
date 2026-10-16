@@ -17,6 +17,7 @@ interface SeatingTable {
     width: number;
     height: number;
     rotation: number;
+    is_accessible: boolean;
     guests: Guest[];
 }
 
@@ -90,9 +91,14 @@ export default function Overview({ event, tables }: Props) {
                         return (
                             <div key={table.id}>
                                 <div
-                                    className={`absolute flex flex-col items-center justify-center border-2 border-ink bg-bg p-2 text-center text-xs ${table.shape === 'round' ? 'rounded-full' : 'rounded-md'}`}
+                                    className={`absolute flex flex-col items-center justify-center border-2 p-2 text-center text-xs ${table.is_accessible ? 'border-accent' : 'border-ink'} bg-bg ${table.shape === 'round' ? 'rounded-full' : 'rounded-md'}`}
                                     style={{ left: table.position_x, top: table.position_y, width: table.width, height: table.height }}
                                 >
+                                    {table.is_accessible && (
+                                        <span title="Accès PMR" aria-label="Accès PMR" className="text-sm">
+                                            ♿
+                                        </span>
+                                    )}
                                     <span className="font-medium">{table.name}</span>
                                     <span className="text-ink-soft">
                                         {table.guests.length}/{table.capacity}
@@ -128,6 +134,7 @@ export default function Overview({ event, tables }: Props) {
                     <div key={table.id} className="rounded-card bg-bg p-4 ring-1 ring-line">
                         <h3 className="mb-2 text-sm font-medium">
                             {table.name} <span className="text-ink-soft">({table.guests.length}/{table.capacity})</span>
+                            {table.is_accessible && <span className="ml-1" title="Accès PMR">♿</span>}
                         </h3>
                         <ul className="space-y-1 text-sm">
                             {table.guests.map((guest) => (

@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { type DragEvent, useState } from 'react';
 import Button from '../../Components/Button';
+import Checkbox from '../../Components/Checkbox';
 import InputLabel from '../../Components/InputLabel';
 import Select from '../../Components/Select';
 import TextInput from '../../Components/TextInput';
@@ -22,6 +23,7 @@ interface SeatingTable {
     width: number;
     height: number;
     rotation: number;
+    is_accessible: boolean;
     guests: Guest[];
 }
 
@@ -104,6 +106,7 @@ export default function Show({ event, tables: initialTables, unassignedGuests: i
     const [constraints, setConstraints] = useState<Constraint[]>(initialConstraints);
     const [newTableShape, setNewTableShape] = useState(shapes[0] ?? 'round');
     const [newTableCapacity, setNewTableCapacity] = useState('8');
+    const [newTableAccessible, setNewTableAccessible] = useState(false);
     const [feedback, setFeedback] = useState<string | null>(null);
     const [autoPlacing, setAutoPlacing] = useState(false);
     const [constraintForm, setConstraintForm] = useState({ guestAKey: '', guestBKey: '', type: 'must_not_be_with' });
@@ -126,8 +129,17 @@ export default function Show({ event, tables: initialTables, unassignedGuests: i
         const response = await window.axios.post<SeatingTable>(`/events/${event.id}/seating/tables`, {
             shape: newTableShape,
             capacity: Number(newTableCapacity),
+            is_accessible: newTableAccessible,
         });
         setTables((current) => [...current, response.data]);
+        setNewTableAccessible(false);
+    }
+
+    async function handleToggleAccessible(table: SeatingTable) {
+        const response = await window.axios.patch<SeatingTable>(`/events/${event.id}/seating/tables/${table.id}`, {
+            is_accessible: !table.is_accessible,
+        });
+        setTables((current) => current.map((t) => (t.id === table.id ? { ...t, is_accessible: response.data.is_accessible } : t)));
     }
 
     async function handleDeleteTable(table: SeatingTable) {
@@ -311,6 +323,10 @@ export default function Show({ event, tables: initialTables, unassignedGuests: i
                         onChange={(e) => setNewTableCapacity(e.target.value)}
                     />
                 </div>
+                <label className="flex cursor-pointer items-center gap-2 pb-2.5 text-sm text-ink">
+                    <Checkbox checked={newTableAccessible} onChange={(e) => setNewTableAccessible(e.target.checked)} />
+                    Accès PMR
+                </label>
                 <Button className="w-auto" onClick={() => void handleAddTable()}>
                     Ajouter une table
                 </Button>
@@ -341,13 +357,25 @@ export default function Show({ event, tables: initialTables, unassignedGuests: i
                                     onDragStart={(e) => e.dataTransfer.setData('text/table-id', String(table.id))}
                                     onDragOver={(e) => e.preventDefault()}
                                     onDrop={(e) => handleTableDrop(e, table)}
-                                    className={`absolute flex cursor-move flex-col items-center justify-center border-2 border-ink bg-bg p-2 text-center text-xs ${table.shape === 'round' ? 'rounded-full' : 'rounded-md'}`}
+                                    className={`absolute flex cursor-move flex-col items-center justify-center border-2 p-2 text-center text-xs ${table.is_accessible ? 'border-accent' : 'border-ink'} bg-bg ${table.shape === 'round' ? 'rounded-full' : 'rounded-md'}`}
                                     style={{ left: table.position_x, top: table.position_y, width: table.width, height: table.height }}
                                 >
+                                    {table.is_accessible && (
+                                        <span title="Accès PMR" aria-label="Accès PMR" className="text-sm">
+                                            ♿
+                                        </span>
+                                    )}
                                     <span className="font-medium">{table.name}</span>
                                     <span className="text-ink-soft">
                                         {table.guests.length}/{table.capacity}
                                     </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => void handleToggleAccessible(table)}
+                                        className="mt-1 text-[10px] text-ink-soft underline"
+                                    >
+                                        {table.is_accessible ? 'Retirer accès PMR' : 'Marquer accès PMR'}
+                                    </button>
                                     <button
                                         type="button"
                                         onClick={() => void handleDeleteTable(table)}

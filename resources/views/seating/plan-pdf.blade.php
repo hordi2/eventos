@@ -41,6 +41,11 @@
         .table.round {
             border-radius: 50%;
         }
+
+        .table.accessible {
+            border-color: #2563eb;
+            border-width: 2.5px;
+        }
     </style>
 </head>
 <body>
@@ -49,10 +54,10 @@
     <div class="canvas">
         @foreach ($tables as $table)
             <div
-                class="table {{ $table->shape === 'round' ? 'round' : '' }}"
+                class="table {{ $table->shape === 'round' ? 'round' : '' }} {{ $table->isAccessible ? 'accessible' : '' }}"
                 style="left: {{ $table->positionX }}px; top: {{ $table->positionY }}px; width: {{ $table->width }}px; height: {{ $table->height }}px;"
             >
-                {{ $table->name }}<br>({{ count($table->guests) }}/{{ $table->capacity }})
+                {{ $table->name }}{{ $table->isAccessible ? ' (PMR)' : '' }}<br>({{ count($table->guests) }}/{{ $table->capacity }})
             </div>
         @endforeach
     </div>

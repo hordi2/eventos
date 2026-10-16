@@ -90,6 +90,7 @@ final class SeatingController extends Controller
             capacity: $request->integer('capacity'),
             user: $request->user(),
             name: $request->string('name')->toString() ?: null,
+            isAccessible: $request->boolean('is_accessible'),
         );
 
         return response()->json($this->serializeTable(new SeatingTableData(
@@ -102,6 +103,7 @@ final class SeatingController extends Controller
             width: $table->width,
             height: $table->height,
             rotation: $table->rotation,
+            isAccessible: $table->is_accessible,
             guests: [],
         )), 201);
     }
@@ -122,6 +124,7 @@ final class SeatingController extends Controller
             width: $request->has('width') ? $request->float('width') : null,
             height: $request->has('height') ? $request->float('height') : null,
             rotation: $request->has('rotation') ? $request->float('rotation') : null,
+            isAccessible: $request->has('is_accessible') ? $request->boolean('is_accessible') : null,
         );
 
         return response()->json([
@@ -134,6 +137,7 @@ final class SeatingController extends Controller
             'width' => $updated->width,
             'height' => $updated->height,
             'rotation' => $updated->rotation,
+            'is_accessible' => $updated->is_accessible,
         ]);
     }
 
@@ -269,6 +273,7 @@ final class SeatingController extends Controller
             'width' => $table->width,
             'height' => $table->height,
             'rotation' => $table->rotation,
+            'is_accessible' => $table->isAccessible,
             'guests' => array_map($this->serializeGuest(...), $table->guests),
         ];
     }

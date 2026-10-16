@@ -24,6 +24,7 @@ final class StoreSeatingTableRequest extends FormRequest
             'name' => ['nullable', 'string', 'max:100'],
             'shape' => ['required', Rule::enum(SeatingTableShape::class)],
             'capacity' => ['required', 'integer', 'min:1', 'max:200'],
+            'is_accessible' => ['sometimes', 'boolean'],
         ];
     }
 }

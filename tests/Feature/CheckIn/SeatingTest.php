@@ -21,6 +21,34 @@ it('crée une table avec numérotation automatique', function (): void {
     $response->assertJsonPath('capacity', 8);
 });
 
+it('crée une table marquée accès PMR', function (): void {
+    ['event' => $event, 'doorStaff' => $owner] = makeCheckInEvent(MembershipRole::Owner);
+
+    $response = $this->actingAs($owner)->postJson("/events/{$event->id}/seating/tables", [
+        'shape' => 'round',
+        'capacity' => 8,
+        'is_accessible' => true,
+    ]);
+
+    $response->assertCreated();
+    $response->assertJsonPath('is_accessible', true);
+});
+
+it('marque une table comme accessible puis retire ce marquage', function (): void {
+    ['organization' => $organization, 'event' => $event, 'doorStaff' => $owner] = makeCheckInEvent(MembershipRole::Owner);
+    app(CurrentOrganization::class)->set($organization);
+    $table = SeatingTable::factory()->for($organization)->create(['event_id' => $event->id, 'is_accessible' => false]);
+    app(CurrentOrganization::class)->clear();
+
+    $marked = $this->actingAs($owner)->patchJson("/events/{$event->id}/seating/tables/{$table->id}", ['is_accessible' => true]);
+    $marked->assertOk();
+    $marked->assertJsonPath('is_accessible', true);
+
+    $unmarked = $this->actingAs($owner)->patchJson("/events/{$event->id}/seating/tables/{$table->id}", ['is_accessible' => false]);
+    $unmarked->assertOk();
+    $unmarked->assertJsonPath('is_accessible', false);
+});
+
 it('déplace une table (position, taille) dans l\'éditeur visuel', function (): void {
     ['organization' => $organization, 'event' => $event, 'doorStaff' => $owner] = makeCheckInEvent(MembershipRole::Owner);
     app(CurrentOrganization::class)->set($organization);

@@ -33,12 +33,14 @@ final class SeatingTable extends Model
         'width',
         'height',
         'rotation',
+        'is_accessible',
     ];
 
     protected function casts(): array
     {
         return [
             'shape' => SeatingTableShape::class,
+            'is_accessible' => 'boolean',
             // PDO renvoie les colonnes float PostgreSQL sous forme de
             // chaînes sans cast explicite — trouvé en testant l'éditeur
             // visuel, où position_x/position_y revenaient en JSON comme
