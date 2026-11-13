@@ -115,7 +115,10 @@ function addHoursToLocalValue(value: string, hours: number): string {
 }
 
 export default function CreateEvent({ event, eventTypes, eventAudiences, timezones, venues, canDuplicate = false, duplicationParts = [], locales = [], assistantAvailable = false }: CreateEventPageProps) {
-    const [step, setStep] = useState<1 | 2 | 3>(event ? 3 : 1);
+    // « Calendrier d'ouverture » (menu de l'événement) ouvre directement les
+    // dates d'inscription, sans passer par le récapitulatif.
+    const opensOnRegistrationDates = event !== null && new URLSearchParams(window.location.search).get('section') === 'inscriptions';
+    const [step, setStep] = useState<1 | 2 | 3>(event ? (opensOnRegistrationDates ? 2 : 3) : 1);
     const [endTouched, setEndTouched] = useState(Boolean(event));
     const [venueMode, setVenueMode] = useState<'none' | 'existing' | 'new'>(event?.venueId ? 'existing' : 'none');
     const [showDuplicate, setShowDuplicate] = useState(false);
@@ -441,6 +444,7 @@ export default function CreateEvent({ event, eventTypes, eventAudiences, timezon
                                 <TextInput
                                     id="registration_opens_at"
                                     type="datetime-local"
+                                    autoFocus={opensOnRegistrationDates}
                                     value={data.registration_opens_at}
                                     onChange={(e) => setData('registration_opens_at', e.target.value)}
                                 />

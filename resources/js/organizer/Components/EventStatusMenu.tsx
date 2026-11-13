@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import useCloseOnClickOutside from '../hooks/useCloseOnClickOutside';
 import { type EventNav } from '../types';
@@ -152,11 +152,16 @@ export default function EventStatusMenu({ nav }: { nav: EventNav }) {
                             {copied === 'public' ? 'Lien public copié' : 'Copier le lien public'}
                         </button>
                     )}
-                    <span aria-disabled="true" className="flex items-center gap-3 px-3 py-2.5 text-sm text-ink-soft">
-                        <EventIcon name="chart" className="h-4 w-4" />
-                        <span className="flex-1">Calendrier d'ouverture</span>
-                        <span className="rounded-pill border border-line px-2 py-0.5 text-[10px] tracking-[0.08em] uppercase">Bientôt</span>
-                    </span>
+                    {nav.links.settings && (
+                        <Link
+                            href={`${nav.links.settings}?section=inscriptions`}
+                            role="menuitem"
+                            className="flex w-full items-center gap-3 rounded-card px-3 py-2.5 text-left text-sm text-ink hover:bg-bg-alt"
+                        >
+                            <EventIcon name="chart" className="h-4 w-4 text-ink-soft" />
+                            Calendrier d'ouverture
+                        </Link>
+                    )}
 
                     {(nav.canArchive || nav.canDelete) && <div className="my-2 border-t border-line" />}
 
