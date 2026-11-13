@@ -70,3 +70,42 @@ it('enregistre l\'identifiant de mesure et refuse un identifiant mal formé', fu
     $this->actingAs($admin)->post('/settings/api/analytics', ['ga4_measurement_id' => '']);
     expect($organization->fresh()->ga4_measurement_id)->toBeNull();
 });
+
+it('ne charge le pixel Meta qu\'après l\'accord de l\'invité', function (): void {
+    ['organization' => $organization, 'event' => $event] = makeGuestReadyEvent();
+
+    $this->get("/r/{$organization->slug}/{$event->slug}")
+        ->assertOk()
+        ->assertDontSee('connect.facebook.net', false);
+
+    app(CurrentOrganization::class)->set($organization);
+    $organization->update(['meta_pixel_id' => '123456789012345']);
+    app(CurrentOrganization::class)->clear();
+
+    // Pixel seul, sans GA4 : le bandeau demande quand même l'accord, et
+    // aucun script Meta n'est posé par le serveur.
+    $response = $this->get("/r/{$organization->slug}/{$event->slug}")
+        ->assertOk()
+        ->assertSee("Acceptez-vous la mesure d'audience")
+        ->assertSee('123456789012345', false)
+        ->assertDontSee('googletagmanager.com', false);
+
+    expect($response->getContent())->not->toContain('<script async src="https://connect.facebook.net');
+    expect($response->headers->get('Content-Security-Policy'))->toContain('https://connect.facebook.net');
+});
+
+it('enregistre l\'identifiant du pixel Meta et refuse un identifiant mal formé', function (): void {
+    [$organization, $admin] = organizationWithContactRole(MembershipRole::Owner);
+
+    $this->actingAs($admin)->post('/settings/api/analytics', ['ga4_measurement_id' => '', 'meta_pixel_id' => '1234 5678 9012 345'])
+        ->assertSessionHas('status', 'analytics-saved');
+
+    expect($organization->fresh()->meta_pixel_id)->toBe('123456789012345');
+
+    $this->actingAs($admin)->post('/settings/api/analytics', ['ga4_measurement_id' => '', 'meta_pixel_id' => 'fb-123'])
+        ->assertSessionHasErrors('meta_pixel_id');
+
+    // Vide : le pixel est retiré.
+    $this->actingAs($admin)->post('/settings/api/analytics', ['ga4_measurement_id' => '', 'meta_pixel_id' => '']);
+    expect($organization->fresh()->meta_pixel_id)->toBeNull();
+});

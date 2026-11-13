@@ -58,11 +58,11 @@ final class AddGuestContentSecurityPolicy
         $imageHosts = implode(' ', $this->imageHosts());
         $directives = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-eval' https://www.googletagmanager.com",
+            "script-src 'self' 'unsafe-eval' https://www.googletagmanager.com https://connect.facebook.net",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com data:",
-            "img-src 'self' data: {$imageHosts}",
-            "connect-src 'self' https://*.google-analytics.com",
+            "img-src 'self' data: {$imageHosts} https://www.facebook.com",
+            "connect-src 'self' https://*.google-analytics.com https://www.facebook.com",
             // Mot d'accueil et vidéos de la page événement (VideoEmbed) :
             // seules ces deux origines y sont jamais résolues.
             "frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com",

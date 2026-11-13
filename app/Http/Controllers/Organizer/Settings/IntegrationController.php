@@ -59,6 +59,7 @@ final class IntegrationController extends Controller
             // domaine de son instance.
             'apiBaseUrl' => url('/api/v1'),
             'ga4MeasurementId' => $this->currentOrganization()->ga4_measurement_id,
+            'metaPixelId' => $this->currentOrganization()->meta_pixel_id,
             'n8n' => $this->n8nState(),
         ]);
     }
@@ -107,12 +108,15 @@ final class IntegrationController extends Controller
     }
 
     /**
-     * Mesure d'audience Google Analytics 4 des pages invité : chargée
-     * seulement après l'accord de l'invité (guest.layout).
+     * Mesure d'audience des pages invité (Google Analytics 4, pixel Meta) :
+     * chargée seulement après l'accord de l'invité (guest.layout).
      */
     public function saveAnalytics(SaveAnalyticsRequest $request): RedirectResponse
     {
-        $this->currentOrganization()->update(['ga4_measurement_id' => $request->string('ga4_measurement_id')->toString() ?: null]);
+        $this->currentOrganization()->update([
+            'ga4_measurement_id' => $request->string('ga4_measurement_id')->toString() ?: null,
+            'meta_pixel_id' => $request->string('meta_pixel_id')->toString() ?: null,
+        ]);
 
         return back()->with('status', 'analytics-saved');
     }

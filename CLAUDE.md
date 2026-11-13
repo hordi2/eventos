@@ -393,11 +393,22 @@ php artisan queue:failed
       unique, sans WebSocket — la page de résultats se recharge toute
       seule). Chaque pièce s'active indépendamment des autres.
 
-      Le moteur revendeur du D10 — tarifs, marges, reversements — reste
-      ouvert : il demande des décisions commerciales.
+      Le moteur revendeur du D10 est terminé : facturation consolidée (un
+      seul abonnement Stripe pour l'agence, un article par compte client),
+      prix de revente par client et marge, aucune commission sur la
+      billetterie.
+
+      Depuis : le « Calendrier d'ouverture » du menu d'un événement ouvre
+      ses dates d'inscription, le pied de page renvoie aux comptes
+      Instagram et Facebook d'Itaza, et le pixel Meta s'ajoute à GA4 dans
+      la mesure d'audience des pages invité (chargé après accord, M9.1).
+
+      Reste à décider côté commercial : le programme d'affiliation
+      (`/affiliates`, page d'annonce seulement — le montant de la
+      commission n'est pas fixé).
 
 **Reste du lot 2, hors code** : publier l'application mobile de check-in sur
 les stores (compte développeur à ouvrir).
 
-**Dernière mise à jour** : 26 octobre 2026 (D9 livré en cinq lots ; la CSP
-stricte des pages publiques, annoncée au §7, est également en place)
+**Dernière mise à jour** : 13 novembre 2026 (calendrier d'ouverture,
+réseaux sociaux du pied de page, pixel Meta ; D10 noté terminé)

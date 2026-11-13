@@ -78,7 +78,8 @@
     @yield('content')
 
     @php($ga4 = isset($guestOrganization) ? $guestOrganization->ga4_measurement_id : null)
-    @if ($ga4)
+    @php($metaPixel = isset($guestOrganization) ? $guestOrganization->meta_pixel_id : null)
+    @if ($ga4 || $metaPixel)
         {{-- Mesure d'audience : chargée seulement si l'invité l'accepte
              (§10.2, RGPD). Son choix est gardé sur son appareil, jamais
              chez nous, et rien ne part avant qu'il ne l'ait donné. --}}
@@ -88,16 +89,36 @@
                 accept() { this.choice = 'yes'; localStorage.setItem('itaza-audience', 'yes'); this.load(); },
                 refuse() { this.choice = 'no'; localStorage.setItem('itaza-audience', 'no'); },
                 load() {
-                    if (document.getElementById('itaza-ga4')) { return; }
-                    const script = document.createElement('script');
-                    script.id = 'itaza-ga4';
-                    script.async = true;
-                    script.src = 'https://www.googletagmanager.com/gtag/js?id={{ $ga4 }}';
-                    document.head.appendChild(script);
-                    window.dataLayer = window.dataLayer || [];
-                    window.gtag = function () { window.dataLayer.push(arguments); };
-                    window.gtag('js', new Date());
-                    window.gtag('config', '{{ $ga4 }}', { anonymize_ip: true });
+                    @if ($ga4)
+                    if (! document.getElementById('itaza-ga4')) {
+                        const script = document.createElement('script');
+                        script.id = 'itaza-ga4';
+                        script.async = true;
+                        script.src = 'https://www.googletagmanager.com/gtag/js?id={{ $ga4 }}';
+                        document.head.appendChild(script);
+                        window.dataLayer = window.dataLayer || [];
+                        window.gtag = function () { window.dataLayer.push(arguments); };
+                        window.gtag('js', new Date());
+                        window.gtag('config', '{{ $ga4 }}', { anonymize_ip: true });
+                    }
+                    @endif
+                    @if ($metaPixel)
+                    if (! document.getElementById('itaza-meta-pixel')) {
+                        {{-- File d'attente identique à celle du code officiel de
+                             Meta, écrite ici car la CSP refuse tout script en ligne. --}}
+                        const fbq = function () { fbq.callMethod ? fbq.callMethod.apply(fbq, arguments) : fbq.queue.push(arguments); };
+                        fbq.push = fbq; fbq.loaded = true; fbq.version = '2.0'; fbq.queue = [];
+                        window.fbq = window.fbq || fbq;
+                        window._fbq = window._fbq || window.fbq;
+                        const script = document.createElement('script');
+                        script.id = 'itaza-meta-pixel';
+                        script.async = true;
+                        script.src = 'https://connect.facebook.net/en_US/fbevents.js';
+                        document.head.appendChild(script);
+                        window.fbq('init', '{{ $metaPixel }}');
+                        window.fbq('track', 'PageView');
+                    }
+                    @endif
                 },
             }"
             x-init="if (choice === 'yes') { load(); }"
