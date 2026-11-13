@@ -38,6 +38,7 @@ interface Props {
     availableEvents: EventOption[];
     apiBaseUrl: string;
     ga4MeasurementId: string | null;
+    metaPixelId: string | null;
     n8n: N8nState;
 }
 
@@ -45,8 +46,8 @@ function formatDate(value: string | null): string {
     return value ? new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : 'jamais';
 }
 
-export default function Integrations({ tokens, webhooks, availableEvents, apiBaseUrl, ga4MeasurementId, n8n }: Props) {
-    const analyticsForm = useForm({ ga4_measurement_id: ga4MeasurementId ?? '' });
+export default function Integrations({ tokens, webhooks, availableEvents, apiBaseUrl, ga4MeasurementId, metaPixelId, n8n }: Props) {
+    const analyticsForm = useForm({ ga4_measurement_id: ga4MeasurementId ?? '', meta_pixel_id: metaPixelId ?? '' });
     const { flash } = usePage<SharedProps>().props;
     const [showTokenSecret, setShowTokenSecret] = useState(true);
     // Renseigné quand la clé affichée vient d'être créée depuis le bloc
@@ -131,8 +132,8 @@ export default function Integrations({ tokens, webhooks, availableEvents, apiBas
             <section className="mb-14">
                 <h2 className="mb-1 font-serif text-xl italic">Mesure d'audience</h2>
                 <p className="mb-4 max-w-2xl text-sm text-ink-soft">
-                    Votre identifiant Google Analytics 4 pour suivre les visites de vos pages invité. Il n'est chargé qu'après l'accord de l'invité,
-                    demandé par un bandeau en bas de page.
+                    Votre identifiant Google Analytics 4 et votre pixel Meta (Facebook, Instagram) pour suivre les visites de vos pages invité et
+                    mesurer vos publicités. Ils ne sont chargés qu'après l'accord de l'invité, demandé par un bandeau en bas de page.
                 </p>
                 <form
                     onSubmit={(submitEvent) => {
@@ -151,10 +152,21 @@ export default function Integrations({ tokens, webhooks, availableEvents, apiBas
                         />
                         <InputError message={analyticsForm.errors.ga4_measurement_id} />
                     </div>
+                    <div className="w-64">
+                        <InputLabel htmlFor="meta_pixel">Identifiant du pixel Meta</InputLabel>
+                        <TextInput
+                            id="meta_pixel"
+                            inputMode="numeric"
+                            value={analyticsForm.data.meta_pixel_id}
+                            onChange={(changeEvent) => analyticsForm.setData('meta_pixel_id', changeEvent.target.value)}
+                            placeholder="123456789012345"
+                        />
+                        <InputError message={analyticsForm.errors.meta_pixel_id} />
+                    </div>
                     <Button type="submit" disabled={analyticsForm.processing} className="w-auto px-6 py-2">
                         Enregistrer
                     </Button>
-                    <p className="text-xs text-ink-soft">Laissez vide pour retirer la mesure.</p>
+                    <p className="text-xs text-ink-soft">Laissez un champ vide pour retirer la mesure correspondante.</p>
                 </form>
             </section>
 
